@@ -40,7 +40,6 @@ fake_users_db = {
         "full_name": "John Doe",
         "email": "johndoe@example.com",
         "hashed_password": hash_password("12345"),
-        "refresh_token": None,
         "active": True,
     },
     "alice": {
@@ -48,9 +47,13 @@ fake_users_db = {
         "full_name": "Alice Chains",
         "email": "alicechains@example.com",
         "hashed_password": hash_password("12345"),
-        "refresh_token": None,
         "active": True,
     },
+}
+
+refresh_tokens = {
+    "johndoe": set(), # list of refresh tokens
+    "alice": set(),
 }
 
 
@@ -74,10 +77,6 @@ class UserInDB(UserSchema):
 class TokenData(BaseModel):
     username: str | None = None
     scopes: list[str] = []
-
-
-def update_refresh_token(username: str, token: str):
-    fake_users_db[username]["refresh_token"] = token
 
 
 def create_token(data: dict, expires_delta: datetime.timedelta, token_type: str):
@@ -196,21 +195,8 @@ def get_access_token(
     return current_user
 
 
-def get_refresh_token(
-    token: Annotated[str, Depends(oauth2_scheme)],
-) -> dict:
-    try:
-        payload = validate_token(token=token, token_type="refresh")
-        username = payload["sub"]
-        if fake_users_db[username]["refresh_token"] != token:
-            raise PyJWTError()
-        return payload
-    except PyJWTError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid token",
-        )
-
+def is_refresh_token_valid(username: str, token: str) -> bool:
+    return token in refresh_tokens[username]
 
 def create_tokens(data: dict) -> Token:
     refresh_token = create_token(
@@ -223,11 +209,11 @@ def create_tokens(data: dict) -> Token:
         expires_delta=datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
         token_type="access"
     )
-    update_refresh_token(username=data["sub"], token=refresh_token)
+    refresh_tokens[data["sub"]].add(refresh_token)
     return Token(refresh_token=refresh_token, access_token=access_token, token_type="bearer")
 
 
-@app.post("/auth/")
+@app.post("/token/")
 def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ):
@@ -240,20 +226,29 @@ def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
-    
-    tokens = create_tokens({
+    return create_tokens({
         "sub": user.username,  # it is better to use the user's ID
         "scopes": form_data.scopes,
     })
-    return tokens
 
 
 @app.post("/refresh-token/")
-def refresh(payload: dict = Depends(get_refresh_token)):
-    return create_tokens({
+def refresh(token: Annotated[str, Depends(oauth2_scheme)]):
+    try:
+        payload = validate_token(token=token, token_type="refresh")
+        if not is_refresh_token_valid(username=payload["sub"], token=token):
+            raise PyJWTError()
+    except PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid token",
+        )
+    tokens = create_tokens({
         "sub": payload["sub"],
         "scopes": payload["scopes"],
     })
+    refresh_tokens[payload["sub"]].discard(token)
+    return tokens
 
 
 @app.post("/introspect/")
