@@ -1,5 +1,6 @@
 import datetime
 from typing import Annotated
+from collections import defaultdict
 import bcrypt
 from fastapi import Depends, FastAPI, HTTPException, Security, status
 from fastapi.security import (
@@ -51,10 +52,7 @@ fake_users_db = {
     },
 }
 
-refresh_tokens = {
-    "johndoe": set(), # list of refresh tokens
-    "alice": set(),
-}
+refresh_tokens = defaultdict(set)
 
 
 class Token(BaseModel):
