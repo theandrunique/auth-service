@@ -23,7 +23,7 @@ async def get_user_from_db_by_username(
     username: str,
     session: AsyncSession
 ) -> UserInDB | None:
-    stmt = select(UserInDB).where(UserInDB.username == username)
+    stmt = select(UserInDB).where(UserInDB.username == username).limit(1)
     result: Result = await session.execute(stmt)
     return result.scalar_one_or_none()
 

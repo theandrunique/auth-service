@@ -3,17 +3,29 @@ import bcrypt
 import jwt
 from jwt.exceptions import PyJWTError
 import secrets
+from config import (
+    REFRESH_TOKEN_LENGTH_BYTES,
+    SECRET_KEY,
+    ALGORITHM,
+)
 
-
-SECRET_KEY = "381fe4a2683cd0eee27cd66bfe1e5b02142ab7ee64d4f1ccbf1011e7358b005e"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 10
-REFRESH_TOKEN_EXPIRE_MINUTES = 24 * 60
-REFRESH_TOKEN_LENGTH_BYTES = 24
 
 
 def gen_key():
     return secrets.token_hex(REFRESH_TOKEN_LENGTH_BYTES)
+
+
+def create_token(data: dict, expires_delta: datetime.timedelta, token_type: str):
+    encoded_jwt = jwt.encode(
+        payload={
+            **data,
+            "exp": datetime.datetime.now(datetime.timezone.utc) + expires_delta,
+            "token_type": token_type,
+        },
+        key=SECRET_KEY,
+        algorithm=ALGORITHM,
+    )
+    return encoded_jwt
 
 
 def create_refresh_token(data: dict, expires_delta: datetime.timedelta):
@@ -40,6 +52,17 @@ def create_access_token(data: dict, expires_delta: datetime.timedelta):
         algorithm=ALGORITHM,
     )
     return encoded_jwt
+
+
+def validate_token(token: str, token_type: str):
+    payload: dict = jwt.decode(
+        jwt=token,
+        key=SECRET_KEY,
+        algorithms=[ALGORITHM],
+    )
+    if payload.get("token_type") != token_type:
+        raise PyJWTError()
+    return payload
 
 
 def validate_access_token(token: str):
