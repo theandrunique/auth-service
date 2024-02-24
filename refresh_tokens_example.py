@@ -1,4 +1,5 @@
 import datetime
+from enum import Enum
 from typing import Annotated
 from collections import defaultdict
 import bcrypt
@@ -230,7 +231,7 @@ def login(
     })
 
 
-@app.post("/refresh-token/")
+@app.get("/refresh-token/")
 def refresh(token: Annotated[str, Depends(oauth2_scheme)]):
     try:
         payload = validate_token(token=token, token_type="refresh")
@@ -249,7 +250,7 @@ def refresh(token: Annotated[str, Depends(oauth2_scheme)]):
     return tokens
 
 
-@app.post("/introspect/")
+@app.get("/introspect/")
 def introspect_token(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(
@@ -265,6 +266,6 @@ def introspect_token(token: str = Depends(oauth2_scheme)):
     
     return payload
 
-@app.post("/me/")
+@app.get("/me/")
 def refresh(user: UserSchema = Security(get_access_token, scopes=["me"])):
     return user
