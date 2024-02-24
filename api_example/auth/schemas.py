@@ -13,6 +13,11 @@ class TokenPair(BaseModel):
     token_type: str
 
 
+class TokenData(BaseModel):
+    sub: str
+    scopes: str
+
+
 class UserSchema(BaseModel):
     username: str
     active: bool

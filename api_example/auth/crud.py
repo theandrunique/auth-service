@@ -19,12 +19,11 @@ async def create_new_user(
     return new_user
 
 
-async def create_new_refresh_token(
+async def create_new_refresh_token_field(
     user_id: int,
-    token: str,
     session: AsyncSession,
 ):
-    new_token = RefreshTokenInDB(user_id=user_id, token=token)
+    new_token = RefreshTokenInDB(user_id=user_id)
     session.add(new_token)
     await session.commit()
     return new_token
@@ -35,7 +34,7 @@ async def update_refresh_token(
     new_value: str,
     session: AsyncSession,
 ):
-    token.token = new_value
+    token.hashed_token = hash_password(new_value)
     session.add(token)
     await session.commit()
 
@@ -56,15 +55,8 @@ async def get_user_from_db_by_id(
     return await session.get(UserInDB, ident=id)
 
 
-async def get_refresh_token_from_db(
-    token: str, 
-    user_id: str,
+async def get_refresh_token_from_db_by_id(
+    token_id: int, 
     session: AsyncSession,
 ) -> RefreshTokenInDB | None:
-    stmt = (
-        select(RefreshTokenInDB)
-        .where(RefreshTokenInDB.user_id == user_id)
-        .where(RefreshTokenInDB.token == token)
-    )
-    result: Result = await session.execute(stmt)
-    return result.scalar_one_or_none()
+    return session.get(RefreshTokenInDB, ident=token_id) 

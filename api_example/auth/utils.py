@@ -13,14 +13,8 @@ from models import UserInDB
 from db_helper import db_helper
 
 from .schemas import TokenType, UserSchema 
-from .crud import (
-    get_user_from_db_by_id,
-    get_user_from_db_by_username,
-)
-from .security import (
-    validate_password,
-    validate_token
-)
+from .crud import get_user_from_db_by_id, get_user_from_db_by_username
+from .security import validate_password, validate_token
 
 
 oauth2_scheme = OAuth2PasswordBearer(
