@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import UserInDB
 from db_helper import db_helper
 
-from .schemas import UserSchema 
+from .schemas import TokenType, UserSchema 
 from .crud import (
     get_user_from_db_by_id,
     get_user_from_db_by_username,
@@ -62,7 +62,7 @@ async def get_current_user(
     )
 
     try:
-        payload: dict = validate_token(token=token, token_type="access")
+        payload: dict = validate_token(token=token, token_type=TokenType.ACCESS)
         user_id: str = payload.get("sub")
         if user_id is None:
             raise credentials_exception

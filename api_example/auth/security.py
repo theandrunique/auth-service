@@ -10,7 +10,7 @@ from config import (
     SECRET_KEY,
     ALGORITHM,
 )
-from .schemas import TokenPair
+from .schemas import TokenPair, TokenType
 
 
 
@@ -18,12 +18,12 @@ def gen_key():
     return secrets.token_hex(REFRESH_TOKEN_LENGTH_BYTES)
 
 
-def create_token(data: dict, expires_delta: datetime.timedelta, token_type: str):
+def create_token(data: dict, expires_delta: datetime.timedelta, token_type: TokenType):
     encoded_jwt = jwt.encode(
         payload={
             **data,
             "exp": datetime.datetime.now(datetime.timezone.utc) + expires_delta,
-            "token_type": token_type,
+            "token_type": token_type.value,
         },
         key=SECRET_KEY,
         algorithm=ALGORITHM,
@@ -31,13 +31,13 @@ def create_token(data: dict, expires_delta: datetime.timedelta, token_type: str)
     return encoded_jwt
 
 
-def validate_token(token: str, token_type: str):
+def validate_token(token: str, token_type: TokenType):
     payload: dict = jwt.decode(
         jwt=token,
         key=SECRET_KEY,
         algorithms=[ALGORITHM],
     )
-    if payload.get("token_type") != token_type:
+    if payload.get("token_type") != token_type.value:
         raise PyJWTError()
     return payload
 
@@ -63,12 +63,11 @@ def create_tokens(data: dict) -> TokenPair:
     access_token = create_token(
         data=data,
         expires_delta=datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
-        token_type="access",
+        token_type=TokenType.ACCESS,
     )
-
     refresh_token = create_token(
         data=data,
         expires_delta=datetime.timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES),
-        token_type="refresh",
+        token_type=TokenType.REFRESH,
     )
-    return TokenPair(refresh_token=refresh_token, access_token=access_token, token_type="bearer")
+    return TokenPair(refresh_token=refresh_token, access_token=access_token, token_type="Bearer")

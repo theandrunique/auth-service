@@ -30,6 +30,16 @@ async def create_new_refresh_token(
     return new_token
 
 
+async def update_refresh_token(
+    token: RefreshTokenInDB,
+    new_value: str,
+    session: AsyncSession,
+):
+    token.token = new_value
+    session.add(token)
+    await session.commit()
+
+
 async def get_user_from_db_by_username(
     username: str,
     session: AsyncSession
