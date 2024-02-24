@@ -19,6 +19,17 @@ async def create_new_user(
     return new_user
 
 
+async def create_new_refresh_token(
+    user_id: int,
+    token: str,
+    session: AsyncSession,
+):
+    new_token = RefreshTokenInDB(user_id=user_id, token=token)
+    session.add(new_token)
+    await session.commit()
+    return new_token
+
+
 async def get_user_from_db_by_username(
     username: str,
     session: AsyncSession

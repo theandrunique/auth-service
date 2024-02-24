@@ -103,15 +103,3 @@ def get_access_token(
     current_user: UserSchema = Security(get_current_active_user),
 ) -> UserSchema:
     return current_user
-
-
-# def get_refresh_token(
-#     token: Annotated[str, Depends(oauth2_scheme)],
-# ) -> dict:
-#     try:
-#         return validate_refresh_token(token=token)
-#     except PyJWTError:
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="Invalid token",
-#         )

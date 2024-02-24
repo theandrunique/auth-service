@@ -1,4 +1,3 @@
-import datetime
 import logging
 from typing import Annotated
 
@@ -16,13 +15,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 import jwt
 from jwt.exceptions import PyJWTError
-from models import RefreshTokenInDB, UserInDB
+from models import UserInDB
 from db_helper import db_helper
 
 from .schemas import AuthSchema, UserSchema
-from .crud import create_new_user, get_refresh_token_from_db
+from .crud import (
+    create_new_user,
+    get_refresh_token_from_db,
+    create_new_refresh_token,
+)
 from .security import (
-    create_token,
+    create_tokens,
     validate_token,
 )
 from .utils import (
@@ -31,8 +34,6 @@ from .utils import (
     oauth2_scheme,
 )
 from config import (
-    ACCESS_TOKEN_EXPIRE_MINUTES,
-    REFRESH_TOKEN_EXPIRE_MINUTES,
     SECRET_KEY,
     ALGORITHM,
 )
@@ -82,30 +83,14 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
-    refresh_token = create_token(
-        data={
+    tokens_pair = create_tokens(
+        {
             "sub": user.id,
             "scopes": form_data.scopes,
-        },
-        expires_delta=datetime.timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES),
-        token_type="refresh",
+        }
     )
-    
-    access_token = create_token(
-        data={
-            "sub": user.id,
-            "scopes": form_data.scopes,
-        },
-        expires_delta=datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
-        token_type="access",
-    )
-    new_refresh_token = RefreshTokenInDB(user_id=user.id, token=refresh_token)
-    session.add(new_refresh_token)
-    await session.commit()
-    return {
-        "refresh_token": refresh_token,
-        "access_token": access_token,
-    }
+    await create_new_refresh_token(user_id=user.id, token=tokens_pair.refresh_token)
+    return tokens_pair
 
 
 @router.get("/refresh-token/")
@@ -130,31 +115,17 @@ async def refresh(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid token",
         )
-    access_token = create_token(
-        data={
+    tokens_pair = create_tokens(
+        {
             "sub": payload["sub"],
             "scopes": payload["scopes"],
-        },
-        expires_delta=datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
-        token_type="access",
+        }
     )
-
-    refresh_token = create_token(
-        data={
-            "sub": payload["sub"],
-            "scopes": payload["scopes"],
-        },
-        expires_delta=datetime.timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES),
-        token_type="refresh",
-    )
-    prev_token.token = refresh_token
+    prev_token.token = tokens_pair.refresh_token
     session.add(prev_token)
     await session.commit()
 
-    return {
-        "refresh_token": refresh_token,
-        "access_token": access_token,
-    }
+    return tokens_pair
 
 
 @router.get("/introspect/")

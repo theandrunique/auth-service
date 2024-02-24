@@ -1,4 +1,10 @@
+from enum import Enum
 from pydantic import BaseModel, Field
+
+
+class TokenType(Enum):
+    REFRESH = "refresh"
+    ACCESS = "access"
 
 
 class RefreshToken(BaseModel):
@@ -8,6 +14,12 @@ class RefreshToken(BaseModel):
 
 class AccessToken(BaseModel):
     access_token: str
+    token_type: str
+
+
+class TokenPair(BaseModel):
+    access_token: str
+    refresh_token: str
     token_type: str
 
 
