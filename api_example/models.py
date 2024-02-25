@@ -20,5 +20,5 @@ class RefreshTokenInDB(Base):
     
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    hashed_token: Mapped[bytes]
+    hashed_token: Mapped[bytes] = mapped_column(nullable=True)
     # scopes: Mapped[str]

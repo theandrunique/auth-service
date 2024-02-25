@@ -28,6 +28,7 @@ from .utils import (
     authenticate_user,
     get_access_token,
     oauth2_scheme,
+    validate_refresh_token,
 )
 from config import SECRET_KEY, ALGORITHM
 
@@ -63,7 +64,7 @@ async def register(
         )
 
 
-@router.post("/auth/")
+@router.post("/token/")
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: AsyncSession = Depends(db_helper.session_dependency),
@@ -79,8 +80,8 @@ async def login(
             detail="Incorrect username or password",
         )
     refresh_token_in_db = await create_new_refresh_token_field(user_id=user.id, session=session) 
-    tokens_pair = create_tokens({"sub": user.id, "scopes": form_data.scopes, "token_type": refresh_token_in_db.id})
-    update_refresh_token(refresh_token_in_db, new_value=tokens_pair.refresh_token, session=session)
+    tokens_pair = create_tokens({"sub": user.id, "scopes": form_data.scopes, "token_id": refresh_token_in_db.id})
+    await update_refresh_token(refresh_token_in_db, new_value=tokens_pair.refresh_token, session=session)
     return tokens_pair
 
 
@@ -101,6 +102,14 @@ async def refresh(
         session=session,
     )
     if prev_token is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid token",
+        )
+    if not validate_refresh_token(
+        token=token,
+        hashed_token=prev_token.hashed_token,
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid token",

@@ -39,6 +39,10 @@ async def authenticate_user(
     return None
 
 
+def validate_refresh_token(token: str, hashed_token: bytes) -> bool:
+    return validate_password(password=token, hashed_password=hashed_token)
+
+
 async def get_current_user(
     security_scopes: SecurityScopes,
     token: Annotated[str, Depends(oauth2_scheme)],

@@ -59,4 +59,4 @@ async def get_refresh_token_from_db_by_id(
     token_id: int, 
     session: AsyncSession,
 ) -> RefreshTokenInDB | None:
-    return session.get(RefreshTokenInDB, ident=token_id) 
+    return await session.get(RefreshTokenInDB, ident=token_id) 
