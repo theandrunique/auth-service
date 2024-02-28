@@ -18,12 +18,12 @@ from db_helper import db_helper
 
 from .schemas import AuthSchema, TokenType, UserSchema
 from .crud import (
-    create_new_refresh_token_field,
+    create_new_refresh_token,
     create_new_user,
     get_refresh_token_from_db_by_id,
     update_refresh_token,
 )
-from .security import create_tokens, validate_token
+from .security import create_tokens, validate_token, gen_random_token_id
 from .utils import (
     authenticate_user,
     get_access_token,
@@ -69,7 +69,7 @@ async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: AsyncSession = Depends(db_helper.session_dependency),
 ):
-    user: UserInDB = await authenticate_user(
+    user: UserInDB | None = await authenticate_user(
         username=form_data.username,
         password=form_data.password,
         session=session,
@@ -79,14 +79,25 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
-    refresh_token_in_db = await create_new_refresh_token_field(user_id=user.id, session=session) 
-    tokens_pair = create_tokens({"sub": user.id, "scopes": form_data.scopes, "token_id": refresh_token_in_db.id})
-    await update_refresh_token(refresh_token_in_db, new_value=tokens_pair.refresh_token, session=session)
+    token_id = gen_random_token_id()
+    refresh_token_in_db = await create_new_refresh_token(
+        user_id=user.id,
+        token_id=token_id,
+        session=session,
+    )
+    tokens_pair = create_tokens(
+        {
+            "sub": user.id,
+            "scopes": form_data.scopes,
+            "jti": token_id,
+            "token_id": refresh_token_in_db.id,
+        }
+    )
     return tokens_pair
 
 
 @router.get("/refresh-token/")
-async def refresh(
+async def refresh_token(
     token: Annotated[str, Depends(oauth2_scheme)],
     session: AsyncSession = Depends(db_helper.session_dependency),
 ):
@@ -101,26 +112,21 @@ async def refresh(
         token_id=payload["token_id"],
         session=session,
     )
-    if prev_token is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid token",
+    if prev_token is not None and prev_token.token_id == payload["jti"]:
+        token_id = gen_random_token_id()
+        payload["jti"] = token_id
+        tokens_pair = create_tokens(data=payload)
+        await update_refresh_token(
+            token=prev_token,
+            new_token_id=token_id,
+            session=session,
         )
-    if not validate_refresh_token(
-        token=token,
-        hashed_token=prev_token.hashed_token,
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid token",
-        )
-    tokens_pair = create_tokens(data=payload)
-    await update_refresh_token(
-        token=prev_token,
-        new_value=tokens_pair.refresh_token,
-        session=session,
+        return tokens_pair
+
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Invalid token",
     )
-    return tokens_pair
 
 
 @router.get("/introspect/")
@@ -133,6 +139,7 @@ def introspect_token(token: str = Depends(oauth2_scheme)):
             detail="Invalid token",
         )
     return payload
+
 
 @router.get("/me/", response_model=UserSchema)
 def refresh(user: UserInDB = Security(get_access_token)):

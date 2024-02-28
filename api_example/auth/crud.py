@@ -19,11 +19,12 @@ async def create_new_user(
     return new_user
 
 
-async def create_new_refresh_token_field(
+async def create_new_refresh_token(
     user_id: int,
+    token_id: str,
     session: AsyncSession,
 ):
-    new_token = RefreshTokenInDB(user_id=user_id)
+    new_token = RefreshTokenInDB(user_id=user_id, token_id=token_id)
     session.add(new_token)
     await session.commit()
     return new_token
@@ -31,10 +32,10 @@ async def create_new_refresh_token_field(
 
 async def update_refresh_token(
     token: RefreshTokenInDB,
-    new_value: str,
+    new_token_id: str,
     session: AsyncSession,
 ):
-    token.hashed_token = hash_password(new_value)
+    token.token_id = new_token_id
     session.add(token)
     await session.commit()
 

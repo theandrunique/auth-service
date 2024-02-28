@@ -1,4 +1,5 @@
 import datetime
+import uuid
 import bcrypt
 import jwt
 from jwt.exceptions import PyJWTError
@@ -16,6 +17,10 @@ from .schemas import TokenPair, TokenType
 
 def gen_key():
     return secrets.token_hex(REFRESH_TOKEN_LENGTH_BYTES)
+
+
+def gen_random_token_id():
+    return str(uuid.uuid4())
 
 
 def create_token(data: dict, expires_delta: datetime.timedelta, token_type: TokenType):
