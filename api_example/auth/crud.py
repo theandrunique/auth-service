@@ -21,10 +21,10 @@ async def create_new_user(
 
 async def create_new_refresh_token(
     user_id: int,
-    token_id: str,
+    jti: str,
     session: AsyncSession,
 ):
-    new_token = RefreshTokenInDB(user_id=user_id, token_id=token_id)
+    new_token = RefreshTokenInDB(user_id=user_id, jti=jti)
     session.add(new_token)
     await session.commit()
     return new_token
@@ -35,7 +35,7 @@ async def update_refresh_token(
     new_token_id: str,
     session: AsyncSession,
 ):
-    token.token_id = new_token_id
+    token.jti = new_token_id
     session.add(token)
     await session.commit()
 

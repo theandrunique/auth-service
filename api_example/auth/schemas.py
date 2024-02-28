@@ -13,6 +13,13 @@ class TokenPair(BaseModel):
     token_type: str
 
 
+class TokenPayload(BaseModel):
+    sub: int
+    scopes: list[str]
+    jti: str
+    token_id: int
+
+
 class TokenData(BaseModel):
     sub: str
     scopes: str

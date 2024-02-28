@@ -16,7 +16,7 @@ from jwt.exceptions import PyJWTError
 from models import UserInDB
 from db_helper import db_helper
 
-from .schemas import AuthSchema, TokenType, UserSchema
+from .schemas import AuthSchema, TokenPayload, TokenType, UserSchema
 from .crud import (
     create_new_refresh_token,
     create_new_user,
@@ -28,7 +28,6 @@ from .utils import (
     authenticate_user,
     get_access_token,
     oauth2_scheme,
-    validate_refresh_token,
 )
 from config import SECRET_KEY, ALGORITHM
 
@@ -79,20 +78,21 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
-    token_id = gen_random_token_id()
+    jti = gen_random_token_id()
+    
     refresh_token_in_db = await create_new_refresh_token(
         user_id=user.id,
-        token_id=token_id,
+        jti=jti,
         session=session,
     )
-    tokens_pair = create_tokens(
-        {
-            "sub": user.id,
-            "scopes": form_data.scopes,
-            "jti": token_id,
-            "token_id": refresh_token_in_db.id,
-        }
+    payload = TokenPayload(
+        sub=user.id,
+        scopes=form_data.scopes,
+        jti=jti,
+        token_id=refresh_token_in_db.id,
     )
+    
+    tokens_pair = create_tokens(payload=payload)
     return tokens_pair
 
 
@@ -109,16 +109,16 @@ async def refresh_token(
             detail="Invalid token",
         )
     prev_token = await get_refresh_token_from_db_by_id(
-        token_id=payload["token_id"],
+        token_id=payload.token_id,
         session=session,
     )
-    if prev_token is not None and prev_token.token_id == payload["jti"]:
-        token_id = gen_random_token_id()
-        payload["jti"] = token_id
-        tokens_pair = create_tokens(data=payload)
+    if prev_token is not None and prev_token.jti == payload.jti:
+        new_jti = gen_random_token_id()
+        payload.jti = new_jti
+        tokens_pair = create_tokens(payload=payload)
         await update_refresh_token(
             token=prev_token,
-            new_token_id=token_id,
+            new_token_id=new_jti,
             session=session,
         )
         return tokens_pair

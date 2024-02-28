@@ -11,7 +11,7 @@ from config import (
     SECRET_KEY,
     ALGORITHM,
 )
-from .schemas import TokenPair, TokenType
+from .schemas import TokenPair, TokenType, TokenPayload
 
 
 
@@ -23,7 +23,7 @@ def gen_random_token_id():
     return str(uuid.uuid4())
 
 
-def create_token(data: dict, expires_delta: datetime.timedelta, token_type: TokenType):
+def _create_token(data: dict, expires_delta: datetime.timedelta, token_type: TokenType):
     encoded_jwt = jwt.encode(
         payload={
             **data,
@@ -36,13 +36,14 @@ def create_token(data: dict, expires_delta: datetime.timedelta, token_type: Toke
     return encoded_jwt
 
 
-def validate_token(token: str, token_type: TokenType):
-    payload: dict = jwt.decode(
+def validate_token(token: str, token_type: TokenType) -> TokenPayload:
+    payload_dict: dict = jwt.decode(
         jwt=token,
         key=SECRET_KEY,
         algorithms=[ALGORITHM],
     )
-    if payload.get("token_type") != token_type.value:
+    payload = TokenPayload(**payload_dict)
+    if payload_dict["token_type"] != token_type.value:
         raise PyJWTError()
     return payload
 
@@ -64,14 +65,15 @@ def hash_password(password: str) -> bytes:
     )
     
 
-def create_tokens(data: dict) -> TokenPair:
-    access_token = create_token(
-        data=data,
+def create_tokens(payload: TokenPayload) -> TokenPair:
+    payload_dict = payload.model_dump()
+    access_token = _create_token(
+        data=payload_dict,
         expires_delta=datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
         token_type=TokenType.ACCESS,
     )
-    refresh_token = create_token(
-        data=data,
+    refresh_token = _create_token(
+        data=payload_dict,
         expires_delta=datetime.timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES),
         token_type=TokenType.REFRESH,
     )
