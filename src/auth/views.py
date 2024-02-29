@@ -1,5 +1,5 @@
 import logging
-from typing import Annotated
+from typing import Annotated, Any
 
 import jwt
 from config import settings
@@ -23,7 +23,7 @@ from .crud import (
     get_refresh_token_from_db_by_id,
     update_refresh_token,
 )
-from .schemas import AuthSchema, TokenPayload, TokenType, UserSchema
+from .schemas import AuthSchema, TokenPair, TokenPayload, TokenType, UserSchema
 from .security import create_tokens, gen_random_token_id, validate_token
 from .utils import (
     authenticate_user,
@@ -42,7 +42,7 @@ router = APIRouter()
 async def register(
     auth_data: AuthSchema,
     session: AsyncSession = Depends(db_helper.session_dependency),
-):
+) -> Any:
     try:
         new_user = await create_new_user(
             username=auth_data.username,
@@ -66,7 +66,7 @@ async def register(
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: AsyncSession = Depends(db_helper.session_dependency),
-):
+) -> TokenPair:
     user: UserInDB | None = await authenticate_user(
         username=form_data.username,
         password=form_data.password,
@@ -99,7 +99,7 @@ async def login(
 async def refresh_token(
     token: Annotated[str, Depends(oauth2_scheme)],
     session: AsyncSession = Depends(db_helper.session_dependency),
-):
+) -> TokenPair:
     try:
         payload = validate_token(token=token, token_type=TokenType.REFRESH)
     except PyJWTError:
@@ -129,7 +129,7 @@ async def refresh_token(
 
 
 @router.get("/introspect/")
-def introspect_token(token: str = Depends(oauth2_scheme)):
+def introspect_token(token: str = Depends(oauth2_scheme)) -> Any:
     try:
         payload = jwt.decode(
             jwt=token, key=settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
@@ -143,5 +143,5 @@ def introspect_token(token: str = Depends(oauth2_scheme)):
 
 
 @router.get("/me/", response_model=UserSchema)
-def get_me(user: UserInDB = Security(get_access_token, scopes=["me"])):
+def get_me(user: UserInDB = Security(get_access_token, scopes=["me"])) -> Any:
     return user

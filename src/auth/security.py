@@ -1,6 +1,7 @@
 import datetime
 import secrets
 import uuid
+from typing import Any
 
 import bcrypt
 import jwt
@@ -10,15 +11,19 @@ from jwt.exceptions import PyJWTError
 from .schemas import TokenPair, TokenPayload, TokenType
 
 
-def gen_key():
+def gen_key() -> str:
     return secrets.token_hex(settings.REFRESH_TOKEN_LENGTH_BYTES)
 
 
-def gen_random_token_id():
+def gen_random_token_id() -> str:
     return str(uuid.uuid4())
 
 
-def _create_token(data: dict, expires_delta: datetime.timedelta, token_type: TokenType):
+def _create_token(
+    data: dict[str, Any],
+    expires_delta: datetime.timedelta,
+    token_type: TokenType,
+) -> str:
     encoded_jwt = jwt.encode(
         payload={
             **data,
@@ -32,7 +37,7 @@ def _create_token(data: dict, expires_delta: datetime.timedelta, token_type: Tok
 
 
 def validate_token(token: str, token_type: TokenType) -> TokenPayload:
-    payload_dict: dict = jwt.decode(
+    payload_dict: dict[str, Any] = jwt.decode(
         jwt=token,
         key=settings.SECRET_KEY,
         algorithms=[settings.ALGORITHM],

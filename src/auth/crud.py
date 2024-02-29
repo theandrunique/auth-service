@@ -1,5 +1,5 @@
 from models import RefreshTokenInDB, UserInDB
-from sqlalchemy import Result, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .security import hash_password
@@ -9,7 +9,7 @@ async def create_new_user(
     username: str,
     password: str,
     session: AsyncSession,
-):
+) -> UserInDB:
     new_user = UserInDB(
         username=username,
         hashed_password=hash_password(password),
@@ -23,7 +23,7 @@ async def create_new_refresh_token(
     user_id: int,
     jti: str,
     session: AsyncSession,
-):
+) -> RefreshTokenInDB:
     new_token = RefreshTokenInDB(user_id=user_id, jti=jti)
     session.add(new_token)
     await session.commit()
@@ -34,7 +34,7 @@ async def update_refresh_token(
     token: RefreshTokenInDB,
     new_token_id: str,
     session: AsyncSession,
-):
+) -> None:
     token.jti = new_token_id
     session.add(token)
     await session.commit()
@@ -44,7 +44,7 @@ async def get_user_from_db_by_username(
     username: str, session: AsyncSession
 ) -> UserInDB | None:
     stmt = select(UserInDB).where(UserInDB.username == username).limit(1)
-    result: Result = await session.execute(stmt)
+    result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
 

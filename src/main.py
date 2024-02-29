@@ -7,5 +7,5 @@ app.include_router(auth_router, prefix="")
 
 
 @app.get("/ping")
-def ping_pong():
+def ping_pong() -> str:
     return "pong"
