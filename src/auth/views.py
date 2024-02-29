@@ -29,7 +29,7 @@ from .utils import (
     get_access_token,
     oauth2_scheme,
 )
-from config import SECRET_KEY, ALGORITHM
+from config import settings
 
 
 router = APIRouter()
@@ -132,7 +132,7 @@ async def refresh_token(
 @router.get("/introspect/")
 def introspect_token(token: str = Depends(oauth2_scheme)):
     try:
-        payload = jwt.decode(jwt=token, key=SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(jwt=token, key=settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
     except PyJWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

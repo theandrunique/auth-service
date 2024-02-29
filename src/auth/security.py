@@ -4,19 +4,13 @@ import bcrypt
 import jwt
 from jwt.exceptions import PyJWTError
 import secrets
-from config import (
-    ACCESS_TOKEN_EXPIRE_MINUTES,
-    REFRESH_TOKEN_EXPIRE_MINUTES,
-    REFRESH_TOKEN_LENGTH_BYTES,
-    SECRET_KEY,
-    ALGORITHM,
-)
+from config import settings
 from .schemas import TokenPair, TokenType, TokenPayload
 
 
 
 def gen_key():
-    return secrets.token_hex(REFRESH_TOKEN_LENGTH_BYTES)
+    return secrets.token_hex(settings.REFRESH_TOKEN_LENGTH_BYTES)
 
 
 def gen_random_token_id():
@@ -30,8 +24,8 @@ def _create_token(data: dict, expires_delta: datetime.timedelta, token_type: Tok
             "exp": datetime.datetime.now(datetime.timezone.utc) + expires_delta,
             "token_type": token_type.value,
         },
-        key=SECRET_KEY,
-        algorithm=ALGORITHM,
+        key=settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM,
     )
     return encoded_jwt
 
@@ -39,8 +33,8 @@ def _create_token(data: dict, expires_delta: datetime.timedelta, token_type: Tok
 def validate_token(token: str, token_type: TokenType) -> TokenPayload:
     payload_dict: dict = jwt.decode(
         jwt=token,
-        key=SECRET_KEY,
-        algorithms=[ALGORITHM],
+        key=settings.SECRET_KEY,
+        algorithms=[settings.ALGORITHM],
     )
     payload = TokenPayload(**payload_dict)
     if payload_dict["token_type"] != token_type.value:
@@ -69,12 +63,12 @@ def create_tokens(payload: TokenPayload) -> TokenPair:
     payload_dict = payload.model_dump()
     access_token = _create_token(
         data=payload_dict,
-        expires_delta=datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+        expires_delta=datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         token_type=TokenType.ACCESS,
     )
     refresh_token = _create_token(
         data=payload_dict,
-        expires_delta=datetime.timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES),
+        expires_delta=datetime.timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES),
         token_type=TokenType.REFRESH,
     )
     return TokenPair(refresh_token=refresh_token, access_token=access_token, token_type="Bearer")
