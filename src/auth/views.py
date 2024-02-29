@@ -1,36 +1,35 @@
 import logging
 from typing import Annotated
 
+import jwt
+from config import settings
+from db_helper import db_helper
 from fastapi import (
-    Depends,
     APIRouter,
+    Depends,
     HTTPException,
     Security,
     status,
 )
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import IntegrityError
-import jwt
 from jwt.exceptions import PyJWTError
 from models import UserInDB
-from db_helper import db_helper
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from .schemas import AuthSchema, TokenPayload, TokenType, UserSchema
 from .crud import (
     create_new_refresh_token,
     create_new_user,
     get_refresh_token_from_db_by_id,
     update_refresh_token,
 )
-from .security import create_tokens, validate_token, gen_random_token_id
+from .schemas import AuthSchema, TokenPayload, TokenType, UserSchema
+from .security import create_tokens, gen_random_token_id, validate_token
 from .utils import (
     authenticate_user,
     get_access_token,
     oauth2_scheme,
 )
-from config import settings
-
 
 router = APIRouter()
 

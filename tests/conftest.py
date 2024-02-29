@@ -1,16 +1,15 @@
 import asyncio
 from collections.abc import AsyncGenerator
-from httpx import AsyncClient
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from src.config import settings
 from src.db_helper import db_helper
 from src.main import app
 from src.models import Base
-
 
 settings.DB_URL = "sqlite+aiosqlite:///auth.db"
 db_helper.engine = create_async_engine(settings.DB_URL)
@@ -22,7 +21,7 @@ db_helper.session_factory = async_sessionmaker(
 )
 
 
-@pytest.fixture(autouse=True, scope='session')
+@pytest.fixture(autouse=True, scope="session")
 async def prepare_database():
     async with db_helper.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -31,7 +30,7 @@ async def prepare_database():
         await conn.run_sync(Base.metadata.drop_all)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def event_loop(request):
     """Create an instance of the default event loop for each test case."""
     loop = asyncio.get_event_loop_policy().new_event_loop()
@@ -47,14 +46,11 @@ async def ac() -> AsyncGenerator[AsyncClient, None]:
 
 @pytest.fixture
 def jwt_tokens():
-    response = client.post("/token/", data={
-        "username": "johndoe",
-        "password": "12345",
-        "scope": ["me"]
-    })
+    response = client.post(
+        "/token/", data={"username": "johndoe", "password": "12345", "scope": ["me"]}
+    )
     json_response = response.json()
     return json_response["access_token"], json_response["refresh_token"]
 
 
 client = TestClient(app=app)
-

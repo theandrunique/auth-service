@@ -1,11 +1,13 @@
 import datetime
+import secrets
 import uuid
+
 import bcrypt
 import jwt
-from jwt.exceptions import PyJWTError
-import secrets
 from config import settings
-from .schemas import TokenPair, TokenType, TokenPayload
+from jwt.exceptions import PyJWTError
+
+from .schemas import TokenPair, TokenPayload, TokenType
 
 
 def gen_key():

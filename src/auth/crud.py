@@ -1,7 +1,7 @@
+from models import RefreshTokenInDB, UserInDB
 from sqlalchemy import Result, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import UserInDB, RefreshTokenInDB
 from .security import hash_password
 
 

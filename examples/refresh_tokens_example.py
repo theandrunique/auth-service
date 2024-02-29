@@ -1,17 +1,17 @@
 import datetime
-from typing import Annotated
 from collections import defaultdict
+from typing import Annotated
+
 import bcrypt
+import jwt
 from fastapi import Depends, FastAPI, HTTPException, Security, status
 from fastapi.security import (
     OAuth2PasswordBearer,
     OAuth2PasswordRequestForm,
     SecurityScopes,
 )
-import jwt
 from jwt.exceptions import PyJWTError
 from pydantic import BaseModel, ValidationError
-
 
 app = FastAPI()
 
@@ -177,7 +177,7 @@ async def get_current_user(
 
 
 async def get_current_active_user(
-    current_user: Annotated[UserSchema, Security(get_current_user)]
+    current_user: Annotated[UserSchema, Security(get_current_user)],
 ) -> UserSchema:
     if not current_user.active:
         raise HTTPException(
@@ -196,19 +196,22 @@ def get_access_token(
 def is_refresh_token_valid(username: str, token: str) -> bool:
     return token in refresh_tokens[username]
 
+
 def create_tokens(data: dict) -> Token:
     refresh_token = create_token(
         data=data,
         expires_delta=datetime.timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES),
-        token_type="refresh"
+        token_type="refresh",
     )
     access_token = create_token(
         data=data,
         expires_delta=datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
-        token_type="access"
+        token_type="access",
     )
     refresh_tokens[data["sub"]].add(refresh_token)
-    return Token(refresh_token=refresh_token, access_token=access_token, token_type="bearer")
+    return Token(
+        refresh_token=refresh_token, access_token=access_token, token_type="bearer"
+    )
 
 
 @app.post("/token/")
@@ -224,10 +227,12 @@ def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
-    return create_tokens({
-        "sub": user.username,  # it is better to use the user's ID
-        "scopes": form_data.scopes,
-    })
+    return create_tokens(
+        {
+            "sub": user.username,  # it is better to use the user's ID
+            "scopes": form_data.scopes,
+        }
+    )
 
 
 @app.get("/refresh-token/")
@@ -241,10 +246,12 @@ def refresh(token: Annotated[str, Depends(oauth2_scheme)]):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid token",
         )
-    tokens = create_tokens({
-        "sub": payload["sub"],
-        "scopes": payload["scopes"],
-    })
+    tokens = create_tokens(
+        {
+            "sub": payload["sub"],
+            "scopes": payload["scopes"],
+        }
+    )
     refresh_tokens[payload["sub"]].discard(token)
     return tokens
 
@@ -262,7 +269,7 @@ def introspect_token(token: str = Depends(oauth2_scheme)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
         )
-    
+
     return payload
 
 

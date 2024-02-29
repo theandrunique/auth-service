@@ -1,20 +1,16 @@
 from typing import Annotated
 
-from fastapi import Depends, Security, status, HTTPException
+from db_helper import db_helper
+from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
-
 from jwt.exceptions import PyJWTError
-
+from models import UserInDB
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import UserInDB
-from db_helper import db_helper
-
-from .schemas import TokenPayload, TokenType, UserSchema
 from .crud import get_user_from_db_by_id, get_user_from_db_by_username
+from .schemas import TokenPayload, TokenType, UserSchema
 from .security import validate_password, validate_token
-
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="token",
