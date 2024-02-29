@@ -2,7 +2,6 @@ from typing import Annotated
 
 from fastapi import Depends, Security, status, HTTPException
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
-from fastapi.exceptions import HTTPException
 
 from jwt.exceptions import PyJWTError
 

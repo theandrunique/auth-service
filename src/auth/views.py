@@ -142,5 +142,5 @@ def introspect_token(token: str = Depends(oauth2_scheme)):
 
 
 @router.get("/me/", response_model=UserSchema)
-def refresh(user: UserInDB = Security(get_access_token)):
+def get_me(user: UserInDB = Security(get_access_token, scopes=["me"])):
     return user

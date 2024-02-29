@@ -20,11 +20,6 @@ class TokenPayload(BaseModel):
     token_id: int
 
 
-class TokenData(BaseModel):
-    sub: str
-    scopes: str
-
-
 class UserSchema(BaseModel):
     username: str
     active: bool

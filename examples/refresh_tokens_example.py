@@ -1,5 +1,4 @@
 import datetime
-from enum import Enum
 from typing import Annotated
 from collections import defaultdict
 import bcrypt
@@ -266,6 +265,7 @@ def introspect_token(token: str = Depends(oauth2_scheme)):
     
     return payload
 
+
 @app.get("/me/")
-def refresh(user: UserSchema = Security(get_access_token, scopes=["me"])):
+def get_me(user: UserSchema = Security(get_access_token, scopes=["me"])):
     return user
