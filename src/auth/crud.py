@@ -41,23 +41,19 @@ async def update_refresh_token(
 
 
 async def get_user_from_db_by_username(
-    username: str,
-    session: AsyncSession
+    username: str, session: AsyncSession
 ) -> UserInDB | None:
     stmt = select(UserInDB).where(UserInDB.username == username).limit(1)
     result: Result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
 
-async def get_user_from_db_by_id(
-    id: int,
-    session: AsyncSession
-) -> UserInDB | None:
+async def get_user_from_db_by_id(id: int, session: AsyncSession) -> UserInDB | None:
     return await session.get(UserInDB, ident=id)
 
 
 async def get_refresh_token_from_db_by_id(
-    token_id: int, 
+    token_id: int,
     session: AsyncSession,
 ) -> RefreshTokenInDB | None:
-    return await session.get(RefreshTokenInDB, ident=token_id) 
+    return await session.get(RefreshTokenInDB, ident=token_id)

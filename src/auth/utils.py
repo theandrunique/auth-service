@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import UserInDB
 from db_helper import db_helper
 
-from .schemas import TokenPayload, TokenType, UserSchema 
+from .schemas import TokenPayload, TokenType, UserSchema
 from .crud import get_user_from_db_by_id, get_user_from_db_by_username
 from .security import validate_password, validate_token
 
@@ -79,7 +79,7 @@ async def get_current_user(
 
 
 async def get_current_active_user(
-    current_user: Annotated[UserInDB, Security(get_current_user)]
+    current_user: Annotated[UserInDB, Security(get_current_user)],
 ) -> UserInDB:
     if not current_user.active:
         raise HTTPException(

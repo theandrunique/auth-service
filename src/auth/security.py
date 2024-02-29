@@ -8,7 +8,6 @@ from config import settings
 from .schemas import TokenPair, TokenType, TokenPayload
 
 
-
 def gen_key():
     return secrets.token_hex(settings.REFRESH_TOKEN_LENGTH_BYTES)
 
@@ -50,14 +49,14 @@ def validate_password(
         password=password.encode(),
         hashed_password=hashed_password,
     )
-    
-    
+
+
 def hash_password(password: str) -> bytes:
     return bcrypt.hashpw(
         password=password.encode(),
         salt=bcrypt.gensalt(),
     )
-    
+
 
 def create_tokens(payload: TokenPayload) -> TokenPair:
     payload_dict = payload.model_dump()
@@ -71,4 +70,6 @@ def create_tokens(payload: TokenPayload) -> TokenPair:
         expires_delta=datetime.timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES),
         token_type=TokenType.REFRESH,
     )
-    return TokenPair(refresh_token=refresh_token, access_token=access_token, token_type="Bearer")
+    return TokenPair(
+        refresh_token=refresh_token, access_token=access_token, token_type="Bearer"
+    )

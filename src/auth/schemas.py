@@ -28,4 +28,6 @@ class UserSchema(BaseModel):
 
 class AuthSchema(BaseModel):
     username: str = Field(min_length=5, max_length=20)
-    password: str = Field(min_length=3, )
+    password: str = Field(
+        min_length=3,
+    )

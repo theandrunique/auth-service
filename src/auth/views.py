@@ -79,7 +79,7 @@ async def login(
             detail="Incorrect username or password",
         )
     jti = gen_random_token_id()
-    
+
     refresh_token_in_db = await create_new_refresh_token(
         user_id=user.id,
         jti=jti,
@@ -91,7 +91,7 @@ async def login(
         jti=jti,
         token_id=refresh_token_in_db.id,
     )
-    
+
     tokens_pair = create_tokens(payload=payload)
     return tokens_pair
 
@@ -132,7 +132,9 @@ async def refresh_token(
 @router.get("/introspect/")
 def introspect_token(token: str = Depends(oauth2_scheme)):
     try:
-        payload = jwt.decode(jwt=token, key=settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            jwt=token, key=settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
     except PyJWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
