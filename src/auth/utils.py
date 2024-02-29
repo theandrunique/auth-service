@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import UserInDB
 from db_helper import db_helper
 
-from .schemas import TokenType, UserSchema 
+from .schemas import TokenPayload, TokenType, UserSchema 
 from .crud import get_user_from_db_by_id, get_user_from_db_by_username
 from .security import validate_password, validate_token
 
@@ -55,23 +55,20 @@ async def get_current_user(
     )
 
     try:
-        payload: dict = validate_token(token=token, token_type=TokenType.ACCESS)
-        user_id: str = payload.get("sub")
-        if user_id is None:
+        payload: TokenPayload = validate_token(token=token, token_type=TokenType.ACCESS)
+        if payload.sub is None:
             raise credentials_exception
-
-        token_scopes = payload.get("scopes", [])
 
     except (PyJWTError, ValidationError):
         raise credentials_exception
 
-    user = await get_user_from_db_by_id(id=user_id, session=session)
+    user = await get_user_from_db_by_id(id=payload.sub, session=session)
 
     if user is None:
         raise credentials_exception
 
     for scope in security_scopes.scopes:
-        if scope not in token_scopes:
+        if scope not in payload.scopes:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Not enough permissions",

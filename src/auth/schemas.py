@@ -21,6 +21,7 @@ class TokenPayload(BaseModel):
 
 
 class UserSchema(BaseModel):
+    id: int
     username: str
     active: bool
 
