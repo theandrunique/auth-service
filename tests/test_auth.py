@@ -2,7 +2,7 @@ import jwt
 import pytest
 from conftest import client, db_helper, settings
 
-from src.auth.crud import get_user_from_db_by_username
+from src.auth.crud import get_refresh_token_from_db_by_id, get_user_from_db_by_username
 
 
 def test_register():
@@ -44,6 +44,8 @@ def test_get_token():
 
     assert "access_token" in json_response
     assert "refresh_token" in json_response
+    assert "expires_in" in json_response
+    assert "token_type" in json_response
 
 
 def test_refresh_token(jwt_tokens):
@@ -113,3 +115,25 @@ async def test_get_me(jwt_tokens):
 
         assert json_response["id"] == user.id
         assert json_response["username"] == user.username
+
+@pytest.mark.asyncio
+async def test_revoke_token(jwt_tokens):
+    _, refresh_token = jwt_tokens
+
+    response = client.delete(
+        "/revoke-token/",
+        headers={"Authorization": f"Bearer {refresh_token}"},
+    )
+    assert response.status_code == 200, response.json()
+
+    payload = jwt.decode(
+        refresh_token,
+        settings.SECRET_KEY,
+        algorithms=[settings.ALGORITHM],
+    )
+    async with db_helper.session_factory() as session:
+        prev_token = await get_refresh_token_from_db_by_id(
+            token_id=payload["token_id"],
+            session=session,
+        )
+        assert prev_token is None
