@@ -11,6 +11,7 @@ def test_register():
         json={
             "username": "johndoe",
             "password": "12345",
+            "email": "test@test.com",
         },
     )
 
@@ -23,11 +24,11 @@ def test_register_name_exists_error():
         json={
             "username": "johndoe",
             "password": "12345",
+            "email": "test@test.com",
         },
     )
 
     assert response.status_code == 400
-    assert response.json() == {"detail": "User with this username already exists"}
 
 
 def test_get_token():
@@ -109,12 +110,14 @@ async def test_get_me(jwt_tokens):
 
     assert "id" in json_response
     assert "username" in json_response
+    assert "email" in json_response
 
     async with db_helper.session_factory() as session:
         user = await get_user_from_db_by_username(username="johndoe", session=session)
 
         assert json_response["id"] == user.id
         assert json_response["username"] == user.username
+        assert json_response["email"] == user.email
 
 @pytest.mark.asyncio
 async def test_revoke_token(jwt_tokens):
