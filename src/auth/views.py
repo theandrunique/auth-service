@@ -21,6 +21,7 @@ from .crud import (
     create_new_refresh_token,
     create_new_user,
     get_refresh_token_from_db_by_id,
+    revoke_refresh_token,
     update_refresh_token,
 )
 from .schemas import AuthSchema, TokenPair, TokenPayload, TokenType, UserSchema
@@ -145,3 +146,29 @@ def introspect_token(token: str = Depends(oauth2_scheme)) -> Any:
 @router.get("/me/", response_model=UserSchema)
 def get_me(user: UserInDB = Security(get_access_token, scopes=["me"])) -> Any:
     return user
+
+
+@router.delete("/revoke-token/")
+async def revoke_token(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    session: AsyncSession = Depends(db_helper.session_dependency),
+) -> dict[str, str]:
+    try:
+        payload = validate_token(token=token, token_type=TokenType.REFRESH)
+    except PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid token",
+        )
+    prev_token = await get_refresh_token_from_db_by_id(
+        token_id=payload.token_id,
+        session=session,
+    )
+    if prev_token is not None and prev_token.jti == payload.jti:
+        await revoke_refresh_token(token=prev_token, session=session)
+        return {"detail": "Token revoked successfully"}
+
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Invalid token",
+    )

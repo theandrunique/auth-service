@@ -78,5 +78,8 @@ def create_tokens(payload: TokenPayload) -> TokenPair:
         token_type=TokenType.REFRESH,
     )
     return TokenPair(
-        refresh_token=refresh_token, access_token=access_token, token_type="Bearer"
+        refresh_token=refresh_token,
+        access_token=access_token,
+        token_type="Bearer",
+        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )

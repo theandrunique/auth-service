@@ -57,3 +57,11 @@ async def get_refresh_token_from_db_by_id(
     session: AsyncSession,
 ) -> RefreshTokenInDB | None:
     return await session.get(RefreshTokenInDB, ident=token_id)
+
+
+async def revoke_refresh_token(
+    token: RefreshTokenInDB,
+    session: AsyncSession,
+) -> None:
+    await session.delete(token)
+    await session.commit()
