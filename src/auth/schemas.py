@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 
 class TokenType(Enum):
@@ -25,11 +25,13 @@ class TokenPayload(BaseModel):
 class UserSchema(BaseModel):
     id: int
     username: str
+    email: EmailStr
     active: bool
 
 
 class AuthSchema(BaseModel):
     username: str = Field(min_length=5, max_length=20)
+    email: EmailStr
     password: str = Field(
         min_length=3,
     )

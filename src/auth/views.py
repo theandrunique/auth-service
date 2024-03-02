@@ -48,13 +48,15 @@ async def register(
         new_user = await create_new_user(
             username=auth_data.username,
             password=auth_data.password,
+            email=auth_data.email,
             session=session,
         )
         return new_user
-    except IntegrityError:
+    except IntegrityError as e:
+        logging.error(str(e))
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this username already exists",
+            detail="User with this username or email already exists",
         )
     except Exception as e:
         logging.error(str(e))

@@ -1,3 +1,5 @@
+import datetime
+
 from models import RefreshTokenInDB, UserInDB
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,11 +10,14 @@ from .security import hash_password
 async def create_new_user(
     username: str,
     password: str,
+    email: str,
     session: AsyncSession,
 ) -> UserInDB:
     new_user = UserInDB(
         username=username,
         hashed_password=hash_password(password),
+        email=email,
+        created_at=datetime.datetime.now(),
     )
     session.add(new_user)
     await session.commit()
