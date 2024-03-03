@@ -14,10 +14,10 @@ class UserInDB(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(unique=True, index=True)
     email: Mapped[str] = mapped_column(unique=True, index=True)
-    email_verified: Mapped[bool] = mapped_column(server_default="FALSE")
+    email_verified: Mapped[bool] = mapped_column(default=False)
     hashed_password: Mapped[bytes]
     created_at: Mapped[datetime.datetime]
-    active: Mapped[bool] = mapped_column(server_default="TRUE")
+    active: Mapped[bool] = mapped_column(default=True)
 
 
 class RefreshTokenInDB(Base):

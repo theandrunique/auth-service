@@ -21,10 +21,27 @@ from .crud import (
     create_new_refresh_token,
     create_new_user,
     get_refresh_token_from_db_by_id,
+    get_user_from_db_by_email,
     revoke_refresh_token,
     update_refresh_token,
+    update_user_password,
+    update_user_verify_email,
 )
-from .schemas import AuthSchema, TokenPair, TokenPayload, TokenType, UserSchema
+from .email_utils import (
+    EmailTokenType,
+    send_reset_password_email,
+    send_verify_email,
+    verify_email_token,
+)
+from .schemas import (
+    AuthSchema,
+    NewPasswordSchema,
+    TokenPair,
+    TokenPayload,
+    TokenType,
+    UserSchema,
+    VerifyEmailSchema,
+)
 from .security import create_tokens, gen_random_token_id, validate_token
 from .utils import (
     authenticate_user,
@@ -174,3 +191,86 @@ async def revoke_token(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Invalid token",
     )
+
+
+
+@router.post("/password-recovery/{email}")
+async def recover_password(
+    email: str,
+    session: AsyncSession = Depends(db_helper.session_dependency),
+) -> dict[str, Any]:
+    user = await get_user_from_db_by_email(email=email, session=session)
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="The user with this username does not exist in the system",
+        )
+    elif not user.email_verified:
+        raise HTTPException(status_code=400, detail="Email is not verified")
+    print(user.__dict__)
+    send_reset_password_email(email_to=email)
+    return {
+        "message": "Password recovery email sent",
+    }
+
+
+@router.post("/reset-password/")
+async def reset_password(
+    body: NewPasswordSchema,
+    session: AsyncSession = Depends(db_helper.session_dependency),
+) -> dict[str, Any]:
+    email = verify_email_token(token=body.token, type=EmailTokenType.RECOVERY_PASSWORD)
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid token")
+    user = await get_user_from_db_by_email(email=email, session=session)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="The user with this username does not exist in the system.",
+        )
+    elif not user.active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    await update_user_password(
+        user=user,
+        new_password=body.new_password,
+        session=session,
+    )
+    return {
+        "message": "Password updated successfully",
+    }
+
+
+@router.post("/send-confirmation-email/")
+async def send_confirmation_email(
+    user: UserInDB = Security(get_access_token),
+) -> dict[str, Any]:
+    if user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The email address has already been verified",
+        )
+    send_verify_email(email_to=user.email, username=user.username)
+    return {"message": "Verification email sent"}
+
+
+@router.post("/verify-email/")
+async def verify_email(
+    body: VerifyEmailSchema,
+    session: AsyncSession = Depends(db_helper.session_dependency),
+) -> dict[str, Any]:
+    email = verify_email_token(token=body.token, type=EmailTokenType.VERIFY_EMAIL)
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid token")
+    user = await get_user_from_db_by_email(email=email, session=session)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="The user with this username does not exist in the system.",
+        )
+    elif not user.active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    await update_user_verify_email(user=user, session=session)
+    return {
+        "message": "Email verified successfully",
+    }

@@ -1,5 +1,4 @@
 import datetime
-import secrets
 import uuid
 from typing import Any
 
@@ -10,13 +9,12 @@ from jwt.exceptions import PyJWTError
 
 from .schemas import TokenPair, TokenPayload, TokenType
 
-
-def gen_key() -> str:
-    return secrets.token_hex(settings.REFRESH_TOKEN_LENGTH_BYTES)
+# def gen_key() -> str:
+#     return secrets.token_hex(settings)
 
 
 def gen_random_token_id() -> str:
-    return str(uuid.uuid4())
+    return uuid.uuid4().hex
 
 
 def _create_token(
@@ -80,6 +78,5 @@ def create_tokens(payload: TokenPayload) -> TokenPair:
     return TokenPair(
         refresh_token=refresh_token,
         access_token=access_token,
-        token_type="Bearer",
-        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        scope=payload.scopes,
     )

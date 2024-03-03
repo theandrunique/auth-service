@@ -45,10 +45,35 @@ async def update_refresh_token(
     await session.commit()
 
 
+async def update_user_password(
+    user: UserInDB, new_password: str, session: AsyncSession
+) -> None:
+    user.hashed_password = hash_password(new_password)
+    session.add(user)
+    await session.commit()
+
+
+async def update_user_verify_email(
+    user: UserInDB,
+    session: AsyncSession,
+) -> None:
+    user.email_verified = True
+    session.add(user)
+    await session.commit()
+
+
 async def get_user_from_db_by_username(
     username: str, session: AsyncSession
 ) -> UserInDB | None:
     stmt = select(UserInDB).where(UserInDB.username == username).limit(1)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_user_from_db_by_email(
+    email: str, session: AsyncSession
+) -> UserInDB | None:
+    stmt = select(UserInDB).where(UserInDB.email == email).limit(1)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
