@@ -17,9 +17,12 @@ class TokenPair(BaseModel):
     token_type: str = "Bearer"
     expires_in: int = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     expires_at: int = Field(
-        default_factory=lambda: int((
-            datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        ).timestamp())
+        default_factory=lambda: int(
+            (
+                datetime.utcnow()
+                + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            ).timestamp()
+        )
     )
 
 
@@ -52,5 +55,8 @@ class NewPasswordSchema(BaseModel):
     )
 
 
-class VerifyEmailSchema(BaseModel):
-    token: str
+class OtpAuthSchema(BaseModel):
+    email: EmailStr
+    scopes: list[str]
+    key: str
+    otp: str

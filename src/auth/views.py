@@ -14,6 +14,7 @@ from fastapi import (
 from fastapi.security import OAuth2PasswordRequestForm
 from jwt.exceptions import PyJWTError
 from models import UserInDB
+from redis_helper import redis_client
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,6 +30,7 @@ from .crud import (
 )
 from .email_utils import (
     EmailTokenType,
+    send_otp_email,
     send_reset_password_email,
     send_verify_email,
     verify_email_token,
@@ -36,13 +38,19 @@ from .email_utils import (
 from .schemas import (
     AuthSchema,
     NewPasswordSchema,
+    OtpAuthSchema,
     TokenPair,
     TokenPayload,
     TokenType,
     UserSchema,
-    VerifyEmailSchema,
 )
-from .security import create_tokens, gen_random_token_id, validate_token
+from .security import (
+    create_tokens,
+    gen_key,
+    gen_otp,
+    gen_random_token_id,
+    validate_token,
+)
 from .utils import (
     authenticate_user,
     get_access_token,
@@ -69,8 +77,7 @@ async def register(
             session=session,
         )
         return new_user
-    except IntegrityError as e:
-        logging.error(str(e))
+    except IntegrityError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User with this username or email already exists",
@@ -193,7 +200,6 @@ async def revoke_token(
     )
 
 
-
 @router.post("/password-recovery/{email}")
 async def recover_password(
     email: str,
@@ -208,11 +214,8 @@ async def recover_password(
         )
     elif not user.email_verified:
         raise HTTPException(status_code=400, detail="Email is not verified")
-    print(user.__dict__)
     send_reset_password_email(email_to=email)
-    return {
-        "message": "Password recovery email sent",
-    }
+    return {"message": "Password recovery email sent"}
 
 
 @router.post("/reset-password/")
@@ -236,9 +239,7 @@ async def reset_password(
         new_password=body.new_password,
         session=session,
     )
-    return {
-        "message": "Password updated successfully",
-    }
+    return {"message": "Password updated successfully"}
 
 
 @router.post("/send-confirmation-email/")
@@ -256,10 +257,10 @@ async def send_confirmation_email(
 
 @router.post("/verify-email/")
 async def verify_email(
-    body: VerifyEmailSchema,
+    token: str,
     session: AsyncSession = Depends(db_helper.session_dependency),
 ) -> dict[str, Any]:
-    email = verify_email_token(token=body.token, type=EmailTokenType.VERIFY_EMAIL)
+    email = verify_email_token(token=token, type=EmailTokenType.VERIFY_EMAIL)
     if not email:
         raise HTTPException(status_code=400, detail="Invalid token")
     user = await get_user_from_db_by_email(email=email, session=session)
@@ -271,6 +272,64 @@ async def verify_email(
     elif not user.active:
         raise HTTPException(status_code=400, detail="Inactive user")
     await update_user_verify_email(user=user, session=session)
-    return {
-        "message": "Email verified successfully",
-    }
+    return {"message": "Email verified successfully"}
+
+
+@router.post("/otp-auth/")
+async def otp_auth(
+    otp_auth_data: OtpAuthSchema,
+    session: AsyncSession = Depends(db_helper.session_dependency),
+) -> TokenPair:
+    expected_value = await redis_client.hget(
+        f"otp_user_{otp_auth_data.email}",
+        key=otp_auth_data.key,
+    )
+
+    if expected_value != otp_auth_data.otp:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid OTP",
+        )
+    await redis_client.delete(f"otp_user_{otp_auth_data.email}")
+    user = await get_user_from_db_by_email(email=otp_auth_data.email, session=session)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="The user with this username does not exist in the system.",
+        )
+    jti = gen_random_token_id()
+    refresh_token_in_db = await create_new_refresh_token(
+        user_id=user.id,
+        jti=jti,
+        session=session,
+    )
+    payload = TokenPayload(
+        sub=user.id,
+        scopes=otp_auth_data.scopes,
+        jti=jti,
+        token_id=refresh_token_in_db.id,
+    )
+
+    tokens_pair = create_tokens(payload=payload)
+    return tokens_pair
+
+
+@router.get("/send-otp/")
+async def send_opt(
+    email: str, session=Depends(db_helper.session_dependency)
+) -> dict[str, str]:
+    user = await get_user_from_db_by_email(email=email, session=session)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="The user with this username does not exist in the system.",
+        )
+    elif not user.email_verified:
+        raise HTTPException(status_code=400, detail="Email is not verified")
+
+    opt = gen_otp()
+    key = gen_key()
+    await redis_client.hset(f"otp_user_{user.email}", key, opt)
+    await redis_client.expire(f"otp_user_{user.email}", settings.OTP_EXPIRE_SECONDS)
+    send_otp_email(email_to=email, username=user.username, opt=opt)
+    return {"message": "OPT sent on your email", "key": key}

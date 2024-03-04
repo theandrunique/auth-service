@@ -119,6 +119,7 @@ async def test_get_me(jwt_tokens):
         assert json_response["username"] == user.username
         assert json_response["email"] == user.email
 
+
 @pytest.mark.asyncio
 async def test_revoke_token(jwt_tokens):
     _, refresh_token = jwt_tokens

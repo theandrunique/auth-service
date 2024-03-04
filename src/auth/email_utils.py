@@ -40,7 +40,11 @@ def send_test_email() -> None:
 
 
 def send_reset_password_email(email_to: str) -> None:
-    token = generate_email_token(email=email_to, type=EmailTokenType.RECOVERY_PASSWORD)
+    token = generate_email_token(
+        email=email_to,
+        type=EmailTokenType.RECOVERY_PASSWORD,
+        expires_delta=timedelta(hours=settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS),
+    )
     send_email(
         email_to=email_to,
         subject=f"{settings.PROJECT_NAME} - Password recovery for user {email_to}",
@@ -49,21 +53,30 @@ def send_reset_password_email(email_to: str) -> None:
 
 
 def send_verify_email(email_to: str, username: str) -> None:
-    token = generate_email_token(email=email_to, type=EmailTokenType.VERIFY_EMAIL)
+    token = generate_email_token(
+        email=email_to,
+        type=EmailTokenType.VERIFY_EMAIL,
+        expires_delta=timedelta(hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS),
+    )
+    html_body = (
+        f"<p>Follow this link to verify your email address.\n"
+        f"{settings.SERVER_HOST}/auth/verify-email/?token={token}</p>"
+    )
     send_email(
         email_to=email_to,
         subject=f"{settings.PROJECT_NAME} - Verify email for user {username}",
-        html_body=f"<p>Use the following token to verify email: {token}</p>",
+        html_body=html_body,
     )
 
 
-def generate_email_token(email: str, type: EmailTokenType) -> str:
+def generate_email_token(
+    email: str,
+    type: EmailTokenType,
+    expires_delta: timedelta,
+) -> str:
     encoded_jwt = jwt.encode(
         {
-            "exp": (
-                datetime.utcnow()
-                + timedelta(hours=settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS)
-            ),
+            "exp": datetime.utcnow() + expires_delta,
             "sub": email,
             "type": type.value,
         },
@@ -87,3 +100,11 @@ def verify_email_token(token: str, type: EmailTokenType) -> str | None:
         return payload["sub"]
     except (jwt.exceptions.PyJWTError, KeyError):
         return None
+
+
+def send_otp_email(email_to: str, username: str, opt: str) -> None:
+    send_email(
+        email_to=email_to,
+        subject="OTP",
+        html_body=f"Hello, {username}\nCode: {opt}",
+    )

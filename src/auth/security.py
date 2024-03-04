@@ -1,4 +1,6 @@
 import datetime
+import secrets
+import string
 import uuid
 from typing import Any
 
@@ -9,8 +11,13 @@ from jwt.exceptions import PyJWTError
 
 from .schemas import TokenPair, TokenPayload, TokenType
 
-# def gen_key() -> str:
-#     return secrets.token_hex(settings)
+
+def gen_key() -> str:
+    return secrets.token_urlsafe(settings.KEYS_LENGTH)
+
+
+def gen_otp() -> str:
+    return "".join(secrets.choice(string.digits) for _ in range(6))
 
 
 def gen_random_token_id() -> str:

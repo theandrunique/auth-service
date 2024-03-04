@@ -4,7 +4,7 @@ from fastapi import FastAPI
 
 app = FastAPI()
 
-app.include_router(auth_router, prefix="")
+app.include_router(auth_router, prefix="/auth", tags=["auth"])
 
 
 @app.get("/ping")
