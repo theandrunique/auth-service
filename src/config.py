@@ -1,10 +1,9 @@
-from pydantic import AnyHttpUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "test app"
-    SERVER_HOST: AnyHttpUrl = "http://localhost"
+    SERVER_HOST: str = "http://localhost"
 
     DB_URL: str = "sqlite+aiosqlite:///auth.db"
     SECRET_KEY: str = "381fe4a2683cd0eee27cd66bfe1e5b02142ab7ee64d4f1ccbf1011e7358b005e"
@@ -29,7 +28,7 @@ class Settings(BaseSettings):
     REDIS_PORT: int | None = None
     REDIS_PASSWORD: str | None = None
 
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
 
 settings = Settings()

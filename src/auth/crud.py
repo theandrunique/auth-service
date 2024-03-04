@@ -27,9 +27,16 @@ async def create_new_user(
 async def create_new_refresh_token(
     user_id: int,
     jti: str,
+    ip_address: str | None,
     session: AsyncSession,
 ) -> RefreshTokenInDB:
-    new_token = RefreshTokenInDB(user_id=user_id, jti=jti)
+    new_token = RefreshTokenInDB(
+        user_id=user_id,
+        jti=jti,
+        created_at=datetime.datetime.now(),
+        last_accessed=datetime.datetime.now(),
+        ip_address=ip_address,
+    )
     session.add(new_token)
     await session.commit()
     return new_token
@@ -38,9 +45,12 @@ async def create_new_refresh_token(
 async def update_refresh_token(
     token: RefreshTokenInDB,
     new_token_id: str,
+    ip_address: str | None,
     session: AsyncSession,
 ) -> None:
     token.jti = new_token_id
+    token.ip_address = ip_address
+    token.last_accessed = datetime.datetime.now()
     session.add(token)
     await session.commit()
 

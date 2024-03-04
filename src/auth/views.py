@@ -8,6 +8,7 @@ from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
+    Request,
     Security,
     status,
 )
@@ -92,6 +93,7 @@ async def register(
 @router.post("/token/")
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    request: Request,
     session: AsyncSession = Depends(db_helper.session_dependency),
 ) -> TokenPair:
     user: UserInDB | None = await authenticate_user(
@@ -105,10 +107,10 @@ async def login(
             detail="Incorrect username or password",
         )
     jti = gen_random_token_id()
-
     refresh_token_in_db = await create_new_refresh_token(
         user_id=user.id,
         jti=jti,
+        ip_address=request.client.host if request.client is not None else None,
         session=session,
     )
     payload = TokenPayload(
@@ -125,6 +127,7 @@ async def login(
 @router.get("/refresh-token/")
 async def refresh_token(
     token: Annotated[str, Depends(oauth2_scheme)],
+    request: Request,
     session: AsyncSession = Depends(db_helper.session_dependency),
 ) -> TokenPair:
     try:
@@ -145,6 +148,7 @@ async def refresh_token(
         await update_refresh_token(
             token=prev_token,
             new_token_id=new_jti,
+            ip_address=request.client.host if request.client is not None else None,
             session=session,
         )
         return tokens_pair
@@ -278,6 +282,7 @@ async def verify_email(
 @router.post("/otp-auth/")
 async def otp_auth(
     otp_auth_data: OtpAuthSchema,
+    request: Request,
     session: AsyncSession = Depends(db_helper.session_dependency),
 ) -> TokenPair:
     expected_value = await redis_client.hget(
@@ -301,6 +306,7 @@ async def otp_auth(
     refresh_token_in_db = await create_new_refresh_token(
         user_id=user.id,
         jti=jti,
+        ip_address=request.client.host if request.client is not None else None,
         session=session,
     )
     payload = TokenPayload(
@@ -316,7 +322,8 @@ async def otp_auth(
 
 @router.get("/send-otp/")
 async def send_opt(
-    email: str, session=Depends(db_helper.session_dependency)
+    email: str,
+    session: AsyncSession = Depends(db_helper.session_dependency),
 ) -> dict[str, str]:
     user = await get_user_from_db_by_email(email=email, session=session)
     if not user:

@@ -26,3 +26,6 @@ class RefreshTokenInDB(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     jti: Mapped[str]
+    created_at: Mapped[datetime.datetime]
+    last_accessed: Mapped[datetime.datetime]
+    ip_address: Mapped[str | None] = mapped_column(nullable=True)
