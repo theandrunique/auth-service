@@ -1,4 +1,3 @@
-import logging
 from typing import Annotated, Any
 
 import jwt
@@ -7,14 +6,12 @@ from db_helper import db_helper
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException,
     Request,
     Security,
     status,
 )
 from fastapi.security import OAuth2PasswordRequestForm
 from jwt.exceptions import PyJWTError
-from models import UserInDB
 from redis_helper import redis_client
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,6 +33,17 @@ from .email_utils import (
     send_verify_email,
     verify_email_token,
 )
+from .exceptions import (
+    EmailAlreadyVerified,
+    EmailNotVerified,
+    InactiveUser,
+    InvalidCredentials,
+    InvalidOtp,
+    InvalidToken,
+    UsernameOrEmailAlreadyExists,
+    UserNotFound,
+)
+from .models import UserInDB
 from .schemas import (
     AuthSchema,
     NewPasswordSchema,
@@ -79,15 +87,7 @@ async def register(
         )
         return new_user
     except IntegrityError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this username or email already exists",
-        )
-    except Exception as e:
-        logging.error(str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+        raise UsernameOrEmailAlreadyExists()
 
 
 @router.post("/token/")
@@ -102,10 +102,7 @@ async def login(
         session=session,
     )
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-        )
+        raise InvalidCredentials()
     jti = gen_random_token_id()
     refresh_token_in_db = await create_new_refresh_token(
         user_id=user.id,
@@ -119,7 +116,6 @@ async def login(
         jti=jti,
         token_id=refresh_token_in_db.id,
     )
-
     tokens_pair = create_tokens(payload=payload)
     return tokens_pair
 
@@ -133,30 +129,24 @@ async def refresh_token(
     try:
         payload = validate_token(token=token, token_type=TokenType.REFRESH)
     except PyJWTError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid token",
-        )
+        raise InvalidToken()
     prev_token = await get_refresh_token_from_db_by_id(
         token_id=payload.token_id,
         session=session,
     )
-    if prev_token is not None and prev_token.jti == payload.jti:
-        new_jti = gen_random_token_id()
-        payload.jti = new_jti
-        tokens_pair = create_tokens(payload=payload)
-        await update_refresh_token(
-            token=prev_token,
-            new_token_id=new_jti,
-            ip_address=request.client.host if request.client is not None else None,
-            session=session,
-        )
-        return tokens_pair
+    if prev_token is None or prev_token.jti != payload.jti:
+        raise InvalidToken()
 
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail="Invalid token",
+    new_jti = gen_random_token_id()
+    payload.jti = new_jti
+    tokens_pair = create_tokens(payload=payload)
+    await update_refresh_token(
+        token=prev_token,
+        new_token_id=new_jti,
+        ip_address=request.client.host if request.client is not None else None,
+        session=session,
     )
+    return tokens_pair
 
 
 @router.get("/introspect/")
@@ -166,10 +156,7 @@ def introspect_token(token: str = Depends(oauth2_scheme)) -> Any:
             jwt=token, key=settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
     except PyJWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
-        )
+        raise InvalidToken()
     return payload
 
 
@@ -186,10 +173,7 @@ async def revoke_token(
     try:
         payload = validate_token(token=token, token_type=TokenType.REFRESH)
     except PyJWTError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid token",
-        )
+        raise InvalidToken()
     prev_token = await get_refresh_token_from_db_by_id(
         token_id=payload.token_id,
         session=session,
@@ -198,10 +182,7 @@ async def revoke_token(
         await revoke_refresh_token(token=prev_token, session=session)
         return {"detail": "Token revoked successfully"}
 
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail="Invalid token",
-    )
+    raise InvalidToken()
 
 
 @router.post("/password-recovery/{email}")
@@ -210,14 +191,10 @@ async def recover_password(
     session: AsyncSession = Depends(db_helper.session_dependency),
 ) -> dict[str, Any]:
     user = await get_user_from_db_by_email(email=email, session=session)
-
     if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="The user with this username does not exist in the system",
-        )
+        UserNotFound()
     elif not user.email_verified:
-        raise HTTPException(status_code=400, detail="Email is not verified")
+        raise EmailNotVerified()
     send_reset_password_email(email_to=email)
     return {"message": "Password recovery email sent"}
 
@@ -229,15 +206,12 @@ async def reset_password(
 ) -> dict[str, Any]:
     email = verify_email_token(token=body.token, type=EmailTokenType.RECOVERY_PASSWORD)
     if not email:
-        raise HTTPException(status_code=400, detail="Invalid token")
+        raise InvalidToken()
     user = await get_user_from_db_by_email(email=email, session=session)
     if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="The user with this username does not exist in the system.",
-        )
+        raise UserNotFound()
     elif not user.active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise InactiveUser()
     await update_user_password(
         user=user,
         new_password=body.new_password,
@@ -251,10 +225,7 @@ async def send_confirmation_email(
     user: UserInDB = Security(get_access_token),
 ) -> dict[str, Any]:
     if user.email_verified:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The email address has already been verified",
-        )
+        raise EmailAlreadyVerified()
     send_verify_email(email_to=user.email, username=user.username)
     return {"message": "Verification email sent"}
 
@@ -266,15 +237,12 @@ async def verify_email(
 ) -> dict[str, Any]:
     email = verify_email_token(token=token, type=EmailTokenType.VERIFY_EMAIL)
     if not email:
-        raise HTTPException(status_code=400, detail="Invalid token")
+        raise InvalidToken()
     user = await get_user_from_db_by_email(email=email, session=session)
     if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="The user with this username does not exist in the system.",
-        )
+        raise UserNotFound()
     elif not user.active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise InactiveUser()
     await update_user_verify_email(user=user, session=session)
     return {"message": "Email verified successfully"}
 
@@ -291,17 +259,11 @@ async def otp_auth(
     )
 
     if expected_value != otp_auth_data.otp:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid OTP",
-        )
+        raise InvalidOtp()
     await redis_client.delete(f"otp_user_{otp_auth_data.email}")
     user = await get_user_from_db_by_email(email=otp_auth_data.email, session=session)
     if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="The user with this username does not exist in the system.",
-        )
+        raise UserNotFound()
     jti = gen_random_token_id()
     refresh_token_in_db = await create_new_refresh_token(
         user_id=user.id,
@@ -327,12 +289,9 @@ async def send_opt(
 ) -> dict[str, str]:
     user = await get_user_from_db_by_email(email=email, session=session)
     if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="The user with this username does not exist in the system.",
-        )
+        raise UserNotFound()
     elif not user.email_verified:
-        raise HTTPException(status_code=400, detail="Email is not verified")
+        raise EmailNotVerified()
 
     opt = gen_otp()
     key = gen_key()
