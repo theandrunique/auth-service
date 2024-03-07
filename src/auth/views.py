@@ -11,7 +11,6 @@ from sqlalchemy.exc import IntegrityError
 
 from src.config import settings
 from src.database import DbSession
-from src.models import UserInDB
 from src.redis_helper import redis_client
 
 from .crud import (
@@ -95,10 +94,12 @@ async def login(
     request: Request,
     session: DbSession,
 ) -> TokenPair:
-    user: UserInDB | None = await get_user_from_db_by_username(
-        username=user_data.username,
-        session=session,
-    )
+    if "@" in user_data.login:
+        user = await get_user_from_db_by_email(email=user_data.login, session=session)
+    else:
+        user = await get_user_from_db_by_username(
+            username=user_data.login, session=session,
+        )
     if user is None:
         raise UserNotFound()
     elif not check_password(

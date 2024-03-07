@@ -1,7 +1,11 @@
 from datetime import datetime, timedelta
 from enum import Enum
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    Field,
+)
 
 from src.config import settings
 
@@ -59,7 +63,7 @@ class OtpRequestSchema(BaseModel):
 
 
 class UserLoginSchema(BaseModel):
-    username: str
+    login: str
     password: str
 
 

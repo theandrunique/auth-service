@@ -61,7 +61,7 @@ def send_verify_email(email_to: str, username: str) -> None:
     )
     html_body = (
         f"<p>Follow this link to verify your email address.\n"
-        f"{settings.SERVER_HOST}/auth/verify-email/?token={token}</p>"
+        f"{settings.SERVER_HOST}/auth/verify/?token={token}</p>"
     )
     send_email(
         email_to=email_to,
