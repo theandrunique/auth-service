@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 72932222e509
+Revision ID: 10fcc3074403
 Revises:
-Create Date: 2024-03-04 20:21:17.949426
+Create Date: 2024-03-07 14:35:32.775478
 
 """
 from collections.abc import Sequence
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '72932222e509'
+revision: str = '10fcc3074403'
 down_revision: str | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -38,7 +38,7 @@ def upgrade() -> None:
     sa.Column('jti', sa.String(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('last_accessed', sa.DateTime(), nullable=False),
-    sa.Column('ip_address', sa.String(), nullable=False),
+    sa.Column('ip_address', sa.String(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
