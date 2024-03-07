@@ -49,18 +49,13 @@ class RegistrationSchema(BaseModel):
     )
 
 
-class NewPasswordSchema(BaseModel):
-    token: str
-    new_password: str = Field(
-        min_length=3,
-    )
-
-
 class OtpAuthSchema(BaseModel):
     email: EmailStr
-    scopes: list[str]
-    key: str
     otp: str
+
+
+class OtpRequestSchema(BaseModel):
+    email: EmailStr
 
 
 class UserLoginSchema(BaseModel):
@@ -70,3 +65,19 @@ class UserLoginSchema(BaseModel):
 
 class RefreshToken(BaseModel):
     refresh_token: str
+
+class ForgotPasswordSchema(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordSchema(BaseModel):
+    token: str
+    password: str = Field(
+        min_length=3,
+    )
+
+
+class VerifyEmailSchema(BaseModel):
+    token: str
+
+

@@ -1,22 +1,19 @@
-from typing import Annotated
+import datetime
+import secrets
+import string
+import uuid
+from typing import Any
 
-from fastapi import Depends, HTTPException, Security, status
-from fastapi.security import OAuth2PasswordBearer, SecurityScopes
+import bcrypt
+import jwt
 from jwt.exceptions import PyJWTError
-from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.database import DbSession
+from src.config import settings
 from src.models import UserInDB
 
-from .crud import get_user_from_db_by_id, get_user_from_db_by_username
-from .schemas import TokenPayload, TokenType, UserSchema
-from .security import validate_password, validate_token
-
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="token",
-    scopes={},
-)
+from .crud import get_user_from_db_by_username
+from .schemas import TokenPair, TokenPayload, TokenType
 
 
 async def authenticate_user(
@@ -25,68 +22,75 @@ async def authenticate_user(
     session: AsyncSession,
 ) -> UserInDB | None:
     user: UserInDB | None = await get_user_from_db_by_username(username, session)
-
-    if user is not None and validate_password(
+    if user and check_password(
         password=password,
         hashed_password=user.hashed_password,
     ):
         return user
-
     return None
 
 
-async def get_current_user(
-    session: DbSession,
-    security_scopes: SecurityScopes,
-    token: Annotated[str, Depends(oauth2_scheme)],
-) -> UserInDB:
-    if security_scopes.scopes:
-        authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
-    else:
-        authenticate_value = "Bearer"
+def gen_otp() -> str:
+    return "".join(secrets.choice(string.digits) for _ in range(6))
 
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": authenticate_value},
+
+def gen_random_token_id() -> str:
+    return uuid.uuid4().hex
+
+
+def _create_token(
+    data: dict[str, Any],
+    expires_delta: datetime.timedelta,
+    token_type: TokenType,
+) -> str:
+    encoded_jwt = jwt.encode(
+        payload={
+            **data,
+            "exp": datetime.datetime.now(datetime.timezone.utc) + expires_delta,
+            "token_type": token_type.value,
+        },
+        key=settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM,
+    )
+    return encoded_jwt
+
+
+def validate_token(token: str, token_type: TokenType) -> TokenPayload:
+    payload_dict: dict[str, Any] = jwt.decode(
+        jwt=token,
+        key=settings.SECRET_KEY,
+        algorithms=[settings.ALGORITHM],
+    )
+    payload = TokenPayload(**payload_dict)
+    if payload_dict["token_type"] != token_type.value:
+        raise PyJWTError()
+    return payload
+
+
+def check_password(
+    password: str,
+    hashed_password: bytes,
+) -> bool:
+    return bcrypt.checkpw(
+        password=password.encode(),
+        hashed_password=hashed_password,
     )
 
-    try:
-        payload: TokenPayload = validate_token(token=token, token_type=TokenType.ACCESS)
-        if payload.sub is None:
-            raise credentials_exception
 
-    except (PyJWTError, ValidationError):
-        raise credentials_exception
-
-    user = await get_user_from_db_by_id(id=payload.sub, session=session)
-
-    if user is None:
-        raise credentials_exception
-
-    for scope in security_scopes.scopes:
-        if scope not in payload.scopes:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not enough permissions",
-                headers={"WWW-Authenticate": authenticate_value},
-            )
-
-    return user
-
-
-async def get_current_active_user(
-    current_user: Annotated[UserInDB, Security(get_current_user)],
-) -> UserInDB:
-    if not current_user.active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user",
-        )
-    return current_user
-
-
-def get_access_token(
-    current_user: UserSchema = Security(get_current_active_user),
-) -> UserSchema:
-    return current_user
+def create_tokens(payload: TokenPayload) -> TokenPair:
+    payload_dict = payload.model_dump()
+    access_token = _create_token(
+        data=payload_dict,
+        expires_delta=datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+        token_type=TokenType.ACCESS,
+    )
+    refresh_token = _create_token(
+        data=payload_dict,
+        expires_delta=datetime.timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES),
+        token_type=TokenType.REFRESH,
+    )
+    return TokenPair(
+        refresh_token=refresh_token,
+        access_token=access_token,
+        scopes=payload.scopes,
+    )

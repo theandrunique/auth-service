@@ -8,9 +8,9 @@ from src.database import DbSession
 from src.models import UserInDB
 
 from .crud import get_user_from_db_by_id
-from .exceptions import InvalidToken, NotAuthenticated, UserNotFound
+from .exceptions import InactiveUser, InvalidToken, NotAuthenticated, UserNotFound
 from .schemas import TokenType
-from .security import validate_token
+from .utils import validate_token
 
 
 async def get_authorization(request: Request) -> str:
@@ -31,6 +31,8 @@ async def get_user(
     user = await get_user_from_db_by_id(id=payload.sub, session=session)
     if user is None:
         raise UserNotFound()
+    elif not user.active:
+        raise InactiveUser()
     return user
 
 

@@ -4,7 +4,6 @@ from fastapi import (
     APIRouter,
     Depends,
     Request,
-    Security,
     status,
 )
 from jwt.exceptions import PyJWTError
@@ -44,26 +43,25 @@ from .exceptions import (
     UserNotFound,
 )
 from .schemas import (
-    NewPasswordSchema,
+    ForgotPasswordSchema,
     OtpAuthSchema,
+    OtpRequestSchema,
     RefreshToken,
     RegistrationSchema,
+    ResetPasswordSchema,
     TokenPair,
     TokenPayload,
     TokenType,
     UserLoginSchema,
     UserSchema,
-)
-from .security import (
-    create_tokens,
-    gen_key,
-    gen_otp,
-    gen_random_token_id,
-    validate_token,
+    VerifyEmailSchema,
 )
 from .utils import (
     authenticate_user,
-    get_access_token,
+    create_tokens,
+    gen_otp,
+    gen_random_token_id,
+    validate_token,
 )
 
 router = APIRouter()
@@ -98,7 +96,6 @@ async def login(
 ) -> TokenPair:
     user: UserInDB | None = await authenticate_user(
         username=user_data.username,
-        password=user_data.password,
         session=session,
     )
     if user is None:
@@ -175,26 +172,25 @@ async def revoke_token(
     await revoke_refresh_token(token=prev_token, session=session)
 
 
-@router.post("/password-recovery/{email}")
+@router.post("/forgot/", status_code=status.HTTP_204_NO_CONTENT)
 async def recover_password(
-    email: str,
+    data: ForgotPasswordSchema,
     session: DbSession,
-) -> dict[str, Any]:
-    user = await get_user_from_db_by_email(email=email, session=session)
+) -> None:
+    user = await get_user_from_db_by_email(email=data.email, session=session)
     if not user:
         UserNotFound()
     elif not user.email_verified:
         raise EmailNotVerified()
-    send_reset_password_email(email_to=email)
-    return {"message": "Password recovery email sent"}
+    send_reset_password_email(email_to=data.email)
 
 
-@router.post("/reset-password/")
+@router.post("/reset/", response_model=UserSchema)
 async def reset_password(
-    body: NewPasswordSchema,
+    data: ResetPasswordSchema,
     session: DbSession,
-) -> dict[str, Any]:
-    email = verify_email_token(token=body.token, type=EmailTokenType.RECOVERY_PASSWORD)
+) -> Any:
+    email = verify_email_token(token=data.token, type=EmailTokenType.RECOVERY_PASSWORD)
     if not email:
         raise InvalidToken()
     user = await get_user_from_db_by_email(email=email, session=session)
@@ -204,28 +200,27 @@ async def reset_password(
         raise InactiveUser()
     await update_user_password(
         user=user,
-        new_password=body.new_password,
+        new_password=data.password,
         session=session,
     )
-    return {"message": "Password updated successfully"}
+    return user
 
 
-@router.post("/send-confirmation-email/")
+@router.put("/verify/", status_code=status.HTTP_204_NO_CONTENT)
 async def send_confirmation_email(
-    user: UserInDB = Security(get_access_token),
-) -> dict[str, Any]:
+    user: UserAuthorization,
+) -> None:
     if user.email_verified:
         raise EmailAlreadyVerified()
     send_verify_email(email_to=user.email, username=user.username)
-    return {"message": "Verification email sent"}
 
 
-@router.post("/verify-email/")
+@router.post("/verify/", status_code=status.HTTP_204_NO_CONTENT)
 async def verify_email(
-    token: str,
+    data: VerifyEmailSchema,
     session: DbSession,
-) -> dict[str, Any]:
-    email = verify_email_token(token=token, type=EmailTokenType.VERIFY_EMAIL)
+) -> None:
+    email = verify_email_token(token=data.token, type=EmailTokenType.VERIFY_EMAIL)
     if not email:
         raise InvalidToken()
     user = await get_user_from_db_by_email(email=email, session=session)
@@ -234,24 +229,34 @@ async def verify_email(
     elif not user.active:
         raise InactiveUser()
     await update_user_verify_email(user=user, session=session)
-    return {"message": "Email verified successfully"}
 
 
-@router.post("/otp-auth/")
-async def otp_auth(
-    otp_auth_data: OtpAuthSchema,
-    request: Request,
-    session: DbSession,
-) -> TokenPair:
-    expected_value = await redis_client.hget(
-        f"otp_user_{otp_auth_data.email}",
-        key=otp_auth_data.key,
+@router.put("/otp/", status_code=status.HTTP_204_NO_CONTENT)
+async def send_opt(otp_data: OtpRequestSchema, session: DbSession) -> None:
+    user = await get_user_from_db_by_email(email=otp_data.email, session=session)
+    if not user:
+        raise UserNotFound()
+    elif not user.email_verified:
+        raise EmailNotVerified()
+    opt = gen_otp()
+    await redis_client.set(
+        f"otp_user_{user.email}",
+        opt,
+        ex=settings.OTP_EXPIRE_SECONDS,
     )
+    send_otp_email(email_to=otp_data.email, username=user.username, opt=opt)
 
-    if expected_value != otp_auth_data.otp:
+
+@router.post("/otp/")
+async def otp_auth(
+    otp_data: OtpAuthSchema, request: Request, session: DbSession,
+) -> TokenPair:
+    expected_value = await redis_client.get(f"otp_user_{otp_data.email}")
+    if expected_value != otp_data.otp:
         raise InvalidOtp()
-    await redis_client.delete(f"otp_user_{otp_auth_data.email}")
-    user = await get_user_from_db_by_email(email=otp_auth_data.email, session=session)
+    await redis_client.delete(f"otp_user_{otp_data.email}")
+
+    user = await get_user_from_db_by_email(email=otp_data.email, session=session)
     if not user:
         raise UserNotFound()
     jti = gen_random_token_id()
@@ -267,25 +272,7 @@ async def otp_auth(
         jti=jti,
         token_id=refresh_token_in_db.id,
     )
-
     tokens_pair = create_tokens(payload=payload)
     return tokens_pair
 
 
-@router.get("/send-otp/")
-async def send_opt(
-    email: str,
-    session: DbSession,
-) -> dict[str, str]:
-    user = await get_user_from_db_by_email(email=email, session=session)
-    if not user:
-        raise UserNotFound()
-    elif not user.email_verified:
-        raise EmailNotVerified()
-
-    opt = gen_otp()
-    key = gen_key()
-    await redis_client.hset(f"otp_user_{user.email}", key, opt)
-    await redis_client.expire(f"otp_user_{user.email}", settings.OTP_EXPIRE_SECONDS)
-    send_otp_email(email_to=email, username=user.username, opt=opt)
-    return {"message": "OPT sent on your email", "key": key}
