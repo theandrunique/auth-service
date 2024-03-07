@@ -19,6 +19,7 @@ from .crud import (
     create_new_user,
     get_refresh_token_from_db_by_id,
     get_user_from_db_by_email,
+    get_user_from_db_by_username,
     revoke_refresh_token,
     update_refresh_token,
     update_user_password,
@@ -57,7 +58,7 @@ from .schemas import (
     VerifyEmailSchema,
 )
 from .utils import (
-    authenticate_user,
+    check_password,
     create_tokens,
     gen_otp,
     gen_random_token_id,
@@ -94,12 +95,18 @@ async def login(
     request: Request,
     session: DbSession,
 ) -> TokenPair:
-    user: UserInDB | None = await authenticate_user(
+    user: UserInDB | None = await get_user_from_db_by_username(
         username=user_data.username,
         session=session,
     )
     if user is None:
+        raise UserNotFound()
+    elif not check_password(
+        password=user_data.password,
+        hashed_password=user.hashed_password,
+    ):
         raise InvalidCredentials()
+
     jti = gen_random_token_id()
     refresh_token_in_db = await create_new_refresh_token(
         user_id=user.id,
@@ -117,7 +124,7 @@ async def login(
     return tokens_pair
 
 
-@router.get("/refresh-token/")
+@router.get("/refresh/")
 async def refresh_token(
     token_data: RefreshToken,
     request: Request,

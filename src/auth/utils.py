@@ -7,27 +7,10 @@ from typing import Any
 import bcrypt
 import jwt
 from jwt.exceptions import PyJWTError
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
-from src.models import UserInDB
 
-from .crud import get_user_from_db_by_username
 from .schemas import TokenPair, TokenPayload, TokenType
-
-
-async def authenticate_user(
-    username: str,
-    password: str,
-    session: AsyncSession,
-) -> UserInDB | None:
-    user: UserInDB | None = await get_user_from_db_by_username(username, session)
-    if user and check_password(
-        password=password,
-        hashed_password=user.hashed_password,
-    ):
-        return user
-    return None
 
 
 def gen_otp() -> str:
