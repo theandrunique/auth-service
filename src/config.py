@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     REDIS_HOST: str | None = None
     REDIS_PORT: int | None = None
     REDIS_PASSWORD: str | None = None
+    REDIS_URL: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
