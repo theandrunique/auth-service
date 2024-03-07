@@ -6,8 +6,9 @@ from typing import Any
 
 import bcrypt
 import jwt
-from config import settings
 from jwt.exceptions import PyJWTError
+
+from src.config import settings
 
 from .schemas import TokenPair, TokenPayload, TokenType
 
@@ -85,5 +86,5 @@ def create_tokens(payload: TokenPayload) -> TokenPair:
     return TokenPair(
         refresh_token=refresh_token,
         access_token=access_token,
-        scope=payload.scopes,
+        scopes=payload.scopes,
     )

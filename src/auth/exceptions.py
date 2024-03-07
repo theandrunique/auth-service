@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 
 
 class UsernameOrEmailAlreadyExists(HTTPException):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User with this username or email already exists",
@@ -10,7 +10,7 @@ class UsernameOrEmailAlreadyExists(HTTPException):
 
 
 class InvalidCredentials(HTTPException):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
@@ -18,7 +18,7 @@ class InvalidCredentials(HTTPException):
 
 
 class InvalidToken(HTTPException):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
@@ -26,7 +26,7 @@ class InvalidToken(HTTPException):
 
 
 class EmailNotVerified(HTTPException):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email is not verified",
@@ -34,7 +34,7 @@ class EmailNotVerified(HTTPException):
 
 
 class EmailAlreadyVerified(HTTPException):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email is already verified",
@@ -42,7 +42,7 @@ class EmailAlreadyVerified(HTTPException):
 
 
 class UserNotFound(HTTPException):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
@@ -50,7 +50,7 @@ class UserNotFound(HTTPException):
 
 
 class InactiveUser(HTTPException):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user",
@@ -58,8 +58,15 @@ class InactiveUser(HTTPException):
 
 
 class InvalidOtp(HTTPException):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid OTP",
+        )
+
+class NotAuthenticated(HTTPException):
+    def __init__(self) -> None:
+        super().__init__(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authenticated"
         )

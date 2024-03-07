@@ -1,8 +1,5 @@
-from typing import Annotated, Any
+from typing import Any
 
-import jwt
-from config import settings
-from db_helper import db_helper
 from fastapi import (
     APIRouter,
     Depends,
@@ -10,11 +7,14 @@ from fastapi import (
     Security,
     status,
 )
-from fastapi.security import OAuth2PasswordRequestForm
 from jwt.exceptions import PyJWTError
-from redis_helper import redis_client
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.config import settings
+from src.db_helper import db_helper
+from src.models import UserInDB
+from src.redis_helper import redis_client
 
 from .crud import (
     create_new_refresh_token,
@@ -26,6 +26,7 @@ from .crud import (
     update_user_password,
     update_user_verify_email,
 )
+from .dependencies import UserAuthorization, get_authorization
 from .email_utils import (
     EmailTokenType,
     send_otp_email,
@@ -43,14 +44,15 @@ from .exceptions import (
     UsernameOrEmailAlreadyExists,
     UserNotFound,
 )
-from .models import UserInDB
 from .schemas import (
-    AuthSchema,
     NewPasswordSchema,
     OtpAuthSchema,
+    RefreshToken,
+    RegistrationSchema,
     TokenPair,
     TokenPayload,
     TokenType,
+    UserLoginSchema,
     UserSchema,
 )
 from .security import (
@@ -63,7 +65,6 @@ from .security import (
 from .utils import (
     authenticate_user,
     get_access_token,
-    oauth2_scheme,
 )
 
 router = APIRouter()
@@ -75,7 +76,7 @@ router = APIRouter()
     response_model=UserSchema,
 )
 async def register(
-    auth_data: AuthSchema,
+    auth_data: RegistrationSchema,
     session: AsyncSession = Depends(db_helper.session_dependency),
 ) -> Any:
     try:
@@ -90,15 +91,15 @@ async def register(
         raise UsernameOrEmailAlreadyExists()
 
 
-@router.post("/token/")
+@router.post("/login/")
 async def login(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    user_data: UserLoginSchema,
     request: Request,
     session: AsyncSession = Depends(db_helper.session_dependency),
 ) -> TokenPair:
     user: UserInDB | None = await authenticate_user(
-        username=form_data.username,
-        password=form_data.password,
+        username=user_data.username,
+        password=user_data.password,
         session=session,
     )
     if user is None:
@@ -112,7 +113,7 @@ async def login(
     )
     payload = TokenPayload(
         sub=user.id,
-        scopes=form_data.scopes,
+        scopes="",
         jti=jti,
         token_id=refresh_token_in_db.id,
     )
@@ -122,12 +123,15 @@ async def login(
 
 @router.get("/refresh-token/")
 async def refresh_token(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    token_data: RefreshToken,
     request: Request,
     session: AsyncSession = Depends(db_helper.session_dependency),
 ) -> TokenPair:
     try:
-        payload = validate_token(token=token, token_type=TokenType.REFRESH)
+        payload = validate_token(
+            token=token_data.refresh_token,
+            token_type=TokenType.REFRESH,
+        )
     except PyJWTError:
         raise InvalidToken()
     prev_token = await get_refresh_token_from_db_by_id(
@@ -149,27 +153,16 @@ async def refresh_token(
     return tokens_pair
 
 
-@router.get("/introspect/")
-def introspect_token(token: str = Depends(oauth2_scheme)) -> Any:
-    try:
-        payload = jwt.decode(
-            jwt=token, key=settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
-    except PyJWTError:
-        raise InvalidToken()
-    return payload
-
-
 @router.get("/me/", response_model=UserSchema)
-def get_me(user: UserInDB = Security(get_access_token, scopes=["me"])) -> Any:
+def get_me(user: UserAuthorization) -> Any:
     return user
 
 
-@router.delete("/revoke-token/")
+@router.delete("/logout/", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_token(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    token: str = Depends(get_authorization),
     session: AsyncSession = Depends(db_helper.session_dependency),
-) -> dict[str, str]:
+) -> None:
     try:
         payload = validate_token(token=token, token_type=TokenType.REFRESH)
     except PyJWTError:
@@ -178,11 +171,9 @@ async def revoke_token(
         token_id=payload.token_id,
         session=session,
     )
-    if prev_token is not None and prev_token.jti == payload.jti:
-        await revoke_refresh_token(token=prev_token, session=session)
-        return {"detail": "Token revoked successfully"}
-
-    raise InvalidToken()
+    if not prev_token or prev_token.jti != payload.jti:
+        raise InvalidToken()
+    await revoke_refresh_token(token=prev_token, session=session)
 
 
 @router.post("/password-recovery/{email}")
@@ -273,7 +264,7 @@ async def otp_auth(
     )
     payload = TokenPayload(
         sub=user.id,
-        scopes=otp_auth_data.scopes,
+        scopes="",
         jti=jti,
         token_id=refresh_token_in_db.id,
     )

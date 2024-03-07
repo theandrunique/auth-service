@@ -1,9 +1,11 @@
 import datetime
 
-from models import RefreshTokenInDB, UserInDB
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.models import UserInDB
+
+from .models import RefreshTokenInDB
 from .security import hash_password
 
 

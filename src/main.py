@@ -1,6 +1,7 @@
 import uvicorn
-from auth.views import router as auth_router
 from fastapi import FastAPI
+
+from src.auth.views import router as auth_router
 
 app = FastAPI()
 

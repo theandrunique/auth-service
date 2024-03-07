@@ -1,5 +1,6 @@
 import redis.asyncio as redis
-from config import settings
+
+from src.config import settings
 
 redis_client = redis.Redis(
     host=settings.REDIS_HOST,
@@ -7,4 +8,3 @@ redis_client = redis.Redis(
     password=settings.REDIS_PASSWORD,
     decode_responses=True,
 )
-

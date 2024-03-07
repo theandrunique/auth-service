@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 from enum import Enum
 
-from config import settings
 from pydantic import BaseModel, EmailStr, Field
+
+from src.config import settings
 
 
 class TokenType(Enum):
@@ -13,7 +14,7 @@ class TokenType(Enum):
 class TokenPair(BaseModel):
     access_token: str
     refresh_token: str
-    scope: list[str] = []
+    scopes: str
     token_type: str = "Bearer"
     expires_in: int = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     expires_at: int = Field(
@@ -28,7 +29,7 @@ class TokenPair(BaseModel):
 
 class TokenPayload(BaseModel):
     sub: int
-    scopes: list[str]
+    scopes: str
     jti: str
     token_id: int
 
@@ -40,7 +41,7 @@ class UserSchema(BaseModel):
     active: bool
 
 
-class AuthSchema(BaseModel):
+class RegistrationSchema(BaseModel):
     username: str = Field(min_length=5, max_length=20)
     email: EmailStr
     password: str = Field(
@@ -60,3 +61,12 @@ class OtpAuthSchema(BaseModel):
     scopes: list[str]
     key: str
     otp: str
+
+
+class UserLoginSchema(BaseModel):
+    username: str
+    password: str
+
+
+class RefreshToken(BaseModel):
+    refresh_token: str

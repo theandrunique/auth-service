@@ -1,12 +1,13 @@
 from typing import Annotated
 
-from db_helper import db_helper
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from jwt.exceptions import PyJWTError
-from models import UserInDB
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.db_helper import db_helper
+from src.models import UserInDB
 
 from .crud import get_user_from_db_by_id, get_user_from_db_by_username
 from .schemas import TokenPayload, TokenType, UserSchema
@@ -22,8 +23,8 @@ async def authenticate_user(
     username: str,
     password: str,
     session: AsyncSession,
-) -> UserInDB:
-    user: UserInDB = await get_user_from_db_by_username(username, session)
+) -> UserInDB | None:
+    user: UserInDB | None = await get_user_from_db_by_username(username, session)
 
     if user is not None and validate_password(
         password=password,
