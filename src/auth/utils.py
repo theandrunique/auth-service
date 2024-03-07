@@ -6,7 +6,7 @@ from jwt.exceptions import PyJWTError
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db_helper import db_helper
+from src.database import DbSession
 from src.models import UserInDB
 
 from .crud import get_user_from_db_by_id, get_user_from_db_by_username
@@ -36,9 +36,9 @@ async def authenticate_user(
 
 
 async def get_current_user(
+    session: DbSession,
     security_scopes: SecurityScopes,
     token: Annotated[str, Depends(oauth2_scheme)],
-    session: AsyncSession = Depends(db_helper.session_dependency),
 ) -> UserInDB:
     if security_scopes.scopes:
         authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'

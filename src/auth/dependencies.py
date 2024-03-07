@@ -3,9 +3,8 @@ from typing import Annotated
 from fastapi import Depends, Request
 from jwt import PyJWTError
 from pydantic import ValidationError
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db_helper import db_helper
+from src.database import DbSession
 from src.models import UserInDB
 
 from .crud import get_user_from_db_by_id
@@ -22,8 +21,8 @@ async def get_authorization(request: Request) -> str:
 
 
 async def get_user(
+    session: DbSession,
     token: str = Depends(get_authorization),
-    session: AsyncSession = Depends(db_helper.session_dependency),
 ) -> UserInDB:
     try:
         payload = validate_token(token=token, token_type=TokenType.ACCESS)

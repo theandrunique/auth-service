@@ -9,10 +9,9 @@ from fastapi import (
 )
 from jwt.exceptions import PyJWTError
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
-from src.db_helper import db_helper
+from src.database import DbSession
 from src.models import UserInDB
 from src.redis_helper import redis_client
 
@@ -77,7 +76,7 @@ router = APIRouter()
 )
 async def register(
     auth_data: RegistrationSchema,
-    session: AsyncSession = Depends(db_helper.session_dependency),
+    session: DbSession,
 ) -> Any:
     try:
         new_user = await create_new_user(
@@ -95,7 +94,7 @@ async def register(
 async def login(
     user_data: UserLoginSchema,
     request: Request,
-    session: AsyncSession = Depends(db_helper.session_dependency),
+    session: DbSession,
 ) -> TokenPair:
     user: UserInDB | None = await authenticate_user(
         username=user_data.username,
@@ -125,7 +124,7 @@ async def login(
 async def refresh_token(
     token_data: RefreshToken,
     request: Request,
-    session: AsyncSession = Depends(db_helper.session_dependency),
+    session: DbSession,
 ) -> TokenPair:
     try:
         payload = validate_token(
@@ -160,8 +159,8 @@ def get_me(user: UserAuthorization) -> Any:
 
 @router.delete("/logout/", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_token(
+    session: DbSession,
     token: str = Depends(get_authorization),
-    session: AsyncSession = Depends(db_helper.session_dependency),
 ) -> None:
     try:
         payload = validate_token(token=token, token_type=TokenType.REFRESH)
@@ -179,7 +178,7 @@ async def revoke_token(
 @router.post("/password-recovery/{email}")
 async def recover_password(
     email: str,
-    session: AsyncSession = Depends(db_helper.session_dependency),
+    session: DbSession,
 ) -> dict[str, Any]:
     user = await get_user_from_db_by_email(email=email, session=session)
     if not user:
@@ -193,7 +192,7 @@ async def recover_password(
 @router.post("/reset-password/")
 async def reset_password(
     body: NewPasswordSchema,
-    session: AsyncSession = Depends(db_helper.session_dependency),
+    session: DbSession,
 ) -> dict[str, Any]:
     email = verify_email_token(token=body.token, type=EmailTokenType.RECOVERY_PASSWORD)
     if not email:
@@ -224,7 +223,7 @@ async def send_confirmation_email(
 @router.post("/verify-email/")
 async def verify_email(
     token: str,
-    session: AsyncSession = Depends(db_helper.session_dependency),
+    session: DbSession,
 ) -> dict[str, Any]:
     email = verify_email_token(token=token, type=EmailTokenType.VERIFY_EMAIL)
     if not email:
@@ -242,7 +241,7 @@ async def verify_email(
 async def otp_auth(
     otp_auth_data: OtpAuthSchema,
     request: Request,
-    session: AsyncSession = Depends(db_helper.session_dependency),
+    session: DbSession,
 ) -> TokenPair:
     expected_value = await redis_client.hget(
         f"otp_user_{otp_auth_data.email}",
@@ -276,7 +275,7 @@ async def otp_auth(
 @router.get("/send-otp/")
 async def send_opt(
     email: str,
-    session: AsyncSession = Depends(db_helper.session_dependency),
+    session: DbSession,
 ) -> dict[str, str]:
     user = await get_user_from_db_by_email(email=email, session=session)
     if not user:
