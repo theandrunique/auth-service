@@ -26,8 +26,8 @@ def send_email(
     msg["Subject"] = subject
     msg.attach(MIMEText(html_body, "html"))
 
-    server = smtplib.SMTP_SSL(settings.SMTP_SERVER, settings.SMTP_PORT)
-    server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+    server = smtplib.SMTP_SSL(settings.SMTP.SERVER, settings.SMTP.PORT)
+    server.login(settings.SMTP.USER, settings.SMTP.PASSWORD)
     server.send_message(msg=msg)
     server.quit()
 

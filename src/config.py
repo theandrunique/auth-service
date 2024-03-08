@@ -1,35 +1,43 @@
+from pydantic import AnyUrl, BaseModel, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+class SmtpSettings(BaseModel):
+    PORT: int = 465
+    SERVER: str = "smtp.gmail.com"
+    USER: str
+    PASSWORD: str
+
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "test app"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_nested_delimiter="_",
+        extra="ignore",
+        case_sensitive=True
+    )
+
+    PROJECT_NAME: str = "fastapi app"
     SERVER_HOST: str = "http://localhost"
 
-    DB_URL: str = "sqlite+aiosqlite:///auth.db"
-    SECRET_KEY: str = "381fe4a2683cd0eee27cd66bfe1e5b02142ab7ee64d4f1ccbf1011e7358b005e"
+    SQLALCHEMY_DATABASE_URI: AnyUrl
+
+    SECRET_KEY: str = "secret_key"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 24 * 60
     KEYS_LENGTH: int = 40
     OTP_EXPIRE_SECONDS: int = 5 * 60
 
-    SMTP_PORT: int = 465
-    SMTP_SERVER: str = "smtp.gmail.com"
-    SMTP_USER: str | None = None
-    SMTP_PASSWORD: str | None = None
+    SMTP: SmtpSettings
 
-    EMAILS_FROM_EMAIL: str | None = None
-    EMAILS_FROM_NAME: str | None = None
+    EMAILS_FROM_EMAIL: str
+    EMAILS_FROM_NAME: str
 
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 24
     EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS: int = 48
 
-    REDIS_HOST: str | None = None
-    REDIS_PORT: int | None = None
-    REDIS_PASSWORD: str | None = None
-    REDIS_URL: str | None = None
-
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+    REDIS_URL: RedisDsn
 
 
-settings = Settings()
+settings = Settings() # type: ignore
