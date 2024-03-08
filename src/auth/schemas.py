@@ -86,4 +86,3 @@ class ResetPasswordSchema(BaseModel):
 class VerifyEmailSchema(BaseModel):
     token: str
 
-

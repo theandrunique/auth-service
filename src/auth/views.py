@@ -57,6 +57,7 @@ from .schemas import (
     UserTokenPair,
     VerifyEmailSchema,
 )
+from .sessions.views import router as sessions_router
 from .utils import (
     check_password,
     create_tokens,
@@ -66,6 +67,7 @@ from .utils import (
 )
 
 router = APIRouter()
+router.include_router(sessions_router, prefix="/sessions", tags=["sessions"])
 
 
 @router.post(
@@ -298,5 +300,4 @@ async def otp_auth(
         ),
     )
     return tokens_pair
-
 
