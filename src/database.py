@@ -33,7 +33,7 @@ class DatabaseHelper:
 
 
 db_helper = DatabaseHelper(
-    url=settings.SQLALCHEMY_DATABASE_URI, # type: ignore
+    url=str(settings.SQLALCHEMY_DATABASE_URI),
     echo=False,
 )
 

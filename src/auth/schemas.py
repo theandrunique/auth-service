@@ -10,15 +10,9 @@ from pydantic import (
 from src.config import settings
 
 
-class TokenType(Enum):
-    REFRESH = "refresh"
-    ACCESS = "access"
-
-
-class TokenPair(BaseModel):
+class UserTokenPair(BaseModel):
     access_token: str
     refresh_token: str
-    scopes: str
     token_type: str = "Bearer"
     expires_in: int = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     expires_at: int = Field(
@@ -31,9 +25,17 @@ class TokenPair(BaseModel):
     )
 
 
-class TokenPayload(BaseModel):
-    sub: int
-    scopes: str
+class TokenType(Enum):
+    REFRESH = "refresh"
+    ACCESS = "access"
+
+
+class UserAccessTokenPayload(BaseModel):
+    id: int
+    email: str
+
+
+class UserRefreshTokenPayload(BaseModel):
     jti: str
     token_id: int
 

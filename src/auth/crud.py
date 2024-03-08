@@ -1,6 +1,7 @@
 import datetime
 
 import bcrypt
+from fastapi.datastructures import Address
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,7 +37,7 @@ async def create_new_user(
 async def create_new_refresh_token(
     user_id: int,
     jti: str,
-    ip_address: str | None,
+    address: Address | None,
     session: AsyncSession,
 ) -> RefreshTokenInDB:
     new_token = RefreshTokenInDB(
@@ -44,7 +45,7 @@ async def create_new_refresh_token(
         jti=jti,
         created_at=datetime.datetime.now(),
         last_accessed=datetime.datetime.now(),
-        ip_address=ip_address,
+        ip_address=address.host if address else None,
     )
     session.add(new_token)
     await session.commit()

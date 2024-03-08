@@ -9,8 +9,7 @@ from src.models import UserInDB
 
 from .crud import get_user_from_db_by_id
 from .exceptions import InactiveUser, InvalidToken, NotAuthenticated, UserNotFound
-from .schemas import TokenType
-from .utils import validate_token
+from .utils import validate_access_token
 
 
 async def get_authorization(request: Request) -> str:
@@ -25,10 +24,10 @@ async def get_user(
     token: str = Depends(get_authorization),
 ) -> UserInDB:
     try:
-        payload = validate_token(token=token, token_type=TokenType.ACCESS)
+        payload = validate_access_token(token=token)
     except (PyJWTError, ValidationError):
         raise InvalidToken()
-    user = await get_user_from_db_by_id(id=payload.sub, session=session)
+    user = await get_user_from_db_by_id(id=payload.id, session=session)
     if user is None:
         raise UserNotFound()
     elif not user.active:

@@ -10,7 +10,12 @@ from jwt.exceptions import PyJWTError
 
 from src.config import settings
 
-from .schemas import TokenPair, TokenPayload, TokenType
+from .schemas import (
+    TokenType,
+    UserAccessTokenPayload,
+    UserRefreshTokenPayload,
+    UserTokenPair,
+)
 
 
 def gen_otp() -> str:
@@ -38,16 +43,25 @@ def _create_token(
     return encoded_jwt
 
 
-def validate_token(token: str, token_type: TokenType) -> TokenPayload:
+def validate_token(token: str, token_type: TokenType) -> dict[str, Any]:
     payload_dict: dict[str, Any] = jwt.decode(
         jwt=token,
         key=settings.SECRET_KEY,
         algorithms=[settings.ALGORITHM],
     )
-    payload = TokenPayload(**payload_dict)
-    if payload_dict["token_type"] != token_type.value:
+    if payload_dict.get("token_type") != token_type.value:
         raise PyJWTError()
-    return payload
+    return payload_dict
+
+
+def validate_access_token(token: str) -> UserAccessTokenPayload:
+    payload = validate_token(token=token, token_type=TokenType.ACCESS)
+    return UserAccessTokenPayload(**payload)
+
+
+def validate_refresh_token(token: str) -> UserRefreshTokenPayload:
+    payload = validate_token(token=token, token_type=TokenType.REFRESH)
+    return UserRefreshTokenPayload(**payload)
 
 
 def check_password(
@@ -60,20 +74,21 @@ def check_password(
     )
 
 
-def create_tokens(payload: TokenPayload) -> TokenPair:
-    payload_dict = payload.model_dump()
+def create_tokens(
+    refresh_payload: UserRefreshTokenPayload,
+    access_payload: UserAccessTokenPayload,
+) -> UserTokenPair:
     access_token = _create_token(
-        data=payload_dict,
+        data=access_payload.model_dump(),
         expires_delta=datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         token_type=TokenType.ACCESS,
     )
     refresh_token = _create_token(
-        data=payload_dict,
+        data=refresh_payload.model_dump(),
         expires_delta=datetime.timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES),
         token_type=TokenType.REFRESH,
     )
-    return TokenPair(
+    return UserTokenPair(
         refresh_token=refresh_token,
         access_token=access_token,
-        scopes=payload.scopes,
     )
