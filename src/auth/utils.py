@@ -1,7 +1,6 @@
 import datetime
 import secrets
 import string
-import uuid
 from typing import Any
 
 import bcrypt
@@ -17,10 +16,6 @@ from .schemas import (
 
 def gen_otp() -> str:
     return "".join(secrets.choice(string.digits) for _ in range(6))
-
-
-def gen_random_token_id() -> uuid.UUID:
-    return uuid.uuid4()
 
 
 def _create_token(
@@ -62,7 +57,7 @@ def create_user_token(
 ) -> UserTokenSchema:
     token = _create_token(
         data=payload.model_dump(),
-        expires_delta=datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+        expires_delta=datetime.timedelta(minutes=settings.USER_TOKEN_EXPIRE_HOURS),
     )
     return UserTokenSchema(
         user_id=payload.user_id,

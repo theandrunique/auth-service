@@ -8,13 +8,28 @@ class SmtpSettings(BaseModel):
     USER: str
     PASSWORD: str
 
+
+class UsersSettings(BaseModel):
+    USERNAME_MIN_LENGTH: int = 3
+    USERNAME_MAX_LENGTH: int = 32
+
+    USERNAME_PATTERN: str = r"^[a-zA-Z0-9_]+$"
+
+    PASSWORD_MIN_LENGTH: int = 8
+    PASSWORD_MAX_LENGTH: int = 32
+
+    PASSWORD_PATTERN: str = (
+        r"^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$"
+    )
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         env_nested_delimiter="_",
         extra="ignore",
-        case_sensitive=True
+        case_sensitive=True,
     )
 
     PROJECT_NAME: str = "fastapi app"
@@ -24,8 +39,7 @@ class Settings(BaseSettings):
 
     SECRET_KEY: str = "secret_key"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10
-    REFRESH_TOKEN_EXPIRE_MINUTES: int = 24 * 60
+    USER_TOKEN_EXPIRE_HOURS: int = 30 * 24
     KEYS_LENGTH: int = 40
     OTP_EXPIRE_SECONDS: int = 5 * 60
 
@@ -39,5 +53,7 @@ class Settings(BaseSettings):
 
     REDIS_URL: RedisDsn
 
+    USERS: UsersSettings | None
 
-settings = Settings() # type: ignore
+
+settings = Settings()  # type: ignore

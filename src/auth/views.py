@@ -1,3 +1,4 @@
+import uuid
 from typing import Any
 
 from fastapi import (
@@ -58,7 +59,6 @@ from .utils import (
     check_password,
     create_user_token,
     gen_otp,
-    gen_random_token_id,
     validate_user_token,
 )
 
@@ -97,7 +97,8 @@ async def login(
         user = await get_user_from_db_by_email(email=user_data.login, session=session)
     else:
         user = await get_user_from_db_by_username(
-            username=user_data.login, session=session,
+            username=user_data.login,
+            session=session,
         )
     if user is None:
         raise UserNotFound()
@@ -106,7 +107,7 @@ async def login(
         hashed_password=user.hashed_password,
     ):
         raise InvalidCredentials()
-    jti = gen_random_token_id()
+    jti = uuid.uuid4()
     if request.client:
         ip_address = request.client.host
     else:
@@ -118,11 +119,7 @@ async def login(
         session=session,
     )
     token = create_user_token(
-        payload=UserTokenPayload(
-            user_id=user.id,
-            email=user.email,
-            jti=jti.hex
-        )
+        payload=UserTokenPayload(user_id=user.id, email=user.email, jti=jti.hex)
     )
     return token
 
@@ -226,7 +223,9 @@ async def send_opt(otp_data: OtpRequestSchema, session: DbSession) -> None:
 
 @router.post("/otp/")
 async def otp_auth(
-    otp_data: OtpAuthSchema, request: Request, session: DbSession,
+    otp_data: OtpAuthSchema,
+    request: Request,
+    session: DbSession,
 ) -> UserTokenSchema:
     expected_value = await redis_client.get(f"otp_user_{otp_data.email}")
     if expected_value != otp_data.otp:
@@ -238,7 +237,7 @@ async def otp_auth(
         raise UserNotFound()
     if not user.active:
         raise InactiveUser()
-    jti = gen_random_token_id()
+    jti = uuid.uuid4()
     if request.client:
         ip_address = request.client.host
     else:
@@ -250,10 +249,6 @@ async def otp_auth(
         session=session,
     )
     token = create_user_token(
-        payload=UserTokenPayload(
-            user_id=user.id,
-            email=user.email,
-            jti=jti.hex
-        )
+        payload=UserTokenPayload(user_id=user.id, email=user.email, jti=jti.hex)
     )
     return token

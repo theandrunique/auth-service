@@ -29,4 +29,3 @@ async def get_my_sessions(
     return UserSessions(
         user_sessions=session_schemas,
     )
-

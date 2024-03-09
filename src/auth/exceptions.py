@@ -64,9 +64,19 @@ class InvalidOtp(HTTPException):
             detail="Invalid OTP",
         )
 
+
 class NotAuthenticated(HTTPException):
     def __init__(self) -> None:
         super().__init__(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authenticated"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not authenticated"
+        )
+
+
+class PasswordValidationError(HTTPException):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password should have at least 8 characters, "
+            "contain at least one uppercase letter, one lowercase letter, "
+            "one number and one special character from #?!@$%^&*-",
         )
