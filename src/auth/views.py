@@ -54,7 +54,6 @@ from .schemas import (
     UserTokenSchema,
     VerifyEmailSchema,
 )
-from .sessions.views import router as sessions_router
 from .utils import (
     check_password,
     create_user_token,
@@ -63,7 +62,6 @@ from .utils import (
 )
 
 router = APIRouter()
-router.include_router(sessions_router, prefix="/sessions", tags=["sessions"])
 
 
 @router.post(
