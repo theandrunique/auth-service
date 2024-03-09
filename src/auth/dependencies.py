@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends, Request
+from fastapi import Request, Security
 from jwt import PyJWTError
 from pydantic import ValidationError
 
@@ -21,7 +21,7 @@ async def get_authorization(request: Request) -> str:
 
 async def get_user(
     session: DbSession,
-    token: str = Depends(get_authorization),
+    token: str = Security(get_authorization),
 ) -> UserInDB:
     try:
         payload = validate_user_token(token=token)
@@ -43,4 +43,4 @@ async def get_user(
     return user
 
 
-UserAuthorization = Annotated[UserInDB, Depends(get_user)]
+UserAuthorization = Annotated[UserInDB, Security(get_user)]
