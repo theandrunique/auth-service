@@ -1,18 +1,26 @@
-import asyncio
+import asyncio  # noqa: I001
 from collections.abc import AsyncGenerator
+import os
 
 import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from src.config import settings
-from src.db_helper import db_helper
+from src.database import db_helper
 from src.main import app
 from src.models import Base
 
-settings.DB_URL = "sqlite+aiosqlite:///auth.db"
-db_helper.engine = create_async_engine(settings.DB_URL)
+
+# import models
+# from src.auth.models import *  # noqa
+from src.models import *  # noqa
+
+if os.path.exists("tests.db"):
+    os.remove("tests.db")
+
+SQLALCHEMY_DATABASE_URI = "sqlite+aiosqlite:///tests.db"
+db_helper.engine = create_async_engine(url=SQLALCHEMY_DATABASE_URI, echo=True)
 db_helper.session_factory = async_sessionmaker(
     bind=db_helper.engine,
     autoflush=False,
@@ -26,8 +34,8 @@ async def prepare_database():
     async with db_helper.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
-    async with db_helper.engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+    # async with db_helper.engine.begin() as conn:
+    #     await conn.run_sync(Base.metadata.drop_all)
 
 
 @pytest.fixture(scope="session")
@@ -45,12 +53,13 @@ async def ac() -> AsyncGenerator[AsyncClient, None]:
 
 
 @pytest.fixture
-def jwt_tokens():
+def jwt_user_token():
     response = client.post(
-        "/token/", data={"username": "johndoe", "password": "12345", "scope": ["me"]}
+        "/auth/login/", json={"login": "johndoe", "password": "12345"}
     )
+    assert response.status_code == 200, response.json()
     json_response = response.json()
-    return json_response["access_token"], json_response["refresh_token"]
+    return json_response["token"]
 
 
 client = TestClient(app=app)
