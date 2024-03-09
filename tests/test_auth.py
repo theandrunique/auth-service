@@ -1,6 +1,12 @@
 import jwt
 import pytest
-from conftest import client, db_helper
+from conftest import (
+    TEST_USER_EMAIL,
+    TEST_USER_PASSWORD,
+    TEST_USER_USERNAME,
+    client,
+    db_helper,
+)
 
 from src.auth.crud import get_user_from_db_by_username, get_user_session_from_db
 from src.config import settings
@@ -10,9 +16,9 @@ def test_register():
     response = client.post(
         "/auth/register/",
         json={
-            "username": "johndoe",
-            "password": "12345",
-            "email": "test@test.com",
+            "username": TEST_USER_USERNAME,
+            "password": TEST_USER_PASSWORD,
+            "email": TEST_USER_EMAIL,
         },
     )
     assert response.status_code == 201, response.json()
@@ -22,9 +28,9 @@ def test_register_name_exists_error():
     response = client.post(
         "/auth/register/",
         json={
-            "username": "johndoe",
-            "password": "12345",
-            "email": "test@test.com",
+            "username": TEST_USER_USERNAME,
+            "password": TEST_USER_PASSWORD,
+            "email": TEST_USER_EMAIL,
         },
     )
     assert response.status_code == 400, response.json()
@@ -35,8 +41,8 @@ def test_get_token():
     response = client.post(
         "/auth/login/",
         json={
-            "login": "johndoe",
-            "password": "12345",
+            "login": TEST_USER_USERNAME,
+            "password": TEST_USER_PASSWORD,
         },
     )
     assert response.status_code == 200, response.json()
@@ -44,8 +50,8 @@ def test_get_token():
     response = client.post(
         "/auth/login/",
         json={
-            "login": "test@test.com",
-            "password": "12345",
+            "login": TEST_USER_USERNAME,
+            "password": TEST_USER_PASSWORD,
         },
     )
     assert response.status_code == 200, response.json()
@@ -62,7 +68,10 @@ async def test_get_sessions(jwt_user_token):
     assert response.status_code == 200, response.json()
 
     async with db_helper.session_factory() as session:
-        user = await get_user_from_db_by_username(username="johndoe", session=session)
+        user = await get_user_from_db_by_username(
+            username=TEST_USER_USERNAME,
+            session=session,
+        )
         assert user is not None
 
 
@@ -88,4 +97,3 @@ async def test_logout_token(jwt_user_token):
             session=session,
         )
         assert prev_token is None, prev_token
-

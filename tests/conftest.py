@@ -29,6 +29,11 @@ db_helper.session_factory = async_sessionmaker(
 )
 
 
+TEST_USER_USERNAME = "johndoe"
+TEST_USER_PASSWORD = "INrf3fs@"
+TEST_USER_EMAIL = "johndoe@example.com"
+
+
 @pytest.fixture(autouse=True, scope="session")
 async def prepare_database():
     async with db_helper.engine.begin() as conn:
@@ -55,7 +60,11 @@ async def ac() -> AsyncGenerator[AsyncClient, None]:
 @pytest.fixture
 def jwt_user_token():
     response = client.post(
-        "/auth/login/", json={"login": "johndoe", "password": "12345"}
+        "/auth/login/",
+        json={
+            "login": TEST_USER_USERNAME,
+            "password": TEST_USER_PASSWORD,
+        },
     )
     assert response.status_code == 200, response.json()
     json_response = response.json()
