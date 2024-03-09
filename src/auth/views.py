@@ -14,14 +14,12 @@ from src.database import DbSession
 from src.redis_helper import redis_client
 
 from .crud import (
-    create_new_refresh_token,
     create_new_user,
-    get_refresh_token_from_db_by_id,
+    create_new_user_session,
     get_user_from_db_by_email,
-    get_user_from_db_by_id,
     get_user_from_db_by_username,
-    revoke_refresh_token,
-    update_refresh_token,
+    get_user_session_from_db,
+    revoke_user_session,
     update_user_password,
     update_user_verify_email,
 )
@@ -47,23 +45,21 @@ from .schemas import (
     ForgotPasswordSchema,
     OtpAuthSchema,
     OtpRequestSchema,
-    RefreshToken,
     RegistrationSchema,
     ResetPasswordSchema,
-    UserAccessTokenPayload,
     UserLoginSchema,
-    UserRefreshTokenPayload,
     UserSchema,
-    UserTokenPair,
+    UserTokenPayload,
+    UserTokenSchema,
     VerifyEmailSchema,
 )
 from .sessions.views import router as sessions_router
 from .utils import (
     check_password,
-    create_tokens,
+    create_user_token,
     gen_otp,
     gen_random_token_id,
-    validate_refresh_token,
+    validate_user_token,
 )
 
 router = APIRouter()
@@ -96,7 +92,7 @@ async def login(
     user_data: UserLoginSchema,
     request: Request,
     session: DbSession,
-) -> UserTokenPair:
+) -> UserTokenSchema:
     if "@" in user_data.login:
         user = await get_user_from_db_by_email(email=user_data.login, session=session)
     else:
@@ -110,69 +106,25 @@ async def login(
         hashed_password=user.hashed_password,
     ):
         raise InvalidCredentials()
-
     jti = gen_random_token_id()
-    refresh_token_in_db = await create_new_refresh_token(
+    if request.client:
+        ip_address = request.client.host
+    else:
+        ip_address = None
+    await create_new_user_session(
         user_id=user.id,
-        jti=jti,
-        address=request.client,
+        session_id=jti,
+        ip_address=ip_address,
         session=session,
     )
-    tokens_pair = create_tokens(
-        access_payload=UserAccessTokenPayload(
+    token = create_user_token(
+        payload=UserTokenPayload(
+            user_id=user.id,
             email=user.email,
-            id=user.id,
-        ),
-        refresh_payload=UserRefreshTokenPayload(
-            jti=refresh_token_in_db.jti,
-            token_id=refresh_token_in_db.id,
-        ),
+            jti=jti.hex
+        )
     )
-    return tokens_pair
-
-
-@router.get("/refresh/")
-async def refresh_token(
-    token_data: RefreshToken,
-    request: Request,
-    session: DbSession,
-) -> UserTokenPair:
-    try:
-        refresh_payload = validate_refresh_token(token=token_data.refresh_token)
-    except PyJWTError:
-        raise InvalidToken()
-    prev_token = await get_refresh_token_from_db_by_id(
-        token_id=refresh_payload.token_id,
-        session=session,
-    )
-    if prev_token is None or prev_token.jti != refresh_payload.jti:
-        raise InvalidToken()
-    user = await get_user_from_db_by_id(id=prev_token.user_id, session=session)
-    if not user:
-        raise UserNotFound()
-    if not user.active:
-        raise InactiveUser()
-    new_jti = gen_random_token_id()
-    refresh_payload.jti = new_jti
-    tokens_pair = create_tokens(
-        access_payload=UserAccessTokenPayload(
-            id=user.id,
-            email=user.email,
-        ),
-        refresh_payload=refresh_payload,
-    )
-    await update_refresh_token(
-        token=prev_token,
-        new_token_id=new_jti,
-        ip_address=request.client.host if request.client is not None else None,
-        session=session,
-    )
-    return tokens_pair
-
-
-@router.get("/me/", response_model=UserSchema)
-def get_me(user: UserAuthorization) -> Any:
-    return user
+    return token
 
 
 @router.delete("/logout/", status_code=status.HTTP_204_NO_CONTENT)
@@ -181,16 +133,20 @@ async def revoke_token(
     token: str = Depends(get_authorization),
 ) -> None:
     try:
-        payload = validate_refresh_token(token=token)
+        payload = validate_user_token(token=token)
     except PyJWTError:
         raise InvalidToken()
-    prev_token = await get_refresh_token_from_db_by_id(
-        token_id=payload.token_id,
+    user_session = await get_user_session_from_db(
+        user_id=payload.user_id,
+        session_id=payload.jti,
         session=session,
     )
-    if not prev_token or prev_token.jti != payload.jti:
+    if user_session is None:
         raise InvalidToken()
-    await revoke_refresh_token(token=prev_token, session=session)
+    await revoke_user_session(
+        user_session=user_session,
+        session=session,
+    )
 
 
 @router.post("/forgot/", status_code=status.HTTP_204_NO_CONTENT)
@@ -271,7 +227,7 @@ async def send_opt(otp_data: OtpRequestSchema, session: DbSession) -> None:
 @router.post("/otp/")
 async def otp_auth(
     otp_data: OtpAuthSchema, request: Request, session: DbSession,
-) -> UserTokenPair:
+) -> UserTokenSchema:
     expected_value = await redis_client.get(f"otp_user_{otp_data.email}")
     if expected_value != otp_data.otp:
         raise InvalidOtp()
@@ -283,21 +239,21 @@ async def otp_auth(
     if not user.active:
         raise InactiveUser()
     jti = gen_random_token_id()
-    refresh_token_in_db = await create_new_refresh_token(
+    if request.client:
+        ip_address = request.client.host
+    else:
+        ip_address = None
+    await create_new_user_session(
         user_id=user.id,
-        jti=jti,
-        address=request.client,
+        session_id=jti,
+        ip_address=ip_address,
         session=session,
     )
-    tokens_pair = create_tokens(
-        access_payload=UserAccessTokenPayload(
+    token = create_user_token(
+        payload=UserTokenPayload(
+            user_id=user.id,
             email=user.email,
-            id=user.id,
-        ),
-        refresh_payload=UserRefreshTokenPayload(
-            jti=refresh_token_in_db.jti,
-            token_id=refresh_token_in_db.id,
-        ),
+            jti=jti.hex
+        )
     )
-    return tokens_pair
-
+    return token

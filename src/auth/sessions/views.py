@@ -20,14 +20,12 @@ async def get_my_sessions(
     )
     session_schemas = [
         SessionSchema(
-            jti=session.jti,
-            created_at=session.created_at,
-            last_accessed=session.last_accessed,
+            session_id=session.session_id,
+            last_used=session.last_used,
             ip_address=session.ip_address,
         )
         for session in sessions
     ]
-
     return UserSessions(
         user_sessions=session_schemas,
     )

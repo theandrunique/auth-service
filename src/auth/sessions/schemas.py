@@ -1,12 +1,12 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 
 class SessionSchema(BaseModel):
-    jti: str = Field(..., serialization_alias="session_id")
-    created_at: datetime
-    last_accessed: datetime
+    session_id: UUID = Field(..., serialization_alias="session_id")
+    last_used: datetime
     ip_address: str | None = None
 
 

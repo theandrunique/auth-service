@@ -1,43 +1,19 @@
-from datetime import datetime, timedelta
-from enum import Enum
-
 from pydantic import (
     BaseModel,
     EmailStr,
     Field,
 )
 
-from src.config import settings
+
+class UserTokenSchema(BaseModel):
+    user_id: int
+    token: str
 
 
-class UserTokenPair(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str = "Bearer"
-    expires_in: int = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
-    expires_at: int = Field(
-        default_factory=lambda: int(
-            (
-                datetime.utcnow()
-                + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-            ).timestamp()
-        )
-    )
-
-
-class TokenType(Enum):
-    REFRESH = "refresh"
-    ACCESS = "access"
-
-
-class UserAccessTokenPayload(BaseModel):
-    id: int
+class UserTokenPayload(BaseModel):
+    user_id: int
     email: str
-
-
-class UserRefreshTokenPayload(BaseModel):
     jti: str
-    token_id: int
 
 
 class UserSchema(BaseModel):
@@ -68,9 +44,6 @@ class UserLoginSchema(BaseModel):
     login: str
     password: str
 
-
-class RefreshToken(BaseModel):
-    refresh_token: str
 
 class ForgotPasswordSchema(BaseModel):
     email: EmailStr

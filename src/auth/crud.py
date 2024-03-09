@@ -1,13 +1,13 @@
 import datetime
+from uuid import UUID
 
 import bcrypt
-from fastapi.datastructures import Address
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models import UserInDB
 
-from .models import RefreshTokenInDB
+from .models import UserSessionsInDB
 
 
 def hash_password(password: str) -> bytes:
@@ -34,35 +34,21 @@ async def create_new_user(
     return new_user
 
 
-async def create_new_refresh_token(
+async def create_new_user_session(
     user_id: int,
-    jti: str,
-    address: Address | None,
-    session: AsyncSession,
-) -> RefreshTokenInDB:
-    new_token = RefreshTokenInDB(
-        user_id=user_id,
-        jti=jti,
-        created_at=datetime.datetime.now(),
-        last_accessed=datetime.datetime.now(),
-        ip_address=address.host if address else None,
-    )
-    session.add(new_token)
-    await session.commit()
-    return new_token
-
-
-async def update_refresh_token(
-    token: RefreshTokenInDB,
-    new_token_id: str,
+    session_id: UUID,
     ip_address: str | None,
     session: AsyncSession,
-) -> None:
-    token.jti = new_token_id
-    token.ip_address = ip_address
-    token.last_accessed = datetime.datetime.now()
-    session.add(token)
+) -> UserSessionsInDB:
+    new_session = UserSessionsInDB(
+        user_id=user_id,
+        session_id=session_id,
+        last_used=datetime.datetime.now(),
+        ip_address=ip_address,
+    )
+    session.add(new_session)
     await session.commit()
+    return new_session
 
 
 async def update_user_password(
@@ -102,16 +88,24 @@ async def get_user_from_db_by_id(id: int, session: AsyncSession) -> UserInDB | N
     return await session.get(UserInDB, ident=id)
 
 
-async def get_refresh_token_from_db_by_id(
-    token_id: int,
+async def get_user_session_from_db(
+    user_id: int,
+    session_id: str,
     session: AsyncSession,
-) -> RefreshTokenInDB | None:
-    return await session.get(RefreshTokenInDB, ident=token_id)
+) -> UserSessionsInDB | None:
+    stmt = (
+        select(UserSessionsInDB)
+        .where(UserSessionsInDB.user_id == user_id)
+        .where(UserSessionsInDB.session_id == UUID(hex=session_id))
+        .limit(1)
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
 
 
-async def revoke_refresh_token(
-    token: RefreshTokenInDB,
+async def revoke_user_session(
+    user_session: UserSessionsInDB,
     session: AsyncSession,
 ) -> None:
-    await session.delete(token)
+    await session.delete(user_session)
     await session.commit()
