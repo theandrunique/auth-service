@@ -103,9 +103,22 @@ async def get_user_session_from_db(
     return result.scalar_one_or_none()
 
 
-async def revoke_user_session(
-    user_session: UserSessionsInDB,
+async def get_user_with_session_from_db(
+    user_id: int,
+    session_id: str,
     session: AsyncSession,
-) -> None:
-    await session.delete(user_session)
-    await session.commit()
+) -> tuple[UserInDB | None, UserSessionsInDB | None]:
+    stmt = (
+        select(UserSessionsInDB, UserInDB)
+        .join(UserInDB)
+        .where(UserSessionsInDB.user_id == user_id)
+        .where(UserSessionsInDB.session_id == UUID(hex=session_id))
+        .limit(1)
+    )
+    result = await session.execute(stmt)
+    row = result.one_or_none()
+    if row:
+        user_session, user = row
+        return user, user_session
+    else:
+        return None

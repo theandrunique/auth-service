@@ -3,13 +3,12 @@ from typing import Any
 
 from fastapi import (
     APIRouter,
-    Depends,
     Request,
     status,
 )
-from jwt.exceptions import PyJWTError
 from sqlalchemy.exc import IntegrityError
 
+from src.auth.sessions.crud import revoke_user_session
 from src.config import settings
 from src.database import DbSession
 from src.redis_helper import redis_client
@@ -19,12 +18,13 @@ from .crud import (
     create_new_user_session,
     get_user_from_db_by_email,
     get_user_from_db_by_username,
-    get_user_session_from_db,
-    revoke_user_session,
     update_user_password,
     update_user_verify_email,
 )
-from .dependencies import UserAuthorization, get_authorization
+from .dependencies import (
+    UserAuthorization,
+    UserAuthorizationWithSession,
+)
 from .email_utils import (
     EmailTokenType,
     send_otp_email,
@@ -58,7 +58,6 @@ from .utils import (
     check_password,
     create_user_token,
     gen_otp,
-    validate_user_token,
 )
 
 router = APIRouter()
@@ -125,19 +124,9 @@ async def login(
 @router.delete("/logout/", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_token(
     session: DbSession,
-    token: str = Depends(get_authorization),
+    user_with_session: UserAuthorizationWithSession,
 ) -> None:
-    try:
-        payload = validate_user_token(token=token)
-    except PyJWTError:
-        raise InvalidToken()
-    user_session = await get_user_session_from_db(
-        user_id=payload.user_id,
-        session_id=payload.jti,
-        session=session,
-    )
-    if user_session is None:
-        raise InvalidToken()
+    _, user_session = user_with_session
     await revoke_user_session(
         user_session=user_session,
         session=session,
