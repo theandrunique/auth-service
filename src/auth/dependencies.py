@@ -10,6 +10,7 @@ from src.models import UserInDB
 
 from .crud import (
     get_user_with_session_from_db,
+    update_last_used,
 )
 from .exceptions import InactiveUser, InvalidToken, NotAuthenticated, UserNotFound
 from .utils import validate_user_token
@@ -41,6 +42,7 @@ async def get_user_with_session(
         raise UserNotFound()
     elif not user.active:
         raise InactiveUser()
+    await update_last_used(user_session=user_session, session=session)
     return user, user_session
 
 

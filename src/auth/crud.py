@@ -121,4 +121,13 @@ async def get_user_with_session_from_db(
         user_session, user = row
         return user, user_session
     else:
-        return None
+        return None, None
+
+
+async def update_last_used(
+    user_session: UserSessionsInDB,
+    session: AsyncSession,
+) -> None:
+    user_session.last_used = datetime.datetime.now()
+    session.add(user_session)
+    await session.commit()

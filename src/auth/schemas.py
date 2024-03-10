@@ -1,4 +1,5 @@
 import re
+from typing import Any
 
 from pydantic import (
     BaseModel,
@@ -41,7 +42,7 @@ class RegistrationSchema(BaseModel):
     )
 
     @validator("password")
-    def check_pattern(cls, v):
+    def check_pattern(cls, v) -> Any: # type: ignore
         if not re.match(settings.USERS.PASSWORD_PATTERN, v):
             raise ValueError("Invalid password")
         return v
@@ -73,7 +74,7 @@ class ResetPasswordSchema(BaseModel):
     )
 
     @validator("password")
-    def check_pattern(cls, v):
+    def check_pattern(cls, v) -> Any: # type: ignore
         if not re.match(settings.USERS.PASSWORD_PATTERN, v):
             raise ValueError("Invalid password")
         return v

@@ -53,7 +53,7 @@ class Settings(BaseSettings):
 
     REDIS_URL: RedisDsn
 
-    USERS: UsersSettings | None
+    USERS: UsersSettings
 
 
 settings = Settings()  # type: ignore
