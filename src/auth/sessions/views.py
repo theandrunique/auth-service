@@ -1,9 +1,15 @@
-from fastapi import APIRouter
+from typing import Any
 
-from src.auth.dependencies import UserAuthorization
+from fastapi import APIRouter, status
+
+from src.auth.dependencies import UserAuthorization, UserAuthorizationWithSession
 from src.database import DbSession
 
-from .crud import get_sessions_from_db_by_user_id
+from .crud import (
+    get_sessions_from_db_by_user_id,
+    revoke_user_session,
+    revoke_user_sessions_except_current,
+)
 from .schemas import SessionSchema, UserSessions
 
 router = APIRouter()
@@ -28,4 +34,37 @@ async def get_my_sessions(
     ]
     return UserSessions(
         user_sessions=session_schemas,
+    )
+
+
+@router.get("/current/", response_model=SessionSchema)
+async def get_current_session(
+    user_with_session: UserAuthorizationWithSession,
+) -> Any:
+    _, user_session = user_with_session
+    return user_session
+
+
+@router.delete("/{session_id}/", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_session(
+    user_with_session: UserAuthorizationWithSession,
+    session: DbSession,
+) -> None:
+    _, user_session = user_with_session
+    await revoke_user_session(
+        user_session=user_session,
+        session=session,
+    )
+
+
+@router.delete("/logout-others/", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_all_sessions_except_current(
+    user_with_session: UserAuthorizationWithSession,
+    session: DbSession,
+) -> None:
+    user, user_session = user_with_session
+    await revoke_user_sessions_except_current(
+        user_id=user.id,
+        except_id=user_session.session_id,
+        session=session,
     )
