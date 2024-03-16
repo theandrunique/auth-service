@@ -10,6 +10,8 @@ from pydantic import (
 
 from src.config import settings
 
+from .exceptions import PasswordValidationError
+
 
 class UserTokenSchema(BaseModel):
     user_id: int
@@ -42,9 +44,9 @@ class RegistrationSchema(BaseModel):
     )
 
     @validator("password")
-    def check_pattern(cls, v) -> Any: # type: ignore
+    def check_pattern(cls, v) -> Any:  # type: ignore
         if not re.match(settings.USERS.PASSWORD_PATTERN, v):
-            raise ValueError("Invalid password")
+            raise PasswordValidationError()
         return v
 
 
@@ -74,9 +76,9 @@ class ResetPasswordSchema(BaseModel):
     )
 
     @validator("password")
-    def check_pattern(cls, v) -> Any: # type: ignore
+    def check_pattern(cls, v) -> Any:  # type: ignore
         if not re.match(settings.USERS.PASSWORD_PATTERN, v):
-            raise ValueError("Invalid password")
+            raise PasswordValidationError()
         return v
 
 
