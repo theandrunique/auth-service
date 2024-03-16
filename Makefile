@@ -46,3 +46,8 @@ dev: source
 .PHONY: run
 run: source
 	uvicorn src.main:app
+
+.PHONY: alembic-revision
+alembic-revision: source
+	alembic revision --autogenerate
+	alembic upgrade head
