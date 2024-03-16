@@ -57,7 +57,7 @@ def create_user_token(
 ) -> UserTokenSchema:
     token = _create_token(
         data=payload.model_dump(),
-        expires_delta=datetime.timedelta(minutes=settings.USER_TOKEN_EXPIRE_HOURS),
+        expires_delta=datetime.timedelta(hours=settings.USER_TOKEN_EXPIRE_HOURS),
     )
     return UserTokenSchema(
         user_id=payload.user_id,
