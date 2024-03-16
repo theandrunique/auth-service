@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, status
@@ -22,14 +23,16 @@ app_collection = db["apps"]
 
 
 @router.post("/", response_model=AppPrivateSchema)
-async def create_app(app: AppCreate, user: UserAuthorization):
+async def create_app(app: AppCreate, user: UserAuthorization) -> Any:
     new_app = AppMongoSchema(**app.model_dump(), creator_id=user.id)
     await app_collection.insert_one(new_app.model_dump(by_alias=True))
     return new_app
 
 
 @router.get("/{app_id}/")
-async def get_app_by_id(app_id: UUID, user: UserAuthorizationOptional):
+async def get_app_by_id(
+    app_id: UUID, user: UserAuthorizationOptional
+) -> AppPrivateSchema | AppPublicSchema:
     found_app = await app_collection.find_one({"_id": app_id})
     if found_app is None:
         raise AppNotFound()
@@ -42,7 +45,9 @@ async def get_app_by_id(app_id: UUID, user: UserAuthorizationOptional):
 
 
 @router.patch("/{app_id}/")
-async def update_app(app_id: UUID, data: AppUpdate, user: UserAuthorization):
+async def update_app(
+    app_id: UUID, data: AppUpdate, user: UserAuthorization
+) -> AppPrivateSchema:
     new_values = data.model_dump(exclude_defaults=True)
 
     found_app = await app_collection.find_one({"_id": app_id})
@@ -66,7 +71,7 @@ async def update_app(app_id: UUID, data: AppUpdate, user: UserAuthorization):
 
 
 @router.delete("/{app_id}/", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_app(app_id: UUID, user: UserAuthorization):
+async def delete_app(app_id: UUID, user: UserAuthorization) -> None:
     found_app = await app_collection.find_one({"_id": app_id})
     if found_app is None:
         raise AppNotFound()

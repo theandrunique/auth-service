@@ -5,7 +5,7 @@ import bson
 from pydantic import AliasChoices, BaseModel, Field
 
 
-def gen_bin_uuid():
+def gen_bin_uuid() -> bson.Binary:
     return bson.Binary.from_uuid(uuid4())
 
 
