@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, status
 
@@ -7,7 +8,7 @@ from src.database import DbSession
 
 from .crud import (
     get_sessions_from_db_by_user_id,
-    revoke_user_session,
+    revoke_user_sessions_by_id,
     revoke_user_sessions_except_current,
 )
 from .schemas import SessionSchema, UserSessions
@@ -45,18 +46,6 @@ async def get_current_session(
     return user_session
 
 
-@router.delete("/{session_id}/", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_session(
-    user_with_session: UserAuthorizationWithSession,
-    session: DbSession,
-) -> None:
-    _, user_session = user_with_session
-    await revoke_user_session(
-        user_session=user_session,
-        session=session,
-    )
-
-
 @router.delete("/logout-others/", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_all_sessions_except_current(
     user_with_session: UserAuthorizationWithSession,
@@ -66,5 +55,18 @@ async def delete_all_sessions_except_current(
     await revoke_user_sessions_except_current(
         user_id=user.id,
         except_id=user_session.session_id,
+        session=session,
+    )
+
+
+@router.delete("/{session_id}/", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_session(
+    user: UserAuthorization,
+    session: DbSession,
+    session_id: UUID,
+) -> None:
+    await revoke_user_sessions_by_id(
+        user_id=user.id,
+        session_id=session_id,
         session=session,
     )

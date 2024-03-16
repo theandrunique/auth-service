@@ -24,6 +24,16 @@ async def revoke_user_session(
     await session.commit()
 
 
+async def revoke_user_sessions_by_id(
+    user_id: int,
+    session_id: UUID,
+    session: AsyncSession,
+) -> None:
+    stmt = delete(UserSessionsInDB).where(UserSessionsInDB.session_id == session_id)
+    await session.execute(stmt)
+    await session.commit()
+
+
 async def revoke_user_sessions_except_current(
     user_id: int,
     except_id: UUID,
