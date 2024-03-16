@@ -52,6 +52,8 @@ class Settings(BaseSettings):
     EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS: int = 48
 
     REDIS_URL: RedisDsn
+    MONGO_URL: str
+    MONGO_DATABASE_NAME: str
 
     USERS: UsersSettings
 
