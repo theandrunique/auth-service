@@ -16,6 +16,10 @@ from .exceptions import InactiveUser, InvalidToken, NotAuthenticated, UserNotFou
 from .utils import validate_user_token
 
 
+async def get_authorization_optional(request: Request) -> str | None:
+    return request.headers.get("Authorization")
+
+
 async def get_authorization(request: Request) -> str:
     authorization = request.headers.get("Authorization")
     if not authorization:
@@ -59,3 +63,19 @@ async def get_user(
 
 
 UserAuthorization = Annotated[UserInDB, Security(get_user)]
+
+
+async def get_user_authorization_optional(
+    session: DbSession,
+    token: str | None = Security(get_authorization_optional),
+) -> UserInDB | None:
+    if token is None:
+        return None
+    else:
+        user, _ = await get_user_with_session(session=session, token=token)
+        return user
+
+
+UserAuthorizationOptional = Annotated[
+    UserInDB | None, Security(get_user_authorization_optional)
+]
