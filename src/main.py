@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from src.apps.views import router as apps_router
 from src.auth.sessions.views import router as sessions_router
 from src.auth.views import router as auth_router
 
@@ -7,6 +8,7 @@ app = FastAPI()
 
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(sessions_router, prefix="/auth/sessions", tags=["sessions"])
+app.include_router(apps_router, prefix="/app", tags=["apps"])
 
 
 @app.get("/ping")
