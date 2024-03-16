@@ -18,3 +18,4 @@ class UserSessionsInDB(Base):
     session_id: Mapped[UUID]
     last_used: Mapped[datetime.datetime]
     ip_address: Mapped[str | None] = mapped_column(nullable=True)
+    expires_at: Mapped[datetime.datetime]
