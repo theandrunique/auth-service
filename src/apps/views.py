@@ -1,11 +1,12 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 from pymongo import ReturnDocument
 
 from src.auth.dependencies import UserAuthorization
 from src.mongo_helper import db
 
+from .exceptions import AppNotFound, UnauthorizedAccess
 from .schemas import AppCreate, AppMongoSchema, AppSchema, AppUpdate
 
 router = APIRouter(prefix="", tags=["apps"])
@@ -25,10 +26,10 @@ async def create_app(app: AppCreate, user: UserAuthorization):
 async def get_app_by_id(app_id: UUID, user: UserAuthorization):
     found_app = await app_collection.find_one({"_id": app_id})
     if found_app is None:
-        raise HTTPException(status_code=404, detail=f"App {app_id} not found")
+        raise AppNotFound()
     app = AppSchema(**found_app)
     if app.creator_id != user.id:
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise UnauthorizedAccess()
     return app
 
 
@@ -38,12 +39,12 @@ async def update_app(app_id: UUID, data: AppUpdate, user: UserAuthorization):
 
     found_app = await app_collection.find_one({"_id": app_id})
     if found_app is None:
-        raise HTTPException(status_code=404, detail=f"App {app_id} not found")
+        raise AppNotFound()
 
     app = AppSchema(**found_app)
 
     if app.creator_id != user.id:
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise UnauthorizedAccess()
 
     print("im here")
     if new_values:
@@ -61,11 +62,11 @@ async def update_app(app_id: UUID, data: AppUpdate, user: UserAuthorization):
 async def delete_app(app_id: UUID, user: UserAuthorization):
     found_app = await app_collection.find_one({"_id": app_id})
     if found_app is None:
-        raise HTTPException(status_code=404, detail=f"App {app_id} not found")
+        raise AppNotFound()
 
     app = AppSchema(**found_app)
 
     if app.creator_id != user.id:
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise UnauthorizedAccess()
 
     await app_collection.delete_one({"_id": app_id})
