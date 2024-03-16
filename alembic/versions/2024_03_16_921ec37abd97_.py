@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: ab869705511b
+Revision ID: 921ec37abd97
 Revises:
-Create Date: 2024-03-09 22:20:07.665243
+Create Date: 2024-03-16 23:46:53.299226
 
 """
 from collections.abc import Sequence
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "ab869705511b"
+revision: str = "921ec37abd97"
 down_revision: str | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -40,6 +40,7 @@ def upgrade() -> None:
         sa.Column("session_id", sa.Uuid(), nullable=False),
         sa.Column("last_used", sa.DateTime(), nullable=False),
         sa.Column("ip_address", sa.String(), nullable=True),
+        sa.Column("expires_at", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
