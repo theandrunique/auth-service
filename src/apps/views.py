@@ -3,11 +3,17 @@ from uuid import UUID
 from fastapi import APIRouter, status
 from pymongo import ReturnDocument
 
-from src.auth.dependencies import UserAuthorization
+from src.auth.dependencies import UserAuthorization, UserAuthorizationOptional
 from src.mongo_helper import db
 
 from .exceptions import AppNotFound, UnauthorizedAccess
-from .schemas import AppCreate, AppMongoSchema, AppSchema, AppUpdate
+from .schemas import (
+    AppCreate,
+    AppMongoSchema,
+    AppPrivateSchema,
+    AppPublicSchema,
+    AppUpdate,
+)
 
 router = APIRouter(prefix="", tags=["apps"])
 
@@ -15,7 +21,7 @@ router = APIRouter(prefix="", tags=["apps"])
 app_collection = db["apps"]
 
 
-@router.post("/", response_model=AppSchema)
+@router.post("/", response_model=AppPrivateSchema)
 async def create_app(app: AppCreate, user: UserAuthorization):
     new_app = AppMongoSchema(**app.model_dump(), creator_id=user.id)
     await app_collection.insert_one(new_app.model_dump(by_alias=True))
@@ -23,14 +29,16 @@ async def create_app(app: AppCreate, user: UserAuthorization):
 
 
 @router.get("/{app_id}/")
-async def get_app_by_id(app_id: UUID, user: UserAuthorization):
+async def get_app_by_id(app_id: UUID, user: UserAuthorizationOptional):
     found_app = await app_collection.find_one({"_id": app_id})
     if found_app is None:
         raise AppNotFound()
-    app = AppSchema(**found_app)
-    if app.creator_id != user.id:
-        raise UnauthorizedAccess()
-    return app
+    app = AppPrivateSchema(**found_app)
+
+    if user and app.creator_id == user.id:
+        return app
+
+    return AppPublicSchema(**app.model_dump())
 
 
 @router.patch("/{app_id}/")
@@ -41,19 +49,18 @@ async def update_app(app_id: UUID, data: AppUpdate, user: UserAuthorization):
     if found_app is None:
         raise AppNotFound()
 
-    app = AppSchema(**found_app)
+    app = AppPrivateSchema(**found_app)
 
     if app.creator_id != user.id:
         raise UnauthorizedAccess()
 
-    print("im here")
     if new_values:
         updated_app = await app_collection.find_one_and_update(
             {"_id": app_id},
             {"$set": new_values},
             return_document=ReturnDocument.AFTER,
         )
-        return AppSchema(**updated_app)
+        return AppPrivateSchema(**updated_app)
     else:
         return app
 
@@ -64,7 +71,7 @@ async def delete_app(app_id: UUID, user: UserAuthorization):
     if found_app is None:
         raise AppNotFound()
 
-    app = AppSchema(**found_app)
+    app = AppPrivateSchema(**found_app)
 
     if app.creator_id != user.id:
         raise UnauthorizedAccess()

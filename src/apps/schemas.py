@@ -26,7 +26,7 @@ class AppMongoSchema(BaseModel):
     )
 
 
-class AppSchema(BaseModel):
+class AppPrivateSchema(BaseModel):
     id: UUID = Field(validation_alias=AliasChoices("_id", "id"))
     name: str
     client_id: UUID
@@ -36,6 +36,15 @@ class AppSchema(BaseModel):
     creator_id: int
     description: str | None = Field(default=None)
     created_at: datetime.datetime
+
+
+class AppPublicSchema(BaseModel):
+    id: UUID = Field(validation_alias=AliasChoices("_id", "id"))
+    name: str
+    creator_id: int
+    description: str | None = Field(default=None)
+    created_at: datetime.datetime
+
 
 class AppCreate(BaseModel):
     name: str
