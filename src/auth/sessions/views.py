@@ -1,3 +1,4 @@
+import datetime
 from typing import Any
 from uuid import UUID
 
@@ -8,6 +9,7 @@ from src.database import DbSession
 
 from .crud import (
     get_sessions_from_db_by_user_id,
+    revoke_user_session_by_id,
     revoke_user_sessions_by_id,
     revoke_user_sessions_except_current,
 )
@@ -21,18 +23,35 @@ async def get_my_sessions(
     user: UserAuthorization,
     session: DbSession,
 ) -> UserSessions:
-    sessions = await get_sessions_from_db_by_user_id(
+    user_sessions = await get_sessions_from_db_by_user_id(
         user_id=user.id,
         session=session,
     )
+    time_now = datetime.datetime.now()
+
+    expired_ids = [
+        user_session.session_id
+        for user_session in user_sessions
+        if user_session.expires_at < time_now
+    ]
+    if expired_ids:
+        await revoke_user_sessions_by_id(
+            user_id=user.id,
+            session_ids=expired_ids,
+            session=session,
+        )
+
     session_schemas = [
         SessionSchema(
-            session_id=session.session_id,
-            last_used=session.last_used,
-            ip_address=session.ip_address,
+            session_id=user_session.session_id,
+            last_used=user_session.last_used,
+            ip_address=user_session.ip_address,
+            expires_at=user_session.expires_at,
         )
-        for session in sessions
+        for user_session in user_sessions
+        if user_session.expires_at >= time_now
     ]
+
     return UserSessions(
         user_sessions=session_schemas,
     )
@@ -65,7 +84,7 @@ async def delete_session(
     session: DbSession,
     session_id: UUID,
 ) -> None:
-    await revoke_user_sessions_by_id(
+    await revoke_user_session_by_id(
         user_id=user.id,
         session_id=session_id,
         session=session,

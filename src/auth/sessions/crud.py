@@ -24,12 +24,30 @@ async def revoke_user_session(
     await session.commit()
 
 
-async def revoke_user_sessions_by_id(
+async def revoke_user_session_by_id(
     user_id: int,
     session_id: UUID,
     session: AsyncSession,
 ) -> None:
-    stmt = delete(UserSessionsInDB).where(UserSessionsInDB.session_id == session_id)
+    stmt = (
+        delete(UserSessionsInDB)
+        .where(UserSessionsInDB.user_id == user_id)
+        .where(UserSessionsInDB.session_id == session_id)
+    )
+    await session.execute(stmt)
+    await session.commit()
+
+
+async def revoke_user_sessions_by_id(
+    user_id: int,
+    session_ids: list[UUID],
+    session: AsyncSession,
+) -> None:
+    stmt = (
+        delete(UserSessionsInDB)
+        .where(UserSessionsInDB.user_id == user_id)
+        .where(UserSessionsInDB.session_id.in_(session_ids))
+    )
     await session.execute(stmt)
     await session.commit()
 

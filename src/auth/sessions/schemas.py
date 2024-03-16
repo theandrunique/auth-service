@@ -8,6 +8,7 @@ class SessionSchema(BaseModel):
     session_id: UUID = Field(..., serialization_alias="session_id")
     last_used: datetime
     ip_address: str | None = None
+    expires_at: datetime
 
 
 class UserSessions(BaseModel):
