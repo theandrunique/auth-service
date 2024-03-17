@@ -3,6 +3,7 @@ from typing import Any
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Request,
     status,
 )
@@ -137,13 +138,14 @@ async def revoke_token(
 async def recover_password(
     data: ForgotPasswordSchema,
     session: DbSession,
+    worker: BackgroundTasks,
 ) -> None:
     user = await get_user_from_db_by_email(email=data.email, session=session)
     if not user:
         UserNotFound()
     elif not user.email_verified:
         raise EmailNotVerified()
-    send_reset_password_email(email_to=data.email)
+    worker.add_task(send_reset_password_email, data.email)
 
 
 @router.post("/reset/", response_model=UserSchema)
@@ -170,10 +172,11 @@ async def reset_password(
 @router.put("/verify/", status_code=status.HTTP_204_NO_CONTENT)
 async def send_confirmation_email(
     user: UserAuthorization,
+    worker: BackgroundTasks,
 ) -> None:
     if user.email_verified:
         raise EmailAlreadyVerified()
-    send_verify_email(email_to=user.email, username=user.username)
+    worker.add_task(send_verify_email, user.email, user.username)
 
 
 @router.post("/verify/", status_code=status.HTTP_204_NO_CONTENT)
@@ -193,7 +196,9 @@ async def verify_email(
 
 
 @router.put("/otp/", status_code=status.HTTP_204_NO_CONTENT)
-async def send_opt(otp_data: OtpRequestSchema, session: DbSession) -> None:
+async def send_opt(
+    otp_data: OtpRequestSchema, session: DbSession, worker: BackgroundTasks
+) -> None:
     user = await get_user_from_db_by_email(email=otp_data.email, session=session)
     if not user:
         raise UserNotFound()
@@ -205,7 +210,7 @@ async def send_opt(otp_data: OtpRequestSchema, session: DbSession) -> None:
         opt,
         ex=settings.OTP_EXPIRE_SECONDS,
     )
-    send_otp_email(email_to=otp_data.email, username=user.username, opt=opt)
+    worker.add_task(send_otp_email, otp_data.email, user.username, opt)
 
 
 @router.post("/otp/")

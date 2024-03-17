@@ -60,8 +60,8 @@ def send_verify_email(email_to: str, username: str) -> None:
         expires_delta=timedelta(hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS),
     )
     html_body = (
-        f"<p>Follow this link to verify your email address.\n"
-        f"{settings.SERVER_HOST}/auth/verify/?token={token}</p>"
+        f"<p>Use the following token to verify your email address.</p>\n"
+        f"Token: {token}"
     )
     send_email(
         email_to=email_to,
