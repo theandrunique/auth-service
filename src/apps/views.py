@@ -1,5 +1,5 @@
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, status
 from pymongo import ReturnDocument
@@ -11,7 +11,6 @@ from .exceptions import AppNotFound, UnauthorizedAccess
 from .schemas import (
     AppCreate,
     AppMongoSchema,
-    AppPrivateSchema,
     AppPublicSchema,
     AppUpdate,
 )
@@ -22,7 +21,22 @@ router = APIRouter(prefix="", tags=["apps"])
 app_collection = db["apps"]
 
 
-@router.post("/", response_model=AppPrivateSchema)
+@router.put("/{app_id}/regenerate-client-secret/", response_model=AppMongoSchema)
+async def regenerate_client_secret(app_id: UUID, user: UserAuthorization) -> Any:
+    found_app = await app_collection.find_one({"_id": app_id})
+    if found_app is None:
+        raise AppNotFound()
+    app = AppMongoSchema(**found_app)
+    if app.creator_id != user.id:
+        raise UnauthorizedAccess()
+    app.client_secret = uuid4()
+    await app_collection.update_one(
+        {"_id": app_id}, {"$set": {"client_secret": app.client_secret}}
+    )
+    return app
+
+
+@router.post("/", response_model=AppMongoSchema, status_code=status.HTTP_201_CREATED)
 async def create_app(app: AppCreate, user: UserAuthorization) -> Any:
     new_app = AppMongoSchema(**app.model_dump(), creator_id=user.id)
     await app_collection.insert_one(new_app.model_dump(by_alias=True))
@@ -32,11 +46,11 @@ async def create_app(app: AppCreate, user: UserAuthorization) -> Any:
 @router.get("/{app_id}/")
 async def get_app_by_id(
     app_id: UUID, user: UserAuthorizationOptional
-) -> AppPrivateSchema | AppPublicSchema:
+) -> AppMongoSchema | AppPublicSchema:
     found_app = await app_collection.find_one({"_id": app_id})
     if found_app is None:
         raise AppNotFound()
-    app = AppPrivateSchema(**found_app)
+    app = AppMongoSchema(**found_app)
 
     if user and app.creator_id == user.id:
         return app
@@ -47,14 +61,14 @@ async def get_app_by_id(
 @router.patch("/{app_id}/")
 async def update_app(
     app_id: UUID, data: AppUpdate, user: UserAuthorization
-) -> AppPrivateSchema:
+) -> AppMongoSchema:
     new_values = data.model_dump(exclude_defaults=True)
 
     found_app = await app_collection.find_one({"_id": app_id})
     if found_app is None:
         raise AppNotFound()
 
-    app = AppPrivateSchema(**found_app)
+    app = AppMongoSchema(**found_app)
 
     if app.creator_id != user.id:
         raise UnauthorizedAccess()
@@ -65,7 +79,7 @@ async def update_app(
             {"$set": new_values},
             return_document=ReturnDocument.AFTER,
         )
-        return AppPrivateSchema(**updated_app)
+        return AppMongoSchema(**updated_app)
     else:
         return app
 
@@ -76,7 +90,7 @@ async def delete_app(app_id: UUID, user: UserAuthorization) -> None:
     if found_app is None:
         raise AppNotFound()
 
-    app = AppPrivateSchema(**found_app)
+    app = AppMongoSchema(**found_app)
 
     if app.creator_id != user.id:
         raise UnauthorizedAccess()
