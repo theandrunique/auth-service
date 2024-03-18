@@ -63,7 +63,7 @@ async def test_get_sessions(jwt_user_token):
 
     response = client.get(
         "/auth/sessions/",
-        headers={"Authorization": f"{token}"},
+        headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 200, response.json()
 
@@ -81,7 +81,7 @@ async def test_logout_token(jwt_user_token):
 
     response = client.delete(
         "/auth/logout/",
-        headers={"Authorization": f"{token}"},
+        headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 204, response.json()
 

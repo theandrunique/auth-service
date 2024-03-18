@@ -12,7 +12,7 @@ class UsernameOrEmailAlreadyExists(HTTPException):
 class InvalidCredentials(HTTPException):
     def __init__(self) -> None:
         super().__init__(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid username or password",
         )
 
@@ -20,7 +20,7 @@ class InvalidCredentials(HTTPException):
 class InvalidToken(HTTPException):
     def __init__(self) -> None:
         super().__init__(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid token",
         )
 
@@ -68,7 +68,9 @@ class InvalidOtp(HTTPException):
 class NotAuthenticated(HTTPException):
     def __init__(self) -> None:
         super().__init__(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not authenticated"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
 
