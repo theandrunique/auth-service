@@ -18,9 +18,9 @@ install: requirements.txt
 source:
 	$(activate_cmd)
 
-.PHONY: test
-test: source
-	$(PYTHON) -m pytest -ra
+.PHONY: tests
+tests:
+	docker compose -f ./tests/test-compose.yml up --exit-code-from tests --attach tests --build
 
 .PHONY: lint
 lint: source
