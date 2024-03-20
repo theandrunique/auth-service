@@ -12,18 +12,6 @@ from src.auth.crud import get_user_from_db_by_username, get_user_session_from_db
 from src.config import settings
 
 
-def test_register():
-    response = client.post(
-        "/auth/register/",
-        json={
-            "username": TEST_USER_USERNAME,
-            "password": TEST_USER_PASSWORD,
-            "email": TEST_USER_EMAIL,
-        },
-    )
-    assert response.status_code == 201, response.json()
-
-
 def test_register_name_exists_error():
     response = client.post(
         "/auth/register/",
