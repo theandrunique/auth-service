@@ -1,11 +1,10 @@
 import re
-from typing import Any
 
 from pydantic import (
     BaseModel,
     EmailStr,
     Field,
-    validator,
+    field_validator,
 )
 
 from src.config import settings
@@ -43,8 +42,9 @@ class RegistrationSchema(BaseModel):
         max_length=settings.USERS.PASSWORD_MAX_LENGTH,
     )
 
-    @validator("password")
-    def check_pattern(cls, v) -> Any:  # type: ignore
+    @field_validator("password")
+    @classmethod
+    def check_pattern(cls, v: str) -> str:  # type: ignore
         if not re.match(settings.USERS.PASSWORD_PATTERN, v):
             raise PasswordValidationError()
         return v
@@ -75,8 +75,9 @@ class ResetPasswordSchema(BaseModel):
         max_length=settings.USERS.PASSWORD_MAX_LENGTH,
     )
 
-    @validator("password")
-    def check_pattern(cls, v) -> Any:  # type: ignore
+    @field_validator("password")
+    @classmethod
+    def check_pattern(cls, v: str) -> str:
         if not re.match(settings.USERS.PASSWORD_PATTERN, v):
             raise PasswordValidationError()
         return v
