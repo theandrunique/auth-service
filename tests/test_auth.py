@@ -58,12 +58,10 @@ def test_get_token():
 
 
 @pytest.mark.asyncio
-async def test_get_sessions(jwt_user_token):
-    token = jwt_user_token
-
+async def test_get_sessions(get_authorization_token):
     response = client.get(
         "/auth/sessions/",
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {get_authorization_token}"},
     )
     assert response.status_code == 200, response.json()
 
@@ -76,17 +74,15 @@ async def test_get_sessions(jwt_user_token):
 
 
 @pytest.mark.asyncio
-async def test_logout_token(jwt_user_token):
-    token = jwt_user_token
-
+async def test_logout_token(get_authorization_token):
     response = client.delete(
         "/auth/logout/",
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {get_authorization_token}"},
     )
     assert response.status_code == 204, response.json()
 
     payload = jwt.decode(
-        token,
+        get_authorization_token,
         settings.SECRET_KEY,
         algorithms=[settings.ALGORITHM],
     )

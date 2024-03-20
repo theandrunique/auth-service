@@ -13,14 +13,15 @@ from src.models import Base
 
 
 # import models
-# from src.auth.models import *  # noqa
-from src.models import *  # noqa
+from src.oauth2.models import OAuth2SessionsInDB  # noqa
+from src.auth.models import UserSessionsInDB  # noqa
+from src.models import UserInDB  # noqa
 
 if os.path.exists("tests.db"):
     os.remove("tests.db")
 
 SQLALCHEMY_DATABASE_URI = "sqlite+aiosqlite:///tests.db"
-db_helper.engine = create_async_engine(url=SQLALCHEMY_DATABASE_URI, echo=True)
+db_helper.engine = create_async_engine(url=SQLALCHEMY_DATABASE_URI)
 db_helper.session_factory = async_sessionmaker(
     bind=db_helper.engine,
     autoflush=False,
@@ -58,7 +59,7 @@ async def ac() -> AsyncGenerator[AsyncClient, None]:
 
 
 @pytest.fixture
-def jwt_user_token():
+def get_authorization_token() -> str:
     response = client.post(
         "/auth/login/",
         json={
