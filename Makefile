@@ -20,6 +20,7 @@ source:
 
 .PHONY: tests
 tests:
+	docker compose -f .\tests\test-compose.yml rm -fsv
 	docker compose -f ./tests/test-compose.yml up --exit-code-from tests --attach tests --build
 
 .PHONY: lint
