@@ -87,3 +87,8 @@ async def oauth2_exchange_code(
 @router.post("/refresh/")
 async def refresh_token():
     pass
+
+
+@router.post("/revoke/")
+async def revoke_session():
+    pass
