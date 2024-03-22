@@ -8,7 +8,7 @@ class AppMongoSchema(BaseModel):
     id: UUID = Field(
         default_factory=lambda: uuid4(),
         validation_alias=AliasChoices("_id", "id"),
-        serialization_alias="id",
+        serialization_alias="_id",
     )
     name: str
     client_id: UUID = Field(default_factory=lambda: uuid4())

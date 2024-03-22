@@ -36,11 +36,11 @@ async def regenerate_client_secret(app_id: UUID, user: UserAuthorization) -> Any
     return app
 
 
-@router.post("/", response_model=AppMongoSchema, status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_app(app: AppCreate, user: UserAuthorization) -> Any:
     new_app = AppMongoSchema(**app.model_dump(), creator_id=user.id)
     await app_collection.insert_one(new_app.model_dump(by_alias=True))
-    return new_app
+    return new_app.model_dump()
 
 
 @router.get("/{app_id}/")
