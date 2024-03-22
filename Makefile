@@ -52,3 +52,19 @@ run: source
 alembic-revision: source
 	alembic revision --autogenerate
 	alembic upgrade head
+
+
+.PHONY: docker-redis
+docker-redis:
+	docker compose -f ./docker/redis-compose.yml up -d
+
+.PHONY: docker-mongo
+docker-mongo:
+	docker compose -f ./docker/mongo-compose.yml up -d
+
+.PHONY: docker-app
+docker-app:
+	docker compose -f ./docker/app-compose.yml up -d --build
+
+.PHONY: docker-all
+docker-all: docker-redis docker-mongo docker-app
