@@ -1,4 +1,3 @@
-from unittest.mock import AsyncMock
 
 import pytest
 from httpx import AsyncClient
@@ -34,13 +33,6 @@ async def prepare_test_database(async_client):
 async def async_client():
     async with AsyncClient(app=app, base_url="http://test") as ac:
         yield ac
-
-
-@pytest.fixture(autouse=True, scope="function")
-async def mock_mongodb_collection_for_oauth2(mocker):
-    mock = AsyncMock()
-    mocker.patch("src.oauth2.views.app_collection", mock)
-    return mock
 
 
 @pytest.fixture(scope="function")
