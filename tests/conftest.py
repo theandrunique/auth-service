@@ -37,13 +37,6 @@ async def async_client():
 
 
 @pytest.fixture(autouse=True, scope="function")
-async def mock_mongodb_collection_for_apps(mocker):
-    mock = AsyncMock()
-    mocker.patch("src.apps.views.app_collection", mock)
-    return mock
-
-
-@pytest.fixture(autouse=True, scope="function")
 async def mock_mongodb_collection_for_oauth2(mocker):
     mock = AsyncMock()
     mocker.patch("src.oauth2.views.app_collection", mock)

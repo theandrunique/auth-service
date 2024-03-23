@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from tests.test_apps import (
+from tests.app_tests.conftest import (
     TEST_APP_CLIENT_ID,
     TEST_APP_CLIENT_SECRET,
     TEST_APP_NAME,
