@@ -142,7 +142,7 @@ async def recover_password(
 ) -> None:
     user = await get_user_from_db_by_email(email=data.email, session=session)
     if not user:
-        UserNotFound()
+        raise UserNotFound()
     elif not user.email_verified:
         raise EmailNotVerified()
     worker.add_task(send_reset_password_email, data.email)

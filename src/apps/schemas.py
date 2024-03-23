@@ -26,7 +26,9 @@ class AppMongoSchema(BaseModel):
 class AppPublicSchema(BaseModel):
     id: UUID = Field(validation_alias=AliasChoices("_id", "id"))
     name: str
+    client_id: UUID
     creator_id: int
+    redirect_uris: list[str]
     scopes: list[str] = Field(default=[])
     description: str | None = Field(default=None)
     website: str | None = Field(default=None)

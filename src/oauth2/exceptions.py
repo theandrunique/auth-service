@@ -9,11 +9,11 @@ class RedirectUriNotAllowed(HTTPException):
         )
 
 
-class ScopeNotSupportedByApp(HTTPException):
+class NotAllowedScope(HTTPException):
     def __init__(self):
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Scope not supported by app",
+            detail="Scope not allowed by app",
         )
 
 

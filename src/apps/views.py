@@ -21,7 +21,11 @@ router = APIRouter(prefix="", tags=["apps"])
 app_collection = db["apps"]
 
 
-@router.put("/{app_id}/regenerate-client-secret/", response_model=AppMongoSchema)
+@router.put(
+    "/{app_id}/regenerate-client-secret/",
+    response_model=AppMongoSchema,
+    response_model_by_alias=False,
+)
 async def regenerate_client_secret(app_id: UUID, user: UserAuthorization) -> Any:
     found_app = await app_collection.find_one({"_id": app_id})
     if found_app is None:
@@ -36,14 +40,14 @@ async def regenerate_client_secret(app_id: UUID, user: UserAuthorization) -> Any
     return app
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model_by_alias=False)
 async def create_app(app: AppCreate, user: UserAuthorization) -> Any:
     new_app = AppMongoSchema(**app.model_dump(), creator_id=user.id)
     await app_collection.insert_one(new_app.model_dump(by_alias=True))
-    return new_app.model_dump()
+    return new_app
 
 
-@router.get("/{app_id}/")
+@router.get("/{app_id}/", response_model_by_alias=False)
 async def get_app_by_id(
     app_id: UUID, user: UserAuthorizationOptional
 ) -> AppMongoSchema | AppPublicSchema:
@@ -58,7 +62,7 @@ async def get_app_by_id(
     return AppPublicSchema(**app.model_dump())
 
 
-@router.patch("/{app_id}/")
+@router.patch("/{app_id}/", response_model_by_alias=False)
 async def update_app(
     app_id: UUID, data: AppUpdate, user: UserAuthorization
 ) -> AppMongoSchema:

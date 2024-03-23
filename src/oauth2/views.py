@@ -13,8 +13,8 @@ from .exceptions import (
     AuthorizationTypeIsNotSupported,
     InvalidAuthorizationCode,
     InvalidClientSecret,
+    NotAllowedScope,
     RedirectUriNotAllowed,
-    ScopeNotSupportedByApp,
 )
 from .schemas import (
     OAuth2AuthorizeRequest,
@@ -45,7 +45,7 @@ async def oauth2_authorize(
 
     for scope in data.scopes:
         if scope not in app.scopes:
-            raise ScopeNotSupportedByApp()
+            raise NotAllowedScope()
 
     if data.response_type != ResponseType.CODE.value:
         raise AuthorizationTypeIsNotSupported()
@@ -73,8 +73,9 @@ async def oauth2_exchange_code(
 
     user_id = await redis_client.get(f"auth_code_{app.client_id}_{data.code}")
     if not user_id:
-        user_id = await redis_client.delete(f"auth_code_{app.client_id}_{data.code}")
         raise InvalidAuthorizationCode()
+
+    await redis_client.delete(f"auth_code_{app.client_id}_{data.code}")
 
     return await gen_token_pair_and_create_session(
         scope=" ".join(app.scopes),

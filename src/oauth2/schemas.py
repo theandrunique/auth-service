@@ -11,8 +11,8 @@ class OAuth2AuthorizeRequest(BaseModel):
     redirect_uri: str
     response_type: str
     scopes: list[str]
-    state: str | None
-    nonce: str | None
+    state: str | None = Field(default=None)
+    nonce: str | None = Field(default=None)
 
 
 class OAuth2CodeExchangeRequest(BaseModel):
