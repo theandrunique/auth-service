@@ -49,3 +49,37 @@ async def mock_mongodb(mocker):
     mocker.patch("src.apps.views.app_collection", mock)
     return mock
 
+
+def assert_public_app(json_response):
+    expected_keys = [
+        "id",
+        "name",
+        "client_id",
+        "redirect_uris",
+        "scopes",
+        "creator_id",
+        "description",
+        "website",
+        "created_at",
+    ]
+    for key in expected_keys:
+        assert key in json_response
+
+    assert "client_secret" not in json_response
+
+
+def assert_private_app(json_response):
+    expected_keys = [
+        "id",
+        "name",
+        "client_id",
+        "client_secret",
+        "redirect_uris",
+        "scopes",
+        "creator_id",
+        "description",
+        "website",
+        "created_at",
+    ]
+    for key in expected_keys:
+        assert key in json_response

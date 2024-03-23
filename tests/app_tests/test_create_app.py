@@ -2,6 +2,7 @@ from tests.app_tests.conftest import (
     TEST_APP_NAME,
     TEST_APP_REDIRECT_URIS,
     TEST_APP_SCOPES,
+    assert_private_app,
 )
 
 
@@ -17,13 +18,4 @@ async def test_create_app(async_client, mock_mongodb, authorized_header):
         headers={"Authorization": authorized_header},
     )
     json_response = response.json()
-    assert "id" in json_response
-    assert "name" in json_response
-    assert "client_id" in json_response
-    assert "client_secret" in json_response
-    assert "redirect_uris" in json_response
-    assert "scopes" in json_response
-    assert "creator_id" in json_response
-    assert "description" in json_response
-    assert "website" in json_response
-    assert "created_at" in json_response
+    assert_private_app(json_response)

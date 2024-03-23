@@ -1,4 +1,9 @@
-from tests.app_tests.conftest import TEST_APP, mock_find_one, mock_find_one_and_update
+from tests.app_tests.conftest import (
+    TEST_APP,
+    assert_private_app,
+    mock_find_one,
+    mock_find_one_and_update,
+)
 
 
 async def test_regenerate_app_secret(async_client, mock_mongodb, authorized_header):
@@ -11,16 +16,7 @@ async def test_regenerate_app_secret(async_client, mock_mongodb, authorized_head
     json_response = response.json()
     assert response.status_code == 200, json_response
     assert json_response["client_secret"] != TEST_APP["client_secret"]
-    assert "id" in json_response
-    assert "name" in json_response
-    assert "client_id" in json_response
-    assert "client_secret" in json_response
-    assert "redirect_uris" in json_response
-    assert "scopes" in json_response
-    assert "creator_id" in json_response
-    assert "description" in json_response
-    assert "website" in json_response
-    assert "created_at" in json_response
+    assert_private_app(json_response)
 
 
 async def test_update_app(async_client, mock_mongodb, authorized_header):
@@ -43,13 +39,4 @@ async def test_update_app(async_client, mock_mongodb, authorized_header):
     assert json_response["website"] != TEST_APP["website"]
     assert json_response["redirect_uris"] != TEST_APP["redirect_uris"]
     assert json_response["scopes"] != TEST_APP["scopes"]
-    assert "id" in json_response
-    assert "name" in json_response
-    assert "client_id" in json_response
-    assert "client_secret" in json_response
-    assert "redirect_uris" in json_response
-    assert "scopes" in json_response
-    assert "creator_id" in json_response
-    assert "description" in json_response
-    assert "website" in json_response
-    assert "created_at" in json_response
+    assert_private_app(json_response)

@@ -2,6 +2,8 @@ from uuid import uuid4
 
 from tests.app_tests.conftest import (
     TEST_APP,
+    assert_private_app,
+    assert_public_app,
     mock_find_one,
 )
 
@@ -13,16 +15,7 @@ async def test_get_public_app(async_client, mock_mongodb):
     )
     assert response.status_code == 200, response.json()
     json_response = response.json()
-    assert "id" in json_response
-    assert "name" in json_response
-    assert "client_id" in json_response
-    assert "client_secret" not in json_response
-    assert "redirect_uris" in json_response
-    assert "scopes" in json_response
-    assert "creator_id" in json_response
-    assert "description" in json_response
-    assert "website" in json_response
-    assert "created_at" in json_response
+    assert_public_app(json_response)
 
 
 async def test_get_private_app(async_client, mock_mongodb, authorized_header):
@@ -33,16 +26,7 @@ async def test_get_private_app(async_client, mock_mongodb, authorized_header):
     )
     assert response.status_code == 200, response.json()
     json_response = response.json()
-    assert "id" in json_response
-    assert "name" in json_response
-    assert "client_id" in json_response
-    assert "client_secret" in json_response
-    assert "redirect_uris" in json_response
-    assert "scopes" in json_response
-    assert "creator_id" in json_response
-    assert "description" in json_response
-    assert "website" in json_response
-    assert "created_at" in json_response
+    assert_private_app(json_response)
 
 
 async def test_app_not_found(async_client, mock_mongodb):
