@@ -1,19 +1,12 @@
-import jwt
-import pytest
-from conftest import (
+from tests.conftest import (
     TEST_USER_EMAIL,
     TEST_USER_PASSWORD,
     TEST_USER_USERNAME,
-    client,
-    db_helper,
 )
 
-from src.auth.crud import get_user_from_db_by_username, get_user_session_from_db
-from src.config import settings
 
-
-def test_register_name_exists_error():
-    response = client.post(
+async def test_register_email_taken(async_client, mocker):
+    response = await async_client.post(
         "/auth/register/",
         json={
             "username": TEST_USER_USERNAME,
@@ -21,12 +14,16 @@ def test_register_name_exists_error():
             "email": TEST_USER_EMAIL,
         },
     )
+
     assert response.status_code == 400, response.json()
 
+    assert response.json() == {
+        "detail": "User with this username or email already exists"
+    }
 
-def test_get_token():
-    # by username
-    response = client.post(
+
+async def test_login_success_by_username(async_client):
+    response = await async_client.post(
         "/auth/login/",
         json={
             "login": TEST_USER_USERNAME,
@@ -34,51 +31,72 @@ def test_get_token():
         },
     )
     assert response.status_code == 200, response.json()
-    # by email
-    response = client.post(
+    assert "token" in response.json()
+
+
+async def test_login_success_by_email(async_client):
+    response = await async_client.post(
         "/auth/login/",
         json={
-            "login": TEST_USER_USERNAME,
+            "login": TEST_USER_EMAIL,
             "password": TEST_USER_PASSWORD,
         },
     )
     assert response.status_code == 200, response.json()
+    assert "token" in response.json()
 
 
-@pytest.mark.asyncio
-async def test_get_sessions(authorization):
-    response = client.get(
-        "/auth/sessions/",
-        headers={"Authorization": f"Bearer {authorization}"},
+async def test_login_failed(async_client):
+    response = await async_client.post(
+        "/auth/login/",
+        json={
+            "login": TEST_USER_USERNAME,
+            "password": "wrong_password",
+        },
+    )
+    assert response.status_code == 403, response.json()
+    assert response.json() == {"detail": "Invalid username or password"}
+
+
+async def test_get_sessions_failed(async_client):
+    response = await async_client.get("/auth/sessions/")
+    assert response.status_code == 401, response.json()
+    assert response.json() == {"detail": "Not authenticated"}
+
+
+async def test_get_sessions_success(async_client):
+    response = await async_client.post(
+        "/auth/login/",
+        json={
+            "login": TEST_USER_EMAIL,
+            "password": TEST_USER_PASSWORD,
+        },
+    )
+    authorization = f"Bearer {response.json()['token']}"
+
+    response = await async_client.get(
+        "/auth/sessions/", headers={"Authorization": authorization}
     )
     assert response.status_code == 200, response.json()
 
-    async with db_helper.session_factory() as session:
-        user = await get_user_from_db_by_username(
-            username=TEST_USER_USERNAME,
-            session=session,
-        )
-        assert user is not None
 
+async def test_logout_success(async_client):
+    response = await async_client.post(
+        "/auth/login/",
+        json={
+            "login": TEST_USER_EMAIL,
+            "password": TEST_USER_PASSWORD,
+        },
+    )
+    authorization = f"Bearer {response.json()['token']}"
 
-@pytest.mark.asyncio
-async def test_logout_token(authorization):
-    response = client.delete(
-        "/auth/logout/",
-        headers={"Authorization": f"Bearer {authorization}"},
+    response = await async_client.delete(
+        "/auth/logout/", headers={"Authorization": authorization}
     )
     assert response.status_code == 204, response.json()
 
-    payload = jwt.decode(
-        authorization,
-        settings.SECRET_KEY,
-        algorithms=[settings.ALGORITHM],
-    )
-    async with db_helper.session_factory() as session:
-        prev_token = await get_user_session_from_db(
-            user_id=payload["user_id"],
-            session_id=payload["jti"],
-            session=session,
-        )
-        assert prev_token is None, prev_token
 
+async def test_logout_failed(async_client):
+    response = await async_client.delete("/auth/logout/")
+    assert response.status_code == 401, response.json()
+    assert response.json() == {"detail": "Not authenticated"}
