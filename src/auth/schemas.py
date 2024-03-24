@@ -69,7 +69,6 @@ class ForgotPasswordSchema(BaseModel):
 
 
 class ResetPasswordSchema(BaseModel):
-    token: str
     password: str = Field(
         min_length=settings.USERS.PASSWORD_MIN_LENGTH,
         max_length=settings.USERS.PASSWORD_MAX_LENGTH,
@@ -83,5 +82,3 @@ class ResetPasswordSchema(BaseModel):
         return v
 
 
-class VerifyEmailSchema(BaseModel):
-    token: str
