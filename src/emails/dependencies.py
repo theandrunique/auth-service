@@ -5,8 +5,8 @@ from fastapi import Security
 
 from src.redis_helper import redis_client
 
-from .exceptions import InvalidToken
-from .schemas import EmailToken
+from .exceptions import InvalidOtp, InvalidToken
+from .schemas import EmailToken, OtpAuthSchema
 from .token_utils import validate_email_token
 
 
@@ -35,3 +35,18 @@ async def check_verify_email_token(data: EmailToken) -> str:
 
 
 VerifyEmailDep = Annotated[str, Security(check_verify_email_token)]
+
+
+async def get_otp(data: OtpAuthSchema) -> str:
+    expected_otp = await redis_client.get(f"otp_{data.email}_{data.token}")
+
+    if data.otp != expected_otp:
+        raise InvalidOtp()
+
+    await redis_client.delete(f"otp_{data.email}_{data.token}")
+
+    return data.email
+
+
+
+OtpEmailDep = Annotated[str, Security(get_otp)]

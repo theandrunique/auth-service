@@ -10,6 +10,7 @@ from src.redis_helper import redis_client
 
 RECOVERY_PASSWORD_TOKEN_EXPIRE_SECONDS = 1 * 60 * 60  # 1 hour
 VERIFY_EMAIL_TOKEN_EXPIRE_SECONDS = 1 * 60 * 60  # 1 hour
+OTP_EXPIRES_SECONDS = 60
 
 
 async def send_reset_password_email(email_to: str) -> None:
@@ -59,9 +60,10 @@ async def send_verify_email(email_to: str, username: str) -> None:
     )
 
 
-# def send_otp_email(email_to: str, username: str) -> None:
-#     send_email(
-#         email_to=email_to,
-#         subject="OTP",
-#         html_body=f"Hello, {username}\nCode: {opt}",
-#     )
+async def send_otp_email(email_to: str, username: str, otp: str, token: str) -> None:
+    await redis_client.set(f"otp_{email_to}_{token}", otp, ex=OTP_EXPIRES_SECONDS)
+    send_email(
+        email_to=email_to,
+        subject="OTP",
+        html_body=f"Hello, {username}\nCode: {otp}",
+    )
