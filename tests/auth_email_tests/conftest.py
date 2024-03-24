@@ -1,9 +1,6 @@
-from datetime import timedelta
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
-from src.auth.email_utils import EmailTokenType, generate_email_token
 
 TEST_EMAIL_USER_USERNAME = "test_email_user"
 TEST_EMAIL_USER_PASSWORD = "INrf3fs@"
@@ -41,39 +38,30 @@ async def prepare_test_recovery_pass_user(async_client):
     )
 
 
-async def verify_email(email, async_client):
-    verification_token = generate_email_token(
-        email=email,
-        type=EmailTokenType.VERIFY_EMAIL,
-        expires_delta=timedelta(hours=1),
-    )
-    response = await async_client.post(
-        "/auth/verify/",
-        json={"token": verification_token},
-    )
-    assert response.status_code == 204, response.json()
-
-
 @pytest.fixture(scope="function")
 async def mock_send_email(mocker):
     mock_SMTP = MagicMock()
-    mocker.patch("src.auth.email_utils.smtplib.SMTP_SSL", new=mock_SMTP)
+    mocker.patch("src.emails.utils.smtplib.SMTP_SSL", new=mock_SMTP)
     return mock_SMTP
 
 
-@pytest.fixture
-def token_for_verify_email():
-    return generate_email_token(
-        email=TEST_EMAIL_USER_EMAIL,
-        type=EmailTokenType.VERIFY_EMAIL,
-        expires_delta=timedelta(hours=1),
-    )
+@pytest.fixture(scope="function")
+async def mock_redis_client(mocker):
+    mock = AsyncMock()
+    mocker.patch("src.emails.main.redis_client", new=mock)
+    return mock
 
 
-@pytest.fixture
-def token_for_recovery_password():
-    return generate_email_token(
-        email=TEST_RECOVERY_PASS_EMAIL,
-        type=EmailTokenType.RECOVERY_PASSWORD,
-        expires_delta=timedelta(hours=1),
-    )
+@pytest.fixture(scope="function")
+async def mock_get_user_from_db_by_email(mocker):
+    mock = AsyncMock()
+    mocker.patch("src.auth.views.get_user_from_db_by_email", new=mock)
+    return mock
+
+
+@pytest.fixture(scope="function")
+async def mock_redis_client_in_dep(mocker):
+    mock = AsyncMock()
+    mocker.patch("src.emails.dependencies.redis_client", new=mock)
+    return mock
+
