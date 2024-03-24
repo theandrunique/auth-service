@@ -57,14 +57,6 @@ class InactiveUser(HTTPException):
         )
 
 
-class InvalidOtp(HTTPException):
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid OTP",
-        )
-
-
 class NotAuthenticated(HTTPException):
     def __init__(self) -> None:
         super().__init__(

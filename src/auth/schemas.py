@@ -50,11 +50,6 @@ class RegistrationSchema(BaseModel):
         return v
 
 
-class OtpAuthSchema(BaseModel):
-    email: EmailStr
-    otp: str
-
-
 class OtpRequestSchema(BaseModel):
     email: EmailStr
 
