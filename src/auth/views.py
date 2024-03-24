@@ -10,9 +10,9 @@ from fastapi import (
 from sqlalchemy.exc import IntegrityError
 
 from src.auth.sessions.crud import revoke_user_session
-from src.config import settings
 from src.database import DbSession
-from src.redis_helper import redis_client
+from src.emails.dependencies import OtpEmailDep, ResetPassEmailDep, VerifyEmailDep
+from src.emails.main import send_otp_email, send_reset_password_email, send_verify_email
 
 from .crud import (
     create_new_user,
@@ -26,26 +26,16 @@ from .dependencies import (
     UserAuthorization,
     UserAuthorizationWithSession,
 )
-from .email_utils import (
-    EmailTokenType,
-    send_otp_email,
-    send_reset_password_email,
-    send_verify_email,
-    verify_email_token,
-)
 from .exceptions import (
     EmailAlreadyVerified,
     EmailNotVerified,
     InactiveUser,
     InvalidCredentials,
-    InvalidOtp,
-    InvalidToken,
     UsernameOrEmailAlreadyExists,
     UserNotFound,
 )
 from .schemas import (
     ForgotPasswordSchema,
-    OtpAuthSchema,
     OtpRequestSchema,
     RegistrationSchema,
     ResetPasswordSchema,
@@ -53,12 +43,11 @@ from .schemas import (
     UserSchema,
     UserTokenPayload,
     UserTokenSchema,
-    VerifyEmailSchema,
 )
 from .utils import (
     check_password,
     create_user_token,
-    gen_otp,
+    gen_otp_with_token,
 )
 
 router = APIRouter()
@@ -143,6 +132,8 @@ async def recover_password(
     user = await get_user_from_db_by_email(email=data.email, session=session)
     if not user:
         raise UserNotFound()
+    elif not user.active:
+        raise InactiveUser()
     elif not user.email_verified:
         raise EmailNotVerified()
     worker.add_task(send_reset_password_email, data.email)
@@ -151,11 +142,10 @@ async def recover_password(
 @router.post("/reset/", response_model=UserSchema)
 async def reset_password(
     data: ResetPasswordSchema,
+    email: ResetPassEmailDep,
     session: DbSession,
 ) -> Any:
-    email = verify_email_token(token=data.token, type=EmailTokenType.RECOVERY_PASSWORD)
-    if not email:
-        raise InvalidToken()
+    # TODO: refactor
     user = await get_user_from_db_by_email(email=email, session=session)
     if not user:
         raise UserNotFound()
@@ -181,12 +171,9 @@ async def send_confirmation_email(
 
 @router.post("/verify/", status_code=status.HTTP_204_NO_CONTENT)
 async def verify_email(
-    data: VerifyEmailSchema,
+    email: VerifyEmailDep,
     session: DbSession,
 ) -> None:
-    email = verify_email_token(token=data.token, type=EmailTokenType.VERIFY_EMAIL)
-    if not email:
-        raise InvalidToken()
     user = await get_user_from_db_by_email(email=email, session=session)
     if not user:
         raise UserNotFound()
@@ -195,7 +182,7 @@ async def verify_email(
     await update_user_verify_email(user=user, session=session)
 
 
-@router.put("/otp/", status_code=status.HTTP_204_NO_CONTENT)
+@router.put("/otp/")
 async def send_opt(
     otp_data: OtpRequestSchema, session: DbSession, worker: BackgroundTasks
 ) -> None:
@@ -204,27 +191,20 @@ async def send_opt(
         raise UserNotFound()
     elif not user.email_verified:
         raise EmailNotVerified()
-    opt = gen_otp()
-    await redis_client.set(
-        f"otp_user_{user.email}",
-        opt,
-        ex=settings.OTP_EXPIRE_SECONDS,
-    )
-    worker.add_task(send_otp_email, otp_data.email, user.username, opt)
+    otp, token = gen_otp_with_token()
+    worker.add_task(send_otp_email, otp_data.email, user.username, otp, token)
+    return {
+        "token": token,
+    }
 
 
 @router.post("/otp/")
 async def otp_auth(
-    otp_data: OtpAuthSchema,
+    email: OtpEmailDep,
     request: Request,
     session: DbSession,
 ) -> UserTokenSchema:
-    expected_value = await redis_client.get(f"otp_user_{otp_data.email}")
-    if expected_value != otp_data.otp:
-        raise InvalidOtp()
-    await redis_client.delete(f"otp_user_{otp_data.email}")
-
-    user = await get_user_from_db_by_email(email=otp_data.email, session=session)
+    user = await get_user_from_db_by_email(email=email, session=session)
     if not user:
         raise UserNotFound()
     if not user.active:

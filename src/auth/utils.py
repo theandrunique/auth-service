@@ -14,8 +14,10 @@ from .schemas import (
 )
 
 
-def gen_otp() -> str:
-    return "".join(secrets.choice(string.digits) for _ in range(6))
+def gen_otp_with_token() -> tuple[str, str]:
+    otp = "".join(secrets.choice(string.digits) for _ in range(6))
+    token = secrets.token_urlsafe(40)
+    return otp, token
 
 
 def _create_token(
