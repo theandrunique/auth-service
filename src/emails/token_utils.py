@@ -4,6 +4,7 @@ import jwt
 from pydantic import ValidationError
 
 from src.config import settings
+from src.utils import UUIDEncoder
 
 from .schemas import EmailTokenPayload
 
@@ -15,11 +16,12 @@ def gen_email_token(
         payload=payload.model_dump(),
         key=settings.SECRET_KEY,
         algorithm=settings.ALGORITHM,
+        json_encoder=UUIDEncoder,
     )
     return encoded_jwt
 
 
-def check_email_token(token: str) -> EmailTokenPayload | None:
+def validate_email_token(token: str) -> EmailTokenPayload | None:
     try:
         payload: dict[str, Any] = jwt.decode(
             token,

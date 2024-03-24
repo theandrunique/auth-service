@@ -24,7 +24,7 @@ async def send_reset_password_email(email_to: str) -> None:
     token = gen_email_token(payload=payload)
     await redis_client.set(
         f"reset_password_token_id_{email_to}",
-        jti,
+        jti.bytes,
         ex=RECOVERY_PASSWORD_TOKEN_EXPIRE_SECONDS,
     )
     send_email(
@@ -46,7 +46,7 @@ async def send_verify_email(email_to: str, username: str) -> None:
     token = gen_email_token(payload=payload)
     await redis_client.set(
         f"verify_email_token_id_{email_to}",
-        jti,
+        jti.bytes,
         ex=VERIFY_EMAIL_TOKEN_EXPIRE_SECONDS
     )
     send_email(
@@ -59,7 +59,7 @@ async def send_verify_email(email_to: str, username: str) -> None:
     )
 
 
-# def send_otp_email(email_to: str, username: str, opt: str) -> None:
+# def send_otp_email(email_to: str, username: str) -> None:
 #     send_email(
 #         email_to=email_to,
 #         subject="OTP",

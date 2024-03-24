@@ -30,5 +30,3 @@ app.include_router(oauth2_router, prefix="/oauth2", tags=["oauth2"])
 @app.get("/ping")
 def ping_pong() -> str:
     return "pong"
-
-
