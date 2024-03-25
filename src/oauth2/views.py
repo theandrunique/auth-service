@@ -3,7 +3,7 @@ from enum import Enum
 from fastapi import APIRouter
 
 from src.apps.exceptions import AppNotFound
-from src.apps.schemas import AppMongoSchema
+from src.apps.schemas import AppInMongo
 from src.apps.views import app_collection
 from src.auth.dependencies import UserAuthorization
 from src.database import DbSession
@@ -38,7 +38,7 @@ async def oauth2_authorize(
     found_app = await app_collection.find_one({"client_id": data.client_id})
     if not found_app:
         raise AppNotFound()
-    app = AppMongoSchema(**found_app)
+    app = AppInMongo(**found_app)
 
     if data.redirect_uri not in app.redirect_uris:
         raise RedirectUriNotAllowed()
@@ -67,7 +67,7 @@ async def oauth2_exchange_code(
     found_app = await app_collection.find_one({"client_id": data.client_id})
     if not found_app:
         raise AppNotFound()
-    app = AppMongoSchema(**found_app)
+    app = AppInMongo(**found_app)
     if data.client_secret != app.client_secret:
         raise InvalidClientSecret()
 

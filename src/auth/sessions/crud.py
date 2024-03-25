@@ -54,7 +54,6 @@ class SessionsDB:
         session.add(user_session)
         await session.commit()
 
-
     @staticmethod
     async def get_by_user_id(
         user_id: int,
@@ -64,7 +63,6 @@ class SessionsDB:
         result = await session.execute(stmt)
         return result.scalars().all()
 
-
     @staticmethod
     async def revoke(
         user_session: UserSessionsInDB,
@@ -72,7 +70,6 @@ class SessionsDB:
     ) -> None:
         await session.delete(user_session)
         await session.commit()
-
 
     @staticmethod
     async def revoke_by_id(
@@ -88,7 +85,6 @@ class SessionsDB:
         await session.execute(stmt)
         await session.commit()
 
-
     @staticmethod
     async def revoke_by_ids(
         user_id: int,
@@ -102,7 +98,6 @@ class SessionsDB:
         )
         await session.execute(stmt)
         await session.commit()
-
 
     @staticmethod
     async def revoke_except(

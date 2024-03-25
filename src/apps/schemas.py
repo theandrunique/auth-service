@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 from pydantic import AliasChoices, BaseModel, Field
 
 
-class AppMongoSchema(BaseModel):
+class AppInMongo(BaseModel):
     id: UUID = Field(
         default_factory=lambda: uuid4(),
         validation_alias=AliasChoices("_id", "id"),
