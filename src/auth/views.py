@@ -8,7 +8,7 @@ from fastapi import (
 )
 from sqlalchemy.exc import IntegrityError
 
-from src.auth.sessions.crud import revoke_user_session
+from src.auth.sessions.crud import SessionsDB
 from src.database import DbSession
 from src.emails.dependencies import OtpEmailDep, ResetPassEmailDep, VerifyEmailDep
 from src.emails.main import send_otp_email, send_reset_password_email, send_verify_email
@@ -93,7 +93,7 @@ async def revoke_token(
     user_with_session: UserAuthorizationWithSession,
 ) -> None:
     _, user_session = user_with_session
-    await revoke_user_session(
+    await SessionsDB.revoke(
         user_session=user_session,
         session=session,
     )

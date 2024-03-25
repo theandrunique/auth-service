@@ -4,57 +4,10 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.config import settings
 from src.models import UserInDB
 
 from .models import UserSessionsInDB
 from .utils import hash_password
-
-
-class SessionsDB:
-    @staticmethod
-    async def create_new(
-        user_id: int,
-        session_id: UUID,
-        ip_address: str | None,
-        session: AsyncSession,
-    ) -> UserSessionsInDB:
-        time_now = datetime.datetime.now()
-        new_session = UserSessionsInDB(
-            user_id=user_id,
-            session_id=session_id,
-            last_used=time_now,
-            ip_address=ip_address,
-            expires_at=time_now
-            + datetime.timedelta(hours=settings.USER_TOKEN_EXPIRE_HOURS),
-        )
-        session.add(new_session)
-        await session.commit()
-        return new_session
-
-    @staticmethod
-    async def get(
-        user_id: int,
-        session_id: str,
-        session: AsyncSession,
-    ) -> UserSessionsInDB | None:
-        stmt = (
-            select(UserSessionsInDB)
-            .where(UserSessionsInDB.user_id == user_id)
-            .where(UserSessionsInDB.session_id == UUID(hex=session_id))
-            .limit(1)
-        )
-        result = await session.execute(stmt)
-        return result.scalar_one_or_none()
-
-    @staticmethod
-    async def update_last_used(
-        user_session: UserSessionsInDB,
-        session: AsyncSession,
-    ) -> None:
-        user_session.last_used = datetime.datetime.now()
-        session.add(user_session)
-        await session.commit()
 
 
 class UsersDB:
