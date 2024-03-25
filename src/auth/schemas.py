@@ -75,5 +75,3 @@ class ResetPasswordSchema(BaseModel):
         if not re.match(settings.USERS.PASSWORD_PATTERN, v):
             raise PasswordValidationError()
         return v
-
-

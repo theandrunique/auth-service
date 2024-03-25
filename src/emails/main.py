@@ -48,7 +48,7 @@ async def send_verify_email(email_to: str, username: str) -> None:
     await redis_client.set(
         f"verify_email_token_id_{email_to}",
         jti.bytes,
-        ex=VERIFY_EMAIL_TOKEN_EXPIRE_SECONDS
+        ex=VERIFY_EMAIL_TOKEN_EXPIRE_SECONDS,
     )
     send_email(
         email_to=email_to,

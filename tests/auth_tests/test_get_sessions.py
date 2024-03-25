@@ -1,4 +1,3 @@
-
 from tests.conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD
 
 

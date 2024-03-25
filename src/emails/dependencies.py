@@ -48,5 +48,4 @@ async def get_otp(data: OtpAuthSchema) -> str:
     return data.email
 
 
-
 OtpEmailDep = Annotated[str, Security(get_otp)]

@@ -1,4 +1,3 @@
-import uuid
 from typing import Any
 
 from fastapi import (
@@ -14,14 +13,7 @@ from src.database import DbSession
 from src.emails.dependencies import OtpEmailDep, ResetPassEmailDep, VerifyEmailDep
 from src.emails.main import send_otp_email, send_reset_password_email, send_verify_email
 
-from .crud import (
-    create_new_user,
-    create_new_user_session,
-    get_user_from_db_by_email,
-    get_user_from_db_by_username,
-    update_user_password,
-    update_user_verify_email,
-)
+from .crud import UsersDB
 from .dependencies import (
     UserAuthorization,
     UserAuthorizationWithSession,
@@ -41,12 +33,11 @@ from .schemas import (
     ResetPasswordSchema,
     UserLoginSchema,
     UserSchema,
-    UserTokenPayload,
     UserTokenSchema,
 )
 from .utils import (
     check_password,
-    create_user_token,
+    create_new_session,
     gen_otp_with_token,
 )
 
@@ -63,7 +54,7 @@ async def register(
     session: DbSession,
 ) -> Any:
     try:
-        new_user = await create_new_user(
+        new_user = await UsersDB.create_new(
             username=auth_data.username,
             password=auth_data.password,
             email=auth_data.email,
@@ -77,38 +68,23 @@ async def register(
 @router.post("/login/")
 async def login(
     user_data: UserLoginSchema,
-    request: Request,
+    req: Request,
     session: DbSession,
 ) -> UserTokenSchema:
     if "@" in user_data.login:
-        user = await get_user_from_db_by_email(email=user_data.login, session=session)
+        user = await UsersDB.get_by_email(email=user_data.login, session=session)
     else:
-        user = await get_user_from_db_by_username(
-            username=user_data.login,
-            session=session,
-        )
+        user = await UsersDB.get_by_username(username=user_data.login, session=session)
     if user is None:
         raise UserNotFound()
+    elif not user.active:
+        raise InactiveUser()
     elif not check_password(
         password=user_data.password,
         hashed_password=user.hashed_password,
     ):
         raise InvalidCredentials()
-    jti = uuid.uuid4()
-    if request.client:
-        ip_address = request.client.host
-    else:
-        ip_address = None
-    await create_new_user_session(
-        user_id=user.id,
-        session_id=jti,
-        ip_address=ip_address,
-        session=session,
-    )
-    token = create_user_token(
-        payload=UserTokenPayload(user_id=user.id, email=user.email, jti=jti.hex)
-    )
-    return token
+    await create_new_session(req=req, user=user, session=session)
 
 
 @router.delete("/logout/", status_code=status.HTTP_204_NO_CONTENT)
@@ -129,7 +105,7 @@ async def recover_password(
     session: DbSession,
     worker: BackgroundTasks,
 ) -> None:
-    user = await get_user_from_db_by_email(email=data.email, session=session)
+    user = await UsersDB.get_by_email(email=data.email, session=session)
     if not user:
         raise UserNotFound()
     elif not user.active:
@@ -146,12 +122,12 @@ async def reset_password(
     session: DbSession,
 ) -> Any:
     # TODO: refactor
-    user = await get_user_from_db_by_email(email=email, session=session)
+    user = await UsersDB.get_by_email(email=email, session=session)
     if not user:
         raise UserNotFound()
     elif not user.active:
         raise InactiveUser()
-    await update_user_password(
+    await UsersDB.update_password(
         user=user,
         new_password=data.password,
         session=session,
@@ -174,19 +150,19 @@ async def verify_email(
     email: VerifyEmailDep,
     session: DbSession,
 ) -> None:
-    user = await get_user_from_db_by_email(email=email, session=session)
+    user = await UsersDB.get_by_email(email=email, session=session)
     if not user:
         raise UserNotFound()
     elif not user.active:
         raise InactiveUser()
-    await update_user_verify_email(user=user, session=session)
+    await UsersDB.verify_email(user=user, session=session)
 
 
 @router.put("/otp/")
 async def send_opt(
     otp_data: OtpRequestSchema, session: DbSession, worker: BackgroundTasks
 ) -> None:
-    user = await get_user_from_db_by_email(email=otp_data.email, session=session)
+    user = await UsersDB.get_by_email(email=otp_data.email, session=session)
     if not user:
         raise UserNotFound()
     elif not user.email_verified:
@@ -201,26 +177,12 @@ async def send_opt(
 @router.post("/otp/")
 async def otp_auth(
     email: OtpEmailDep,
-    request: Request,
+    req: Request,
     session: DbSession,
 ) -> UserTokenSchema:
-    user = await get_user_from_db_by_email(email=email, session=session)
+    user = await UsersDB.get_by_email(email=email, session=session)
     if not user:
         raise UserNotFound()
     if not user.active:
         raise InactiveUser()
-    jti = uuid.uuid4()
-    if request.client:
-        ip_address = request.client.host
-    else:
-        ip_address = None
-    await create_new_user_session(
-        user_id=user.id,
-        session_id=jti,
-        ip_address=ip_address,
-        session=session,
-    )
-    token = create_user_token(
-        payload=UserTokenPayload(user_id=user.id, email=user.email, jti=jti.hex)
-    )
-    return token
+    return create_new_session(req=req, user=user, session=session)

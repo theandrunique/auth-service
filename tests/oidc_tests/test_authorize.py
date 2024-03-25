@@ -9,9 +9,7 @@ from tests.oidc_tests.conftest import (
 )
 
 
-async def test_oauth2_authorize_failed(
-    async_client, mock_mongodb
-):
+async def test_oauth2_authorize_failed(async_client, mock_mongodb):
     mock_mongodb.find_one.side_effect = mock_find_one
 
     data = {
