@@ -5,11 +5,11 @@ from fastapi import FastAPI
 
 from src.apps.views import router as apps_router
 from src.auth.models import UserSessionsInDB
-from src.auth.sessions.views import router as sessions_router
 from src.auth.views import router as auth_router
 from src.database import db_helper
 from src.oauth2.models import OAuth2SessionsInDB
 from src.oauth2.views import router as oauth2_router
+from src.sessions.views import router as sessions_router
 
 
 @asynccontextmanager
@@ -24,7 +24,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(sessions_router, prefix="/auth/sessions", tags=["sessions"])
-app.include_router(apps_router, prefix="/app", tags=["apps"])
+app.include_router(apps_router, prefix="/apps", tags=["apps"])
 app.include_router(oauth2_router, prefix="/oauth2", tags=["oauth2"])
 
 

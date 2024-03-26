@@ -8,10 +8,10 @@ from fastapi import (
 )
 from sqlalchemy.exc import IntegrityError
 
-from src.auth.sessions.crud import SessionsDB
 from src.database import DbSession
 from src.emails.dependencies import OtpEmailDep, ResetPassEmailDep, VerifyEmailDep
 from src.emails.main import send_otp_email, send_reset_password_email, send_verify_email
+from src.sessions.crud import SessionsDB
 
 from .crud import UsersDB
 from .dependencies import (

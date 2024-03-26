@@ -6,9 +6,9 @@ from jwt.exceptions import ExpiredSignatureError, PyJWTError
 from pydantic import ValidationError
 
 from src.auth.models import UserSessionsInDB
-from src.auth.sessions.crud import SessionsDB
 from src.database import DbSession
 from src.models import UserInDB
+from src.sessions.crud import SessionsDB
 
 from .crud import UsersDB
 from .exceptions import InactiveUser, InvalidToken, NotAuthenticated, UserNotFound

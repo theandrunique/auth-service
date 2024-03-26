@@ -9,9 +9,9 @@ import jwt
 from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.sessions.crud import SessionsDB
 from src.config import settings
 from src.models import UserInDB
+from src.sessions.crud import SessionsDB
 
 from .schemas import (
     UserTokenPayload,
