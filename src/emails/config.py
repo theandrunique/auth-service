@@ -9,14 +9,14 @@ class Settings(BaseSettings):
         case_sensitive=True,
     )
 
-    PORT: int = 465
-    SERVER: str = "smtp.gmail.com"
-    USER: str
-    PASSWORD: str
+    SMTP_PORT: int = 465
+    SMTP_SERVER: str = "smtp.gmail.com"
+    SMTP_USER: str
+    SMTP_PASSWORD: str
 
-    EMAILS_FROM_EMAIL: str
-    EMAILS_FROM_NAME: str
-    EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 24
+    SMTP_FROM_EMAIL: str
+    SMTP_FROM_NAME: str
+    RESET_PASSWORD_TOKEN_EXPIRE_HOURS: int = 24
     EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS: int = 48
 
 

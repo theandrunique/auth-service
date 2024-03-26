@@ -11,12 +11,12 @@ def send_email(
     html_body: str,
 ) -> None:
     msg = MIMEMultipart()
-    msg["From"] = f"{settings.EMAILS_FROM_NAME} {settings.EMAILS_FROM_EMAIL}"
+    msg["From"] = f"{settings.SMTP_FROM_NAME} {settings.SMTP_FROM_EMAIL}"
     msg["To"] = email_to
     msg["Subject"] = subject
     msg.attach(MIMEText(html_body, "html"))
 
-    server = smtplib.SMTP_SSL(settings.SERVER, settings.PORT)
-    server.login(settings.USER, settings.PASSWORD)
+    server = smtplib.SMTP_SSL(settings.SMTP_SERVER, settings.SMTP_PORT)
+    server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
     server.send_message(msg=msg)
     server.quit()
