@@ -14,11 +14,19 @@ class AppsRegistry:
     @staticmethod
     async def add(app: AppInMongo) -> UUID:
         result = await app_collection.insert_one(app.model_dump(by_alias=True))
-        return result.inserted_id
+        # inserted_id - should be UUID
+        return result.inserted_id  # type: ignore
 
     @staticmethod
     async def get(app_id: UUID) -> AppInMongo | None:
         found_app = await app_collection.find_one({"_id": app_id})
+        if found_app:
+            return AppInMongo(**found_app)
+        return None
+
+    @staticmethod
+    async def get_by_client_id(client_id: UUID) -> AppInMongo | None:
+        found_app = await app_collection.find_one({"client_id": client_id})
         if found_app:
             return AppInMongo(**found_app)
         return None
@@ -30,6 +38,17 @@ class AppsRegistry:
 
     @staticmethod
     async def update(app_id: UUID, new_values: dict[str, Any]) -> AppInMongo:
+        updated_app = await app_collection.find_one_and_update(
+            {"_id": app_id},
+            {"$set": new_values},
+            return_document=ReturnDocument.AFTER,
+        )
+        return AppInMongo(**updated_app)
+
+    @staticmethod
+    async def update_optional(
+        app_id: UUID, new_values: dict[str, Any]
+    ) -> AppInMongo | None:
         updated_app = await app_collection.find_one_and_update(
             {"_id": app_id},
             {"$set": new_values},

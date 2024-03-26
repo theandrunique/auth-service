@@ -2,7 +2,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from src.config import settings
+from src.emails.config import settings
 
 
 def send_email(
@@ -16,7 +16,7 @@ def send_email(
     msg["Subject"] = subject
     msg.attach(MIMEText(html_body, "html"))
 
-    server = smtplib.SMTP_SSL(settings.SMTP.SERVER, settings.SMTP.PORT)
-    server.login(settings.SMTP.USER, settings.SMTP.PASSWORD)
+    server = smtplib.SMTP_SSL(settings.SERVER, settings.PORT)
+    server.login(settings.USER, settings.PASSWORD)
     server.send_message(msg=msg)
     server.quit()

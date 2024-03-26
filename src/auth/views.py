@@ -84,7 +84,7 @@ async def login(
         hashed_password=user.hashed_password,
     ):
         raise InvalidCredentials()
-    await create_new_session(req=req, user=user, session=session)
+    return await create_new_session(req=req, user=user, session=session)
 
 
 @router.delete("/logout/", status_code=status.HTTP_204_NO_CONTENT)
@@ -161,7 +161,7 @@ async def verify_email(
 @router.put("/otp/")
 async def send_opt(
     otp_data: OtpRequestSchema, session: DbSession, worker: BackgroundTasks
-) -> None:
+) -> dict[str, Any]:
     user = await UsersDB.get_by_email(email=otp_data.email, session=session)
     if not user:
         raise UserNotFound()
@@ -185,4 +185,4 @@ async def otp_auth(
         raise UserNotFound()
     if not user.active:
         raise InactiveUser()
-    return create_new_session(req=req, user=user, session=session)
+    return await create_new_session(req=req, user=user, session=session)

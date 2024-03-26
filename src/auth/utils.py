@@ -9,7 +9,7 @@ import jwt
 from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.crud import SessionsDB
+from src.auth.sessions.crud import SessionsDB
 from src.config import settings
 from src.models import UserInDB
 
@@ -83,7 +83,7 @@ async def create_new_session(
     req: Request,
     user: UserInDB,
     session: AsyncSession,
-) -> str:
+) -> UserTokenSchema:
     jti = uuid.uuid4()
     await SessionsDB.create_new(
         user_id=user.id,

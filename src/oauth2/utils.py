@@ -18,12 +18,12 @@ def gen_authorization_code() -> str:
     return uuid4().hex
 
 
-def align_b64(b64_string):
+def align_b64(b64_string: str) -> str:
     missing = len(b64_string) % 4
     return f"{b64_string}{'=' * missing}"
 
 
-def validate_token(token: str, token_hash: bytes):
+def validate_token(token: str, token_hash: bytes) -> bool:
     b64_decoded = base64.urlsafe_b64decode(align_b64(token))
     input_hash = hashlib.sha256(b64_decoded)
     return secrets.compare_digest(input_hash.digest(), token_hash)
@@ -51,7 +51,7 @@ def hash_token(token_bytes: bytes) -> bytes:
 
 async def gen_token_pair_and_create_session(
     scope: str, user_id: int, app_id: UUID, session: AsyncSession
-):
+) -> OAuth2CodeExchangeResponse:
     refresh_token_bytes = gen_refresh_token_bytes()
     refresh_token = get_token_from_bytes(refresh_token_bytes)
     access_token = gen_access_token(

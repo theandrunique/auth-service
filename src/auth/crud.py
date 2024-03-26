@@ -11,6 +11,7 @@ from .utils import hash_password
 
 
 class UsersDB:
+    @staticmethod
     async def create_new(
         username: str,
         password: str,
@@ -27,6 +28,7 @@ class UsersDB:
         await session.commit()
         return new_user
 
+    @staticmethod
     async def get_by_id(id: int, session: AsyncSession) -> UserInDB | None:
         return await session.get(UserInDB, ident=id)
 

@@ -3,8 +3,7 @@ from enum import Enum
 from fastapi import APIRouter
 
 from src.apps.exceptions import AppNotFound
-from src.apps.schemas import AppInMongo
-from src.apps.views import app_collection
+from src.apps.registry import AppsRegistry
 from src.auth.dependencies import UserAuthorization
 from src.database import DbSession
 from src.redis_helper import redis_client
@@ -20,6 +19,7 @@ from .schemas import (
     OAuth2AuthorizeRequest,
     OAuth2AuthorizeResponse,
     OAuth2CodeExchangeRequest,
+    OAuth2CodeExchangeResponse,
 )
 from .utils import gen_authorization_code, gen_token_pair_and_create_session
 
@@ -30,15 +30,14 @@ class ResponseType(Enum):
     CODE = "code"
 
 
-@router.post("/authorize/")
+@router.post("/authorize/", response_model_exclude_none=True)
 async def oauth2_authorize(
     data: OAuth2AuthorizeRequest,
     user: UserAuthorization,
 ) -> OAuth2AuthorizeResponse:
-    found_app = await app_collection.find_one({"client_id": data.client_id})
-    if not found_app:
+    app = await AppsRegistry.get_by_client_id(data.client_id)
+    if not app:
         raise AppNotFound()
-    app = AppInMongo(**found_app)
 
     if data.redirect_uri not in app.redirect_uris:
         raise RedirectUriNotAllowed()
@@ -63,11 +62,10 @@ async def oauth2_authorize(
 @router.post("/token/")
 async def oauth2_exchange_code(
     data: OAuth2CodeExchangeRequest, session: DbSession
-) -> None:
-    found_app = await app_collection.find_one({"client_id": data.client_id})
-    if not found_app:
+) -> OAuth2CodeExchangeResponse:
+    app = await AppsRegistry.get_by_client_id(data.client_id)
+    if not app:
         raise AppNotFound()
-    app = AppInMongo(**found_app)
     if data.client_secret != app.client_secret:
         raise InvalidClientSecret()
 
@@ -86,10 +84,10 @@ async def oauth2_exchange_code(
 
 
 @router.post("/refresh/")
-async def refresh_token():
+async def refresh_token() -> None:
     pass
 
 
 @router.post("/revoke/")
-async def revoke_session():
+async def revoke_session() -> None:
     pass

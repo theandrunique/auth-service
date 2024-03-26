@@ -14,4 +14,5 @@ class Settings(BaseModel):
         r"^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$"
     )
 
-settings = Settings()  # type: ignore
+
+settings = Settings()

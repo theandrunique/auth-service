@@ -23,7 +23,7 @@ class OAuth2CodeExchangeRequest(BaseModel):
 
 class OAuth2AuthorizeResponse(BaseModel):
     code: str
-    state: str
+    state: str | None
 
 
 class OAuth2AccessTokenPayload(BaseModel):

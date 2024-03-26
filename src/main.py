@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI
 
@@ -12,7 +13,7 @@ from src.oauth2.views import router as oauth2_router
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> Any:
     async with db_helper.engine.begin() as conn:
         await conn.run_sync(OAuth2SessionsInDB.metadata.create_all)
         await conn.run_sync(UserSessionsInDB.metadata.create_all)
