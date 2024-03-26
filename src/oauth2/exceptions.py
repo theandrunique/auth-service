@@ -10,10 +10,10 @@ class RedirectUriNotAllowed(HTTPException):
 
 
 class NotAllowedScope(HTTPException):
-    def __init__(self) -> None:
+    def __init__(self, scopes: list[str]) -> None:
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Scope not allowed by app",
+            detail=f"Scopes: '{', '.join(scopes)}' not allowed by the app",
         )
 
 

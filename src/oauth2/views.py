@@ -42,9 +42,9 @@ async def oauth2_authorize(
     if data.redirect_uri not in app.redirect_uris:
         raise RedirectUriNotAllowed()
 
-    for scope in data.scopes:
-        if scope not in app.scopes:
-            raise NotAllowedScope()
+    disallowed_scopes = [scope for scope in data.scopes if scope not in app.scopes]
+    if disallowed_scopes:
+        raise NotAllowedScope(disallowed_scopes)
 
     if data.response_type != ResponseType.CODE.value:
         raise AuthorizationTypeIsNotSupported()
