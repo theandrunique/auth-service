@@ -1,7 +1,7 @@
 import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 ACCESS_TOKEN_EXPIRE_SECONDS = 3600
 
@@ -39,5 +39,17 @@ class OAuth2CodeExchangeResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = Field(default="Bearer")
-    expires_in: int
+    expires_in: int = Field(default=ACCESS_TOKEN_EXPIRE_SECONDS)
     scope: str
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+    grant_type: str
+
+    @field_validator("grant_type")
+    @classmethod
+    def check_grant_type(cls, v: str) -> str:
+        if v != "refresh_token":
+            raise ValueError("grant_type must be 'refresh_token'")
+        return v

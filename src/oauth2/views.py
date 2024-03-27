@@ -6,6 +6,7 @@ from src.apps.exceptions import AppNotFound
 from src.apps.registry import AppsRegistry
 from src.auth.dependencies import UserAuthorization
 from src.database import DbSession
+from src.oauth2.crud import OAuth2SessionsDB
 from src.redis_helper import redis_client
 
 from .config import settings
@@ -13,6 +14,7 @@ from .exceptions import (
     AuthorizationTypeIsNotSupported,
     InvalidAuthorizationCode,
     InvalidClientSecret,
+    InvalidSession,
     NotAllowedScope,
     RedirectUriNotAllowed,
 )
@@ -21,8 +23,13 @@ from .schemas import (
     OAuth2AuthorizeResponse,
     OAuth2CodeExchangeRequest,
     OAuth2CodeExchangeResponse,
+    RefreshTokenRequest,
 )
-from .utils import gen_authorization_code, gen_token_pair_and_create_session
+from .utils import (
+    gen_authorization_code,
+    gen_token_pair_and_create_session,
+    update_session_and_gen_new_token,
+)
 
 router = APIRouter(prefix="", tags=["oauth2"])
 
@@ -89,10 +96,11 @@ async def oauth2_exchange_code(
 
 
 @router.post("/refresh/")
-async def refresh_token() -> None:
-    pass
-
-
-@router.post("/revoke/")
-async def revoke_session() -> None:
-    pass
+async def refresh_token(data: RefreshTokenRequest, session: DbSession
+) -> OAuth2CodeExchangeResponse:
+    oauth2_session = await OAuth2SessionsDB.get_by_token(
+        data.refresh_token, session=session
+    )
+    if not oauth2_session:
+        raise InvalidSession()
+    return await update_session_and_gen_new_token(oauth2_session, session)

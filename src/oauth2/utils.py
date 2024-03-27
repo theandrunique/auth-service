@@ -9,7 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import settings as global_settings
 
 from .config import settings
-from .crud import create_oauth2_session
+from .crud import OAuth2SessionsDB
+from .models import OAuth2SessionsInDB
 from .schemas import OAuth2AccessTokenPayload, OAuth2CodeExchangeResponse
 
 
@@ -44,8 +45,20 @@ def get_token_from_bytes(token_bytes: bytes) -> str:
     return base64.urlsafe_b64encode(token_bytes).rstrip(b"=").decode("utf-8")
 
 
+def get_bytes_from_token(token: str) -> bytes:
+    return base64.urlsafe_b64decode(align_b64(token))
+
+
 def hash_token(token_bytes: bytes) -> bytes:
     return hashlib.sha256(token_bytes).digest()
+
+
+def create_token_pair(
+    payload: OAuth2AccessTokenPayload, refresh_token_bytes: bytes
+) -> tuple[str, str]:
+    access_token = gen_access_token(payload)
+    refresh_token = get_token_from_bytes(refresh_token_bytes)
+    return access_token, refresh_token
 
 
 async def gen_token_pair_and_create_session(
@@ -53,14 +66,11 @@ async def gen_token_pair_and_create_session(
 ) -> OAuth2CodeExchangeResponse:
     scopes_str = " ".join(scopes)
     refresh_token_bytes = gen_refresh_token_bytes()
-    refresh_token = get_token_from_bytes(refresh_token_bytes)
-    access_token = gen_access_token(
-        OAuth2AccessTokenPayload(
-            sub=str(user_id),
-            scopes=scopes,
-        )
+    access_token, refresh_token = create_token_pair(
+        payload=OAuth2AccessTokenPayload(sub=str(user_id), scopes=scopes),
+        refresh_token_bytes=refresh_token_bytes,
     )
-    await create_oauth2_session(
+    await OAuth2SessionsDB.create_session(
         user_id=user_id,
         session_id=uuid4(),
         refresh_token_hash=hash_token(refresh_token_bytes),
@@ -71,7 +81,28 @@ async def gen_token_pair_and_create_session(
     return OAuth2CodeExchangeResponse(
         access_token=access_token,
         refresh_token=refresh_token,
-        token_type="Bearer",
-        expires_in=3600,
         scope=scopes_str,
+    )
+
+
+async def update_session_and_gen_new_token(
+    oauth2_session: OAuth2SessionsInDB, session: AsyncSession
+) -> OAuth2CodeExchangeResponse:
+    scopes = oauth2_session.scope.split(" ")
+    refresh_token_bytes = gen_refresh_token_bytes()
+    access_token, refresh_token = create_token_pair(
+        payload=OAuth2AccessTokenPayload(
+            sub=str(oauth2_session.user_id), scopes=scopes
+        ),
+        refresh_token_bytes=refresh_token_bytes,
+    )
+    await OAuth2SessionsDB.update(
+        oauth2_session=oauth2_session,
+        refresh_token_hash=hash_token(refresh_token_bytes),
+        session=session,
+    )
+    return OAuth2CodeExchangeResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        scope=oauth2_session.scope,
     )
