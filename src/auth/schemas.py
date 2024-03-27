@@ -1,5 +1,6 @@
 import datetime
 import re
+from uuid import UUID
 
 from pydantic import (
     BaseModel,
@@ -21,7 +22,7 @@ class UserTokenSchema(BaseModel):
 
 class UserTokenPayload(BaseModel):
     sub: int
-    jti: str
+    jti: UUID
     exp: datetime.datetime = Field(
         default_factory=lambda: datetime.datetime.now(datetime.timezone.utc)
         + datetime.timedelta(hours=global_settings.USER_TOKEN_EXPIRE_HOURS),

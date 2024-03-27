@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import settings
 from src.models import UserInDB
 from src.sessions.crud import SessionsDB
+from src.utils import UUIDEncoder
 
 from .schemas import (
     UserTokenPayload,
@@ -33,6 +34,7 @@ def _create_token(
         },
         key=settings.SECRET_KEY,
         algorithm=settings.ALGORITHM,
+        json_encoder=UUIDEncoder,
     )
     return encoded_jwt
 
@@ -92,5 +94,5 @@ async def create_new_session(
         session=session,
     )
     return create_user_token(
-        payload=UserTokenPayload(sub=user.id, jti=jti.hex)
+        payload=UserTokenPayload(sub=user.id, jti=jti)
     )
