@@ -73,3 +73,19 @@ class PasswordValidationError(ValueError):
             "contain at least one uppercase letter, one lowercase letter, "
             "one number and one special character from #?!@$%^&*-",
         )
+
+
+class NotSupportedByOAuth2(HTTPException):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Endpoint is not supported by OAuth2",
+        )
+
+
+class MissingScope(HTTPException):
+    def __init__(self, scopes: list[str]) -> None:
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Scopes: '{', '.join(scopes)}' not allowed by the app",
+        )

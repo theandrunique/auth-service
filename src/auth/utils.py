@@ -1,4 +1,3 @@
-import datetime
 import secrets
 import string
 import uuid
@@ -27,12 +26,10 @@ def gen_otp_with_token() -> tuple[str, str]:
 
 def _create_token(
     data: dict[str, Any],
-    expires_delta: datetime.timedelta,
 ) -> str:
     encoded_jwt = jwt.encode(
         payload={
             **data,
-            "exp": datetime.datetime.now(datetime.timezone.utc) + expires_delta,
         },
         key=settings.SECRET_KEY,
         algorithm=settings.ALGORITHM,
@@ -40,12 +37,16 @@ def _create_token(
     return encoded_jwt
 
 
-def validate_user_token(token: str) -> UserTokenPayload:
-    payload = jwt.decode(
+def decode_token(token: str) -> dict[str, Any]:
+    return jwt.decode(  # type: ignore
         jwt=token,
         key=settings.SECRET_KEY,
         algorithms=[settings.ALGORITHM],
     )
+
+
+def validate_user_token(token: str) -> UserTokenPayload:
+    payload = decode_token(token=token)
     return UserTokenPayload(**payload)
 
 
@@ -71,10 +72,9 @@ def create_user_token(
 ) -> UserTokenSchema:
     token = _create_token(
         data=payload.model_dump(),
-        expires_delta=datetime.timedelta(hours=settings.USER_TOKEN_EXPIRE_HOURS),
     )
     return UserTokenSchema(
-        user_id=payload.user_id,
+        user_id=payload.sub,
         token=token,
     )
 
@@ -92,5 +92,5 @@ async def create_new_session(
         session=session,
     )
     return create_user_token(
-        payload=UserTokenPayload(user_id=user.id, email=user.email, jti=jti.hex)
+        payload=UserTokenPayload(sub=user.id, jti=jti.hex)
     )

@@ -1,3 +1,4 @@
+import datetime
 import re
 
 from pydantic import (
@@ -7,6 +8,7 @@ from pydantic import (
     field_validator,
 )
 
+from src.config import settings as global_settings
 from src.users.config import settings
 
 from .exceptions import PasswordValidationError
@@ -18,9 +20,12 @@ class UserTokenSchema(BaseModel):
 
 
 class UserTokenPayload(BaseModel):
-    user_id: int
-    email: str
+    sub: int
     jti: str
+    exp: datetime.datetime = Field(
+        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc)
+        + datetime.timedelta(hours=global_settings.USER_TOKEN_EXPIRE_HOURS),
+    )
 
 
 class UserSchema(BaseModel):

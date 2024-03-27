@@ -50,14 +50,15 @@ def hash_token(token_bytes: bytes) -> bytes:
 
 
 async def gen_token_pair_and_create_session(
-    scope: str, user_id: int, app_id: UUID, session: AsyncSession
+    scopes: list[str], user_id: int, app_id: UUID, session: AsyncSession
 ) -> OAuth2CodeExchangeResponse:
+    scopes_str = " ".join(scopes)
     refresh_token_bytes = gen_refresh_token_bytes()
     refresh_token = get_token_from_bytes(refresh_token_bytes)
     access_token = gen_access_token(
         OAuth2AccessTokenPayload(
             sub=str(user_id),
-            scope=scope,
+            scopes=scopes,
         )
     )
     await create_oauth2_session(
@@ -65,7 +66,7 @@ async def gen_token_pair_and_create_session(
         session_id=uuid4(),
         refresh_token_hash=hash_token(refresh_token_bytes),
         app_id=app_id,
-        scope=scope,
+        scope=scopes_str,
         session=session,
     )
     return OAuth2CodeExchangeResponse(
@@ -73,5 +74,5 @@ async def gen_token_pair_and_create_session(
         refresh_token=refresh_token,
         token_type="Bearer",
         expires_in=3600,
-        scope=scope,
+        scope=scopes_str,
     )

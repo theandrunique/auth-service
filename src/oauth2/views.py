@@ -76,7 +76,7 @@ async def oauth2_exchange_code(
     await redis_client.delete(f"auth_code_{app.client_id}_{data.code}")
 
     return await gen_token_pair_and_create_session(
-        scope=" ".join(app.scopes),
+        scopes=app.scopes,
         user_id=user_id,
         app_id=app.id,
         session=session,

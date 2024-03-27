@@ -28,7 +28,7 @@ class OAuth2AuthorizeResponse(BaseModel):
 
 class OAuth2AccessTokenPayload(BaseModel):
     sub: str
-    scope: str
+    scopes: list[str]
     exp: datetime.datetime = Field(
         default_factory=lambda: datetime.datetime.now()
         + datetime.timedelta(seconds=ACCESS_TOKEN_EXPIRE_SECONDS)
