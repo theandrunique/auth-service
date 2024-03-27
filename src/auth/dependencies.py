@@ -160,6 +160,4 @@ async def get_user_optional(
         return user
 
 
-UserAuthorizationOptional = Annotated[
-    UserInDB | None, Security(get_user_optional)
-]
+UserAuthorizationOptional = Annotated[UserInDB | None, Security(get_user_optional)]

@@ -93,6 +93,4 @@ async def create_new_session(
         ip_address=req.client.host if req.client else None,
         session=session,
     )
-    return create_user_token(
-        payload=UserTokenPayload(sub=user.id, jti=jti)
-    )
+    return create_user_token(payload=UserTokenPayload(sub=user.id, jti=jti))

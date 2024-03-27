@@ -8,6 +8,7 @@ from src.auth.dependencies import UserAuthorization
 from src.database import DbSession
 from src.redis_helper import redis_client
 
+from .config import settings
 from .exceptions import (
     AuthorizationTypeIsNotSupported,
     InvalidAuthorizationCode,
@@ -51,7 +52,11 @@ async def oauth2_authorize(
 
     auth_code = gen_authorization_code()
 
-    await redis_client.set(f"auth_code_{app.client_id}_{auth_code}", user.id, ex=60)
+    await redis_client.set(
+        f"auth_code_{app.client_id}_{auth_code}",
+        user.id,
+        ex=settings.AUTHORIZATION_CODE_EXPIRE_SECONDS,
+    )
 
     return OAuth2AuthorizeResponse(
         code=auth_code,

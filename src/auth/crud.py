@@ -35,14 +35,14 @@ class UsersDB:
     @staticmethod
     async def get_with_session(
         user_id: int,
-        session_id: str,
+        session_id: UUID,
         session: AsyncSession,
     ) -> tuple[UserInDB | None, UserSessionsInDB | None]:
         stmt = (
             select(UserSessionsInDB, UserInDB)
             .join(UserInDB)
             .where(UserSessionsInDB.user_id == user_id)
-            .where(UserSessionsInDB.session_id == UUID(hex=session_id))
+            .where(UserSessionsInDB.session_id == session_id)
             .limit(1)
         )
         result = await session.execute(stmt)

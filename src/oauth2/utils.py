@@ -6,16 +6,15 @@ from uuid import UUID, uuid4
 import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.config import settings
+from src.config import settings as global_settings
 
+from .config import settings
 from .crud import create_oauth2_session
 from .schemas import OAuth2AccessTokenPayload, OAuth2CodeExchangeResponse
 
-REFRESH_TOKEN_LENGTH = 64
-
 
 def gen_authorization_code() -> str:
-    return uuid4().hex
+    return secrets.token_urlsafe(settings.AUTHORIZATION_CODE_LENGTH)
 
 
 def align_b64(b64_string: str) -> str:
@@ -32,13 +31,13 @@ def validate_token(token: str, token_hash: bytes) -> bool:
 def gen_access_token(payload: OAuth2AccessTokenPayload) -> str:
     return jwt.encode(
         payload=payload.model_dump(),
-        key=settings.SECRET_KEY,
-        algorithm=settings.ALGORITHM,
+        key=global_settings.SECRET_KEY,
+        algorithm=global_settings.ALGORITHM,
     )
 
 
 def gen_refresh_token_bytes() -> bytes:
-    return secrets.token_bytes(REFRESH_TOKEN_LENGTH)
+    return secrets.token_bytes(settings.REFRESH_TOKEN_LENGTH)
 
 
 def get_token_from_bytes(token_bytes: bytes) -> str:
