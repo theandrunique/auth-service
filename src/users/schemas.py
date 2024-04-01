@@ -1,3 +1,4 @@
+import datetime
 import re
 
 from pydantic import (
@@ -17,6 +18,7 @@ class UserSchema(BaseModel):
     username: str
     email: EmailStr
     active: bool
+    created_at: datetime.datetime
 
 
 class RegistrationSchema(BaseModel):

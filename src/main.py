@@ -14,6 +14,7 @@ from src.oauth2.views import router as oauth2_router
 from src.redis_helper import redis_client
 from src.sessions.models import UserSessionsInDB
 from src.sessions.views import router as sessions_router
+from src.users.views import router as users_router
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ app.include_router(sessions_router, prefix="/auth/sessions", tags=["sessions"])
 app.include_router(apps_router, prefix="/apps", tags=["apps"])
 app.include_router(oauth2_router, prefix="/oauth2", tags=["oauth2"])
 app.include_router(emails_router, prefix="/emails", tags=["emails"])
+app.include_router(users_router, prefix="/users", tags=["users"])
 
 
 @app.get("/ping")
