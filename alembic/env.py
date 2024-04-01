@@ -26,7 +26,8 @@ from src.models import Base  # noqa
 
 # import models
 from src.models import *  # noqa
-from src.auth.models import *  # noqa
+from src.sessions.models import *  # noqa
+from src.users.models import *  # noqa
 
 target_metadata = Base.metadata
 
