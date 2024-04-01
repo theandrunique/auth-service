@@ -12,8 +12,17 @@ from src.database import DbSession
 from src.emails.dependencies import OtpEmailDep, ResetPassEmailDep, VerifyEmailDep
 from src.emails.main import send_otp_email, send_reset_password_email, send_verify_email
 from src.sessions.crud import SessionsDB
+from src.users.crud import UsersDB
+from src.users.exceptions import (
+    InactiveUser,
+    UserNotFound,
+)
+from src.users.schemas import (
+    RegistrationSchema,
+    ResetPasswordSchema,
+    UserSchema,
+)
 
-from .crud import UsersDB
 from .dependencies import (
     UserAuthorization,
     UserAuthorizationWithSession,
@@ -21,18 +30,12 @@ from .dependencies import (
 from .exceptions import (
     EmailAlreadyVerified,
     EmailNotVerified,
-    InactiveUser,
     InvalidCredentials,
     UsernameOrEmailAlreadyExists,
-    UserNotFound,
 )
 from .schemas import (
-    ForgotPasswordSchema,
-    OtpRequestSchema,
-    RegistrationSchema,
-    ResetPasswordSchema,
-    UserLoginSchema,
-    UserSchema,
+    EmailRequest,
+    LoginSchema,
     UserTokenSchema,
 )
 from .utils import (
@@ -50,14 +53,14 @@ router = APIRouter()
     response_model=UserSchema,
 )
 async def register(
-    auth_data: RegistrationSchema,
+    data: RegistrationSchema,
     session: DbSession,
 ) -> Any:
     try:
         new_user = await UsersDB.create_new(
-            username=auth_data.username,
-            password=auth_data.password,
-            email=auth_data.email,
+            username=data.username,
+            password=data.password,
+            email=data.email,
             session=session,
         )
         return new_user
@@ -67,20 +70,20 @@ async def register(
 
 @router.post("/login/")
 async def login(
-    user_data: UserLoginSchema,
+    data: LoginSchema,
     req: Request,
     session: DbSession,
 ) -> UserTokenSchema:
-    if "@" in user_data.login:
-        user = await UsersDB.get_by_email(email=user_data.login, session=session)
+    if "@" in data.login:
+        user = await UsersDB.get_by_email(email=data.login, session=session)
     else:
-        user = await UsersDB.get_by_username(username=user_data.login, session=session)
+        user = await UsersDB.get_by_username(username=data.login, session=session)
     if user is None:
         raise UserNotFound()
     elif not user.active:
         raise InactiveUser()
     elif not check_password(
-        password=user_data.password,
+        password=data.password,
         hashed_password=user.hashed_password,
     ):
         raise InvalidCredentials()
@@ -101,7 +104,7 @@ async def revoke_token(
 
 @router.post("/forgot/", status_code=status.HTTP_204_NO_CONTENT)
 async def recover_password(
-    data: ForgotPasswordSchema,
+    data: EmailRequest,
     session: DbSession,
     worker: BackgroundTasks,
 ) -> None:
@@ -160,7 +163,7 @@ async def verify_email(
 
 @router.put("/otp/")
 async def send_opt(
-    otp_data: OtpRequestSchema, session: DbSession, worker: BackgroundTasks
+    otp_data: EmailRequest, session: DbSession, worker: BackgroundTasks
 ) -> dict[str, Any]:
     user = await UsersDB.get_by_email(email=otp_data.email, session=session)
     if not user:

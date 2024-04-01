@@ -4,10 +4,9 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models import UserInDB
-
-from .models import UserSessionsInDB
-from .utils import hash_password
+from src.auth.utils import hash_password
+from src.sessions.models import UserSessionsInDB
+from src.users.models import UserInDB
 
 
 class UsersDB:

@@ -5,8 +5,8 @@ from uuid import UUID
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.models import UserSessionsInDB
 from src.config import settings
+from src.sessions.models import UserSessionsInDB
 
 
 class SessionsDB:

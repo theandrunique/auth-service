@@ -7,22 +7,24 @@ from jwt.exceptions import ExpiredSignatureError, PyJWTError
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.crud import UsersDB
-from src.auth.models import UserSessionsInDB
 from src.auth.schemas import UserTokenPayload
 from src.config import settings
 from src.database import DbSession
-from src.models import UserInDB
 from src.oauth2.schemas import OAuth2AccessTokenPayload
 from src.sessions.crud import SessionsDB
+from src.sessions.models import UserSessionsInDB
+from src.users.crud import UsersDB
+from src.users.exceptions import (
+    InactiveUser,
+    UserNotFound,
+)
+from src.users.models import UserInDB
 
 from .exceptions import (
-    InactiveUser,
     InvalidToken,
     MissingScope,
     NotAuthenticated,
     NotSupportedByOAuth2,
-    UserNotFound,
 )
 
 oauth2_scheme = OAuth2PasswordBearer(

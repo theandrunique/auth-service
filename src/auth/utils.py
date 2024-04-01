@@ -9,8 +9,8 @@ from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
-from src.models import UserInDB
 from src.sessions.crud import SessionsDB
+from src.users.models import UserInDB
 from src.utils import UUIDEncoder
 
 from .schemas import (
