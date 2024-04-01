@@ -1,7 +1,5 @@
 from collections.abc import AsyncGenerator
-from typing import Annotated
 
-from fastapi import Depends
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -36,5 +34,3 @@ db_helper = DatabaseHelper(
     url=str(settings.SQLALCHEMY_DATABASE_URI),
     echo=False,
 )
-
-DbSession = Annotated[AsyncSession, Depends(db_helper.session_dependency)]

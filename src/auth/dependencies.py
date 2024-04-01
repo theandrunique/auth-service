@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.schemas import UserTokenPayload
 from src.config import settings
-from src.database import DbSession
+from src.dependencies import DbSession
 from src.oauth2.schemas import OAuth2AccessTokenPayload
 from src.sessions.crud import SessionsDB
 from src.sessions.models import UserSessionsInDB
@@ -122,9 +122,6 @@ async def get_user(
     return user
 
 
-UserAuthorization = Annotated[UserInDB, Security(get_user)]
-
-
 async def get_user_with_session(
     user_with_session: UserAuthorizationDep,
 ) -> tuple[UserInDB, UserSessionsInDB]:
@@ -143,11 +140,6 @@ async def get_user_with_session(
     return user, user_session
 
 
-UserAuthorizationWithSession = Annotated[
-    tuple[UserInDB, UserSessionsInDB], Security(get_user_with_session)
-]
-
-
 async def get_user_optional(
     req_scopes: SecurityScopes,
     session: DbSession,
@@ -162,4 +154,3 @@ async def get_user_optional(
         return user
 
 
-UserAuthorizationOptional = Annotated[UserInDB | None, Security(get_user_optional)]

@@ -8,7 +8,7 @@ from fastapi import (
 )
 from sqlalchemy.exc import IntegrityError
 
-from src.database import DbSession
+from src.dependencies import DbSession, UserAuthorizationWithSession
 from src.emails.dependencies import OtpEmailDep, ResetPassEmailDep
 from src.emails.utils import send_otp_email, send_reset_password_email
 from src.sessions.crud import SessionsDB
@@ -23,7 +23,6 @@ from src.users.schemas import (
     UserSchema,
 )
 
-from .dependencies import UserAuthorizationWithSession
 from .exceptions import (
     EmailNotVerified,
     InvalidCredentials,

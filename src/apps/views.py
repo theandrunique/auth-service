@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, status
 
-from src.auth.dependencies import UserAuthorization, UserAuthorizationOptional
+from src.dependencies import UserAuthorization, UserAuthorizationOptional
 
 from .exceptions import AppNotFound, UnauthorizedAccess
 from .registry import AppsRegistry

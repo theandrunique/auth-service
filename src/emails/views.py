@@ -1,7 +1,6 @@
 from fastapi import APIRouter, BackgroundTasks, status
 
-from src.auth.dependencies import UserAuthorization
-from src.database import DbSession
+from src.dependencies import DbSession, UserAuthorization
 from src.emails.dependencies import VerifyEmailDep
 from src.users.crud import UsersDB
 from src.users.exceptions import InactiveUser, UserNotFound

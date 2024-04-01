@@ -4,8 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, status
 
-from src.auth.dependencies import UserAuthorization, UserAuthorizationWithSession
-from src.database import DbSession
+from src.dependencies import DbSession, UserAuthorization, UserAuthorizationWithSession
 
 from .crud import SessionsDB
 from .schemas import SessionSchema, UserSessions

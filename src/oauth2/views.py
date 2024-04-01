@@ -4,8 +4,7 @@ from fastapi import APIRouter
 
 from src.apps.exceptions import AppNotFound
 from src.apps.registry import AppsRegistry
-from src.auth.dependencies import UserAuthorization
-from src.database import DbSession
+from src.dependencies import DbSession, UserAuthorization
 from src.oauth2.crud import OAuth2SessionsDB
 from src.redis_helper import redis_client
 
