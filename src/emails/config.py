@@ -16,8 +16,9 @@ class Settings(BaseSettings):
 
     SMTP_FROM_EMAIL: str
     SMTP_FROM_NAME: str
-    RESET_PASSWORD_TOKEN_EXPIRE_HOURS: int = 24
-    EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS: int = 48
+    RESET_PASSWORD_TOKEN_EXPIRE_SECONDS: int = 24 * 60 * 60
+    EMAIL_VERIFICATION_TOKEN_EXPIRE_SECONDS: int = 48 * 60 * 60
 
+    OTP_EXPIRES_SECONDS = 60
 
 settings = Settings()  # type: ignore

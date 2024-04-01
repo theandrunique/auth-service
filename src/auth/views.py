@@ -9,8 +9,8 @@ from fastapi import (
 from sqlalchemy.exc import IntegrityError
 
 from src.database import DbSession
-from src.emails.dependencies import OtpEmailDep, ResetPassEmailDep, VerifyEmailDep
-from src.emails.main import send_otp_email, send_reset_password_email, send_verify_email
+from src.emails.dependencies import OtpEmailDep, ResetPassEmailDep
+from src.emails.utils import send_otp_email, send_reset_password_email
 from src.sessions.crud import SessionsDB
 from src.users.crud import UsersDB
 from src.users.exceptions import (
@@ -23,12 +23,8 @@ from src.users.schemas import (
     UserSchema,
 )
 
-from .dependencies import (
-    UserAuthorization,
-    UserAuthorizationWithSession,
-)
+from .dependencies import UserAuthorizationWithSession
 from .exceptions import (
-    EmailAlreadyVerified,
     EmailNotVerified,
     InvalidCredentials,
     UsernameOrEmailAlreadyExists,
@@ -136,29 +132,6 @@ async def reset_password(
         session=session,
     )
     return user
-
-
-@router.put("/verify/", status_code=status.HTTP_204_NO_CONTENT)
-async def send_confirmation_email(
-    user: UserAuthorization,
-    worker: BackgroundTasks,
-) -> None:
-    if user.email_verified:
-        raise EmailAlreadyVerified()
-    worker.add_task(send_verify_email, user.email, user.username)
-
-
-@router.post("/verify/", status_code=status.HTTP_204_NO_CONTENT)
-async def verify_email(
-    email: VerifyEmailDep,
-    session: DbSession,
-) -> None:
-    user = await UsersDB.get_by_email(email=email, session=session)
-    if not user:
-        raise UserNotFound()
-    elif not user.active:
-        raise InactiveUser()
-    await UsersDB.verify_email(user=user, session=session)
 
 
 @router.put("/otp/")

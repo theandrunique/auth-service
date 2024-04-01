@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from src.apps.views import router as apps_router
 from src.auth.views import router as auth_router
 from src.database import db_helper
+from src.emails.views import router as emails_router
 from src.mongo_helper import mongo_client
 from src.oauth2.models import OAuth2SessionsInDB
 from src.oauth2.views import router as oauth2_router
@@ -33,6 +34,7 @@ app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(sessions_router, prefix="/auth/sessions", tags=["sessions"])
 app.include_router(apps_router, prefix="/apps", tags=["apps"])
 app.include_router(oauth2_router, prefix="/oauth2", tags=["oauth2"])
+app.include_router(emails_router, prefix="/emails", tags=["emails"])
 
 
 @app.get("/ping")
