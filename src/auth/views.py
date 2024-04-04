@@ -6,7 +6,6 @@ from fastapi import (
     Request,
     status,
 )
-from sqlalchemy.exc import IntegrityError
 
 from src.dependencies import DbSession, UserAuthorizationWithSession
 from src.emails.dependencies import OtpEmailDep, ResetPassEmailDep
@@ -24,9 +23,10 @@ from src.users.schemas import (
 )
 
 from .exceptions import (
+    EmailAlreadyExists,
     EmailNotVerified,
     InvalidCredentials,
-    UsernameOrEmailAlreadyExists,
+    UsernameAlreadyExists,
 )
 from .schemas import (
     EmailRequest,
@@ -51,16 +51,22 @@ async def register(
     data: RegistrationSchema,
     session: DbSession,
 ) -> Any:
-    try:
-        new_user = await UsersDB.create_new(
-            username=data.username,
-            password=data.password,
-            email=data.email,
-            session=session,
-        )
-        return new_user
-    except IntegrityError:
-        raise UsernameOrEmailAlreadyExists()
+    existed_email = await UsersDB.get_by_email(email=data.email, session=session)
+    if existed_email:
+        raise EmailAlreadyExists()
+    existed_username = await UsersDB.get_by_username(
+        username=data.username, session=session
+    )
+    if existed_username:
+        raise UsernameAlreadyExists()
+
+    new_user = await UsersDB.create_new(
+        username=data.username,
+        password=data.password,
+        email=data.email,
+        session=session,
+    )
+    return new_user
 
 
 @router.post("/login/")

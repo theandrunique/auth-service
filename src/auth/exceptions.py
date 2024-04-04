@@ -1,11 +1,19 @@
 from fastapi import HTTPException, status
 
 
-class UsernameOrEmailAlreadyExists(HTTPException):
+class EmailAlreadyExists(HTTPException):
     def __init__(self) -> None:
         super().__init__(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this username or email already exists",
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User with this email already exists",
+        )
+
+
+class UsernameAlreadyExists(HTTPException):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User with this username already exists",
         )
 
 
