@@ -1,11 +1,11 @@
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from fastapi import APIRouter, status
 
 from src.dependencies import UserAuthorization, UserAuthorizationOptional
 
-from .exceptions import AppNotFound, UnauthorizedAccess
+from .dependencies import AppAccessControlDep, AppDep
 from .registry import AppsRegistry
 from .schemas import (
     AppCreate,
@@ -22,14 +22,9 @@ router = APIRouter(prefix="", tags=["apps"])
     response_model=AppInMongo,
     response_model_by_alias=False,
 )
-async def regenerate_client_secret(app_id: UUID, user: UserAuthorization) -> Any:
-    app = await AppsRegistry.get(app_id)
-    if app is None:
-        raise AppNotFound()
-    if app.creator_id != user.id:
-        raise UnauthorizedAccess()
+async def regenerate_client_secret(app: AppAccessControlDep) -> Any:
     app.client_secret = uuid4()
-    await AppsRegistry.update(app_id, {"client_secret": app.client_secret})
+    await AppsRegistry.update(app.id, {"client_secret": app.client_secret})
     return app
 
 
@@ -42,11 +37,8 @@ async def create_app(app: AppCreate, user: UserAuthorization) -> Any:
 
 @router.get("/{app_id}/", response_model_by_alias=False)
 async def get_app_by_id(
-    app_id: UUID, user: UserAuthorizationOptional
+    app: AppDep, user: UserAuthorizationOptional
 ) -> AppInMongo | AppPublicSchema:
-    app = await AppsRegistry.get(app_id)
-    if app is None:
-        raise AppNotFound()
     if user and app.creator_id == user.id:
         return app
     return AppPublicSchema(**app.model_dump())
@@ -54,30 +46,15 @@ async def get_app_by_id(
 
 @router.patch("/{app_id}/", response_model_by_alias=False)
 async def update_app(
-    app_id: UUID, data: AppUpdate, user: UserAuthorization
+    app: AppAccessControlDep, data: AppUpdate,
 ) -> AppInMongo:
     new_values = data.model_dump(exclude_defaults=True)
-
-    app = await AppsRegistry.get(app_id)
-    if app is None:
-        raise AppNotFound()
-
-    if app.creator_id != user.id:
-        raise UnauthorizedAccess()
-
     if new_values:
-        return await AppsRegistry.update(app_id, new_values)
+        return await AppsRegistry.update(app.id, new_values)
     else:
         return app
 
 
 @router.delete("/{app_id}/", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_app(app_id: UUID, user: UserAuthorization) -> None:
-    app = await AppsRegistry.get(app_id)
-    if app is None:
-        raise AppNotFound()
-
-    if app.creator_id != user.id:
-        raise UnauthorizedAccess()
-
-    await AppsRegistry.delete(app_id)
+async def delete_app(app: AppAccessControlDep) -> None:
+    await AppsRegistry.delete(app.id)
