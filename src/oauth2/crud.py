@@ -5,7 +5,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import OAuth2SessionsInDB
-from .utils import get_bytes_from_token, hash_token
 
 
 class OAuth2SessionsDB:
@@ -33,11 +32,10 @@ class OAuth2SessionsDB:
 
     @staticmethod
     async def get_by_token(
-        token: str, session: AsyncSession
+        token_hash: bytes, session: AsyncSession
     ) -> OAuth2SessionsInDB | None:
-        token_bytes = hash_token(get_bytes_from_token(token))
         stmt = select(OAuth2SessionsInDB).where(
-            OAuth2SessionsInDB.refresh_token_hash == hash_token(token_bytes)
+            OAuth2SessionsInDB.refresh_token_hash == token_hash
         )
         result = await session.execute(stmt)
         return result.scalar_one_or_none()

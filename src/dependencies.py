@@ -1,10 +1,9 @@
 from typing import Annotated
 
-from fastapi import Depends, Security
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Security
 
 from src.auth.dependencies import get_user, get_user_optional, get_user_with_session
-from src.database import db_helper
+from src.database import DbSession as DbSession  # noqa
 from src.sessions.models import UserSessionsInDB
 from src.users.models import UserInDB
 
@@ -17,6 +16,3 @@ UserAuthorizationWithSession = Annotated[
 
 
 UserAuthorizationOptional = Annotated[UserInDB | None, Security(get_user_optional)]
-
-
-DbSession = Annotated[AsyncSession, Depends(db_helper.session_dependency)]
