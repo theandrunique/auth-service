@@ -40,6 +40,7 @@ class InvalidAuthorizationCode(HTTPException):
             detail="Invalid authorization code",
         )
 
+
 class InvalidSession(HTTPException):
     def __init__(self) -> None:
         super().__init__(

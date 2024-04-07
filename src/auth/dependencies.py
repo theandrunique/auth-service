@@ -152,5 +152,3 @@ async def get_user_optional(
             req_scopes=req_scopes, token=token, session=session
         )
         return user
-
-

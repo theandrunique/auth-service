@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
-ACCESS_TOKEN_EXPIRE_SECONDS = 3600
+from .config import settings
 
 
 class OAuth2AuthorizeRequest(BaseModel):
@@ -31,7 +31,7 @@ class OAuth2AccessTokenPayload(BaseModel):
     scopes: list[str]
     exp: datetime.datetime = Field(
         default_factory=lambda: datetime.datetime.now()
-        + datetime.timedelta(seconds=ACCESS_TOKEN_EXPIRE_SECONDS)
+        + datetime.timedelta(seconds=settings.ACCESS_TOKEN_EXPIRE_SECONDS)
     )
 
 
@@ -39,7 +39,7 @@ class OAuth2CodeExchangeResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = Field(default="Bearer")
-    expires_in: int = Field(default=ACCESS_TOKEN_EXPIRE_SECONDS)
+    expires_in: int = Field(default=settings.ACCESS_TOKEN_EXPIRE_SECONDS)
     scope: str
 
 

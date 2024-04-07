@@ -21,4 +21,5 @@ class Settings(BaseSettings):
 
     OTP_EXPIRES_SECONDS = 60
 
+
 settings = Settings()  # type: ignore

@@ -23,4 +23,3 @@ async def get_user(user_id: PositiveInt, session: DbSession) -> Any:
     if not found_user:
         raise UserNotFound()
     return found_user
-

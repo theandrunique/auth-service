@@ -95,7 +95,8 @@ async def oauth2_exchange_code(
 
 
 @router.post("/refresh/")
-async def refresh_token(data: RefreshTokenRequest, session: DbSession
+async def refresh_token(
+    data: RefreshTokenRequest, session: DbSession
 ) -> OAuth2CodeExchangeResponse:
     oauth2_session = await OAuth2SessionsDB.get_by_token(
         data.refresh_token, session=session

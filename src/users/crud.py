@@ -65,11 +65,23 @@ class UsersDB:
         return result.scalar_one_or_none()
 
     @staticmethod
+    async def get_by_email_or_username(
+        username: str, email: str, session: AsyncSession
+    ) -> UserInDB | None:
+        stmt = (
+            select(UserInDB)
+            .where(UserInDB.username == username)
+            .where(UserInDB.email == email)
+            .limit(1)
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    @staticmethod
     async def update_password(
         user: UserInDB, new_password: str, session: AsyncSession
     ) -> None:
         user.hashed_password = hash_password(new_password)
-        session.add(user)
         await session.commit()
 
     @staticmethod
@@ -78,5 +90,4 @@ class UsersDB:
         session: AsyncSession,
     ) -> None:
         user.email_verified = True
-        session.add(user)
         await session.commit()
