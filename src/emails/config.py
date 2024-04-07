@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     RESET_PASSWORD_TOKEN_EXPIRE_SECONDS: int = 24 * 60 * 60
     EMAIL_VERIFICATION_TOKEN_EXPIRE_SECONDS: int = 48 * 60 * 60
 
-    OTP_EXPIRES_SECONDS = 60
+    OTP_EXPIRES_SECONDS: int = 60
 
 
 settings = Settings()  # type: ignore

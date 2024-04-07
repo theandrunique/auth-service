@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.schemas import UserTokenPayload
 from src.config import settings
-from src.dependencies import DbSession
+from src.database import DbSession
 from src.oauth2.schemas import OAuth2AccessTokenPayload
 from src.sessions.crud import SessionsDB
 from src.sessions.models import UserSessionsInDB

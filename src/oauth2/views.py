@@ -27,6 +27,8 @@ from .schemas import (
 from .utils import (
     gen_authorization_code,
     gen_token_pair_and_create_session,
+    get_bytes_from_token,
+    hash_token,
     update_session_and_gen_new_token,
 )
 
@@ -99,7 +101,7 @@ async def refresh_token(
     data: RefreshTokenRequest, session: DbSession
 ) -> OAuth2CodeExchangeResponse:
     oauth2_session = await OAuth2SessionsDB.get_by_token(
-        data.refresh_token, session=session
+        hash_token(get_bytes_from_token(data.refresh_token)), session=session
     )
     if not oauth2_session:
         raise InvalidSession()
