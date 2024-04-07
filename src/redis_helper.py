@@ -4,5 +4,5 @@ from src.config import settings
 
 redis_client = aioredis.from_url(
     str(settings.REDIS_URL),  # type: ignore
-    decode_responses=True,
+    # decode_responses=True,
 )

@@ -14,6 +14,7 @@ async def test_verify_email_success(
     async_client, mock_send_email, mock_redis_client_in_dep
 ):
     VERIFY_JTI = uuid4()
+
     async def mock_redis_get(key):
         if key == f"verify_email_token_id_{TEST_EMAIL_USER_EMAIL}":
             return VERIFY_JTI.bytes
@@ -25,7 +26,7 @@ async def test_verify_email_success(
             sub=TEST_EMAIL_USER_EMAIL,
             exp=datetime.datetime.now() + timedelta(hours=1),
             jti=VERIFY_JTI,
-            typ="email"
+            typ="email",
         )
     )
     response = await async_client.post(

@@ -22,10 +22,9 @@ async def test_check_token_valid_token():
     )
     with patch("src.emails.dependencies.redis_client") as mock_redis_client:
         mock_redis_client.get = AsyncMock(return_value=jti.bytes)
-        result = await check_token(token, 'key_prefix')
+        result = await check_token(token, "key_prefix")
 
-    assert result == 'valid_sub'
-
+    assert result == "valid_sub"
 
 
 async def test_check_token_invalid_token():
@@ -41,4 +40,4 @@ async def test_check_token_invalid_token():
     with patch("src.emails.dependencies.redis_client") as mock_redis_client:
         with pytest.raises(InvalidToken):
             mock_redis_client.get = AsyncMock(return_value=jti.bytes)
-            await check_token(token, 'key_prefix')
+            await check_token(token, "key_prefix")

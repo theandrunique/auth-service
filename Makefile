@@ -4,7 +4,7 @@ ifeq ($(OS),Windows_NT)
     activate_cmd = .\$(VENV)\Scripts\activate
 	PYTHON = python
 else
-    activate_cmd = source ./$(VENV)/bin/activate
+	activate_cmd = source $(VENV)/bin/activate
 	PYTHON = python3
 endif
 

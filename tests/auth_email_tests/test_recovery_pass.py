@@ -24,7 +24,6 @@ async def test_forgot_password_failed(async_client, mock_send_email):
     assert mock_send_email.return_value.send_message.call_count == 0
 
 
-
 async def test_forgot_password(
     async_client, mock_send_email, mock_get_user_from_db_by_email, mock_redis_client
 ):
@@ -46,6 +45,7 @@ async def test_forgot_password(
 
 async def test_reset_password_success(async_client, mock_redis_client_in_dep):
     TEST_JTI = uuid4()
+
     async def mock_redis_get(key):
         if key == f"reset_password_token_id_{TEST_RECOVERY_PASS_EMAIL}":
             return TEST_JTI.bytes

@@ -15,3 +15,11 @@ class InvalidOtp(HTTPException):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid OTP",
         )
+
+
+class EmailAlreadyVerified(HTTPException):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email is already verified",
+        )

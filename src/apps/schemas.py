@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 from pydantic import AliasChoices, BaseModel, Field
 
 
-class AppMongoSchema(BaseModel):
+class AppInMongo(BaseModel):
     id: UUID = Field(
         default_factory=lambda: uuid4(),
         validation_alias=AliasChoices("_id", "id"),
@@ -40,7 +40,7 @@ class AppCreate(BaseModel):
     description: str | None = None
     redirect_uris: list[str]
     scopes: list[str] = Field(default=[])
-    website: str | None = Field(default=None)
+    website: str | None = None
 
 
 class AppUpdate(BaseModel):
@@ -48,4 +48,4 @@ class AppUpdate(BaseModel):
     description: str | None = None
     redirect_uris: list[str] | None = None
     scopes: list[str] | None = None
-    website: str | None = Field(default=None)
+    website: str | None = None

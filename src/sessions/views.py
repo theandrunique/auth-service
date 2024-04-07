@@ -4,15 +4,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, status
 
-from src.auth.dependencies import UserAuthorization, UserAuthorizationWithSession
-from src.database import DbSession
+from src.dependencies import DbSession, UserAuthorization, UserAuthorizationWithSession
 
-from .crud import (
-    get_sessions_from_db_by_user_id,
-    revoke_user_session_by_id,
-    revoke_user_sessions_by_id,
-    revoke_user_sessions_except_current,
-)
+from .crud import SessionsDB
 from .schemas import SessionSchema, UserSessions
 
 router = APIRouter()
@@ -23,7 +17,7 @@ async def get_my_sessions(
     user: UserAuthorization,
     session: DbSession,
 ) -> UserSessions:
-    user_sessions = await get_sessions_from_db_by_user_id(
+    user_sessions = await SessionsDB.get_by_user_id(
         user_id=user.id,
         session=session,
     )
@@ -35,12 +29,11 @@ async def get_my_sessions(
         if user_session.expires_at < time_now
     ]
     if expired_ids:
-        await revoke_user_sessions_by_id(
+        await SessionsDB.revoke_by_ids(
             user_id=user.id,
             session_ids=expired_ids,
             session=session,
         )
-
     session_schemas = [
         SessionSchema(
             session_id=user_session.session_id,
@@ -51,7 +44,6 @@ async def get_my_sessions(
         for user_session in user_sessions
         if user_session.expires_at >= time_now
     ]
-
     return UserSessions(
         user_sessions=session_schemas,
     )
@@ -71,7 +63,7 @@ async def delete_all_sessions_except_current(
     session: DbSession,
 ) -> None:
     user, user_session = user_with_session
-    await revoke_user_sessions_except_current(
+    await SessionsDB.revoke_except(
         user_id=user.id,
         except_id=user_session.session_id,
         session=session,
@@ -84,7 +76,7 @@ async def delete_session(
     session: DbSession,
     session_id: UUID,
 ) -> None:
-    await revoke_user_session_by_id(
+    await SessionsDB.revoke_by_id(
         user_id=user.id,
         session_id=session_id,
         session=session,

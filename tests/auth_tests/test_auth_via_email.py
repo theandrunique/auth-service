@@ -1,5 +1,3 @@
-
-
 from unittest.mock import patch
 
 from src.emails.dependencies import get_otp

@@ -25,7 +25,6 @@ TEST_RECOVERY_PASS_SECOND_PASSWORD = "INrf3fs@D*)(AWrefdcas)"
 TEST_RECOVERY_PASS_EMAIL = "test_recovery_pass_user@example.com"
 
 
-
 @pytest.fixture(autouse=True, scope="session")
 async def prepare_test_recovery_pass_user(async_client):
     await async_client.post(
@@ -64,4 +63,3 @@ async def mock_redis_client_in_dep(mocker):
     mock = AsyncMock()
     mocker.patch("src.emails.dependencies.redis_client", new=mock)
     return mock
-

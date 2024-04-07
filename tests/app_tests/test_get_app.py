@@ -36,4 +36,3 @@ async def test_app_not_found(async_client, mock_mongodb):
     )
     assert response.status_code == 404, response.json()
     assert response.json() == {"detail": "App not found"}, response.json()
-
