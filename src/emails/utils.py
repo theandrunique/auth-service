@@ -72,8 +72,7 @@ async def send_verify_email(email_to: str, username: str) -> None:
         email_to=email_to,
         subject=f"{global_settings.PROJECT_NAME} - Verify email for user {username}",
         html_body=(
-            f"<p>Use the following token to verify your email address.</p>\n"
-            f"Token: {token}"
+            f"<p>{global_settings.FRONTEND_URL}{settings.EMAIL_CONFIRM_FRONTEND_URI}?token={token}</p>\n"
         ),
     )
 

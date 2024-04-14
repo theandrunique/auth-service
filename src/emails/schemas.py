@@ -26,3 +26,7 @@ class OtpAuthSchema(BaseModel):
     otp: str
     token: str
     email: EmailStr
+
+
+class EmailReq(BaseModel):
+    email: EmailStr

@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     SMTP_FROM_NAME: str
     RESET_PASSWORD_TOKEN_EXPIRE_SECONDS: int = 24 * 60 * 60
     EMAIL_VERIFICATION_TOKEN_EXPIRE_SECONDS: int = 48 * 60 * 60
+    EMAIL_CONFIRM_FRONTEND_URI: str = "/email-confirm"
 
     OTP_EXPIRES_SECONDS: int = 60
 
