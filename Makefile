@@ -68,3 +68,7 @@ docker-app:
 
 .PHONY: docker-all
 docker-all: docker-redis docker-mongo docker-app
+
+.PHONY: up
+up:
+	docker compose -f ./docker/docker-compose.yml up -d --build
