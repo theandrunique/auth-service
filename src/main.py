@@ -3,9 +3,11 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.apps.views import router as apps_router
 from src.auth.views import router as auth_router
+from src.config import settings
 from src.database import db_helper
 from src.emails.views import router as emails_router
 from src.mongo_helper import mongo_client
@@ -18,6 +20,9 @@ from src.users.views import router as users_router
 
 logger = logging.getLogger(__name__)
 
+origins = [
+settings.FRONTEND_URL,
+]
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> Any:
@@ -30,7 +35,13 @@ async def lifespan(app: FastAPI) -> Any:
 
 
 app = FastAPI(lifespan=lifespan)
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(sessions_router, prefix="/auth/sessions", tags=["sessions"])
 app.include_router(apps_router, prefix="/apps", tags=["apps"])
