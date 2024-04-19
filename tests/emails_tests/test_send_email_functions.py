@@ -1,4 +1,8 @@
-from src.emails.main import send_otp_email, send_reset_password_email, send_verify_email
+from src.emails.utils import (
+    send_otp_email,
+    send_reset_password_email,
+    send_verify_email,
+)
 
 
 async def test_send_verify_email(mock_send_email, mock_redis_client):

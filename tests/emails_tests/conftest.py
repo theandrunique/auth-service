@@ -13,5 +13,5 @@ async def mock_send_email(mocker):
 @pytest.fixture(scope="function")
 async def mock_redis_client(mocker):
     mock = AsyncMock()
-    mocker.patch("src.emails.main.redis_client", new=mock)
+    mocker.patch("src.emails.utils.redis_client", new=mock)
     return mock
