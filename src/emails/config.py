@@ -22,5 +22,7 @@ class Settings(BaseSettings):
 
     OTP_EXPIRES_SECONDS: int = 60
 
+    EMAILS_TEMPLATES_DIR: str = "email-templates"
+
 
 settings = Settings()  # type: ignore

@@ -3,7 +3,10 @@ import smtplib
 from datetime import timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from typing import Any
 from uuid import uuid4
+
+import jinja2
 
 from src.config import settings as global_settings
 from src.emails.schemas import EmailTokenPayload
@@ -11,6 +14,14 @@ from src.emails.token_utils import gen_email_token
 from src.redis_helper import redis_client
 
 from .config import settings
+
+template_loader = jinja2.FileSystemLoader(settings.EMAILS_TEMPLATES_DIR)
+template_env = jinja2.Environment(enable_async=True, loader=template_loader)
+
+
+async def render_email_template(*, template_name: str, context: dict[str, Any]) -> str:
+    template = template_env.get_template(template_name)
+    return await template.render_async(context)
 
 
 def send_email(
@@ -49,7 +60,10 @@ async def send_reset_password_email(email_to: str) -> None:
     send_email(
         email_to=email_to,
         subject=subject,
-        html_body=f"<p>Use the token to recovery your password: {token}</p>",
+        html_body=await render_email_template(
+            template_name="reset_password.html",
+            context={"token": token},
+        ),
     )
 
 
@@ -68,11 +82,16 @@ async def send_verify_email(email_to: str, username: str) -> None:
         jti.bytes,
         ex=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_SECONDS,
     )
+    confirm_url = f"{global_settings.FRONTEND_URL}{settings.EMAIL_CONFIRM_FRONTEND_URI}?token={token}"
     send_email(
         email_to=email_to,
         subject=f"{global_settings.PROJECT_NAME} - Verify email for user {username}",
-        html_body=(
-            f"<p>{global_settings.FRONTEND_URL}{settings.EMAIL_CONFIRM_FRONTEND_URI}?token={token}</p>\n"
+        html_body=await render_email_template(
+            template_name="confirm_email.html",
+            context={
+                "username": username,
+                "confirm_url": confirm_url,
+            },
         ),
     )
 
@@ -84,5 +103,8 @@ async def send_otp_email(email_to: str, username: str, otp: str, token: str) -> 
     send_email(
         email_to=email_to,
         subject="OTP",
-        html_body=f"Hello, {username}\nCode: {otp}",
+        html_body=await render_email_template(
+            template_name="otp.html",
+            context={"username": username, "otp": otp},
+        ),
     )
