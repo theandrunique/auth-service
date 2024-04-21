@@ -1,5 +1,5 @@
 version: "3.9"
-name: auth-app-compose
+name: auth-server
 
 services:
   app:
@@ -10,4 +10,4 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - ../.env
+      - .docker.env

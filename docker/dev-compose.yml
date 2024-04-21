@@ -1,0 +1,16 @@
+version: "3.9"
+name: auth-server
+
+services:
+  dev-app:
+    container_name: dev-app
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .docker.env
+    volumes:
+      - ../src:/app/src
+    command: "uvicorn src.main:app --host 0.0.0.0 --port 8000 --log-config logger_config.yml --reload"

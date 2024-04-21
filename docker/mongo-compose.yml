@@ -1,5 +1,5 @@
-version: '3.1'
-name: mongo-compose
+version: '3.9'
+
 services:
   mongo:
     image: mongo
@@ -18,8 +18,7 @@ services:
     ports:
       - 8081:8081
     environment:
-      ME_CONFIG_BASICAUTH_USERNAME: root
-      ME_CONFIG_BASICAUTH_PASSWORD: 1234 
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
       ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+      ME_CONFIG_BASICAUTH: false
