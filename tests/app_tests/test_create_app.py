@@ -1,17 +1,16 @@
 from tests.app_tests.conftest import (
-    TEST_APP_NAME,
-    TEST_APP_REDIRECT_URIS,
-    TEST_APP_SCOPES,
     assert_private_app,
 )
 
 
-async def test_create_app(async_client, mock_mongodb, authorized_header):
-    mock_mongodb.insert_one.side_effect = None
+async def test_create_app(async_client, authorized_header):
+    TEST_APP_REDIRECT_URIS = ["http://example.com"]
+    TEST_APP_SCOPES = ["read", "write"]
+
     response = await async_client.post(
-        "/app/",
+        "/apps/",
         json={
-            "name": TEST_APP_NAME,
+            "name": "test",
             "redirect_uris": TEST_APP_REDIRECT_URIS,
             "scopes": TEST_APP_SCOPES,
         },

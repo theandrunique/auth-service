@@ -1,9 +1,10 @@
-import copy
 import datetime
-from unittest.mock import AsyncMock
 from uuid import UUID
 
 import pytest
+
+from src.apps.schemas import AppInMongo
+from tests.app_tests.fake_app_repository import FakeAppsRepository
 
 TEST_APP_CLIENT_ID = "30219807-9f3f-4da1-bd25-ef0f7abefa1a"
 TEST_APP_CLIENT_SECRET = "5d8b84a1-3e18-41d5-8c05-2d77254b21e7"
@@ -26,28 +27,19 @@ TEST_APP = {
 }
 
 
-async def mock_find_one(data):
-    if data.get("_id") == TEST_APP["_id"]:
-        return TEST_APP
-    elif data.get("client_id") == TEST_APP["client_id"]:
-        return TEST_APP
-    else:
-        return None
+@pytest.fixture(autouse=True)
+def patch_mongo(monkeypatch):
+    fake_registry = FakeAppsRepository()
+    monkeypatch.setattr("src.apps.views.repository", fake_registry)
+    monkeypatch.setattr("src.apps.dependencies.repository", fake_registry)
+    return fake_registry
 
 
-async def mock_find_one_and_update(filter, data, return_document):
-    old_app = await mock_find_one(filter)
-    new_app_data = old_app.copy()
-    new_app_data = copy.deepcopy(old_app)
-    new_app_data.update(data["$set"])
-    return new_app_data
-
-
-@pytest.fixture(autouse=True, scope="function")
-async def mock_mongodb(mocker):
-    mock = AsyncMock()
-    mocker.patch("src.apps.views.app_collection", mock)
-    return mock
+@pytest.fixture
+async def prepare_test_element(patch_mongo) -> AppInMongo:
+    app = AppInMongo(**TEST_APP)
+    await patch_mongo.add(app)
+    return app
 
 
 def assert_public_app(json_response):
