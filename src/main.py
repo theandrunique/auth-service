@@ -33,5 +33,5 @@ app.include_router(users_router, prefix="/users", tags=["users"])
 
 
 @app.get("/ping")
-def ping_pong() -> str:
+def ping_pong() -> dict[str, str]:
     return {"ping": "pong"}
