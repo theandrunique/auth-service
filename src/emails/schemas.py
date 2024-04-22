@@ -28,5 +28,5 @@ class OtpAuthSchema(BaseModel):
     email: EmailStr
 
 
-class EmailReq(BaseModel):
+class EmailRequest(BaseModel):
     email: EmailStr

@@ -1,5 +1,3 @@
-import secrets
-import string
 import uuid
 from typing import Any
 
@@ -14,15 +12,9 @@ from src.users.models import UserInDB
 from src.utils import UUIDEncoder
 
 from .schemas import (
+    UserToken,
     UserTokenPayload,
-    UserTokenSchema,
 )
-
-
-def gen_otp_with_token() -> tuple[str, str]:
-    otp = "".join(secrets.choice(string.digits) for _ in range(6))
-    token = secrets.token_urlsafe(40)
-    return otp, token
 
 
 def _create_token(
@@ -71,11 +63,11 @@ def hash_password(password: str) -> bytes:
 
 def create_user_token(
     payload: UserTokenPayload,
-) -> UserTokenSchema:
+) -> UserToken:
     token = _create_token(
         data=payload.model_dump(),
     )
-    return UserTokenSchema(
+    return UserToken(
         user_id=payload.sub,
         token=token,
     )
@@ -85,7 +77,7 @@ async def create_new_session(
     req: Request,
     user: UserInDB,
     session: AsyncSession,
-) -> UserTokenSchema:
+) -> UserToken:
     jti = uuid.uuid4()
     await SessionsDB.create_new(
         user_id=user.id,

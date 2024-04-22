@@ -3,7 +3,6 @@ from uuid import UUID
 
 from pydantic import (
     BaseModel,
-    EmailStr,
     Field,
 )
 
@@ -19,15 +18,12 @@ class UserTokenPayload(BaseModel):
     )
 
 
-class UserTokenSchema(BaseModel):
+class UserToken(BaseModel):
     user_id: int
     token: str
 
 
-class LoginSchema(BaseModel):
+class Login(BaseModel):
     login: str
     password: str
 
-
-class EmailRequest(BaseModel):
-    email: EmailStr

@@ -1,5 +1,7 @@
 import datetime
+import secrets
 import smtplib
+import string
 from datetime import timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -15,7 +17,7 @@ from src.redis_helper import redis_client
 
 from .config import settings
 
-template_loader = jinja2.FileSystemLoader(settings.EMAILS_TEMPLATES_DIR)
+template_loader = jinja2.FileSystemLoader(settings.TEMPLATES_DIR)
 template_env = jinja2.Environment(enable_async=True, loader=template_loader)
 
 
@@ -30,7 +32,7 @@ def send_email(
     html_body: str,
 ) -> None:
     msg = MIMEMultipart()
-    msg["From"] = f"{settings.SMTP_FROM_NAME} {settings.SMTP_FROM_EMAIL}"
+    msg["From"] = f"{settings.FROM_NAME} {settings.FROM_EMAIL}"
     msg["To"] = email_to
     msg["Subject"] = subject
     msg.attach(MIMEText(html_body, "html"))
@@ -108,3 +110,9 @@ async def send_otp_email(email_to: str, username: str, otp: str, token: str) -> 
             context={"username": username, "otp": otp},
         ),
     )
+
+
+def gen_otp_with_token() -> tuple[str, str]:
+    otp = "".join(secrets.choice(string.digits) for _ in range(6))
+    token = secrets.token_urlsafe(40)
+    return otp, token

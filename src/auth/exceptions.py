@@ -33,14 +33,6 @@ class InvalidToken(HTTPException):
         )
 
 
-class EmailNotVerified(HTTPException):
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email is not verified",
-        )
-
-
 class NotAuthenticated(HTTPException):
     def __init__(self) -> None:
         super().__init__(
