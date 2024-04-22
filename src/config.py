@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     SQLALCHEMY_DATABASE_URI: AnyUrl
 
-    SECRET_KEY: str = "secret_key"
+    SECRET_KEY: str
     ALGORITHM: str = "HS256"
     USER_TOKEN_EXPIRE_HOURS: int = 30 * 24
     KEYS_LENGTH: int = 40
@@ -23,6 +23,8 @@ class Settings(BaseSettings):
 
     REDIS_URL: RedisDsn
     FRONTEND_URL: str = "http://localhost:5173"
+
+    EMAILS_ENABLED: bool
 
 
 settings = Settings()  # type: ignore
