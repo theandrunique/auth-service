@@ -1,21 +1,21 @@
-
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends
-from pydantic import UUID4
 
 from src.dependencies import UserAuthorization
 
 from .exceptions import AppNotFound, UnauthorizedAccess
-from .registry import AppsRegistry
+from .repository import repository
 from .schemas import AppInMongo
 
 
-async def valid_app_id(app_id: UUID4) -> AppInMongo:
-    found_app = await AppsRegistry.get(app_id)
+async def valid_app_id(app_id: UUID) -> AppInMongo:
+    found_app = await repository.get(app_id)
     if not found_app:
         raise AppNotFound()
     return found_app
+
 
 AppDep = Annotated[AppInMongo, Depends(valid_app_id)]
 

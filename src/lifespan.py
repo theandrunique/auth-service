@@ -4,12 +4,12 @@ from typing import Any
 from fastapi import FastAPI
 
 from src.logger import logger
-from src.mongo_helper import mongo_client
+from src.mongo import test_connection
 from src.redis_helper import redis_client
 
 
 async def on_startup(app: FastAPI) -> None:
-    logger.info("MongoDB connected: ", await mongo_client.server_info())
+    await test_connection()
     logger.info("Redis connected: ", await redis_client.info())
 
 

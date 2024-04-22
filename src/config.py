@@ -22,8 +22,6 @@ class Settings(BaseSettings):
     OTP_EXPIRE_SECONDS: int = 5 * 60
 
     REDIS_URL: RedisDsn
-    MONGO_URL: str
-    MONGO_DATABASE_NAME: str
     FRONTEND_URL: str = "http://localhost:5173"
 
 

@@ -19,11 +19,11 @@ class AppInMongo(BaseModel):
     description: str | None = Field(default=None)
     website: str | None = Field(default=None)
     created_at: datetime.datetime = Field(
-        default_factory=lambda: datetime.datetime.now(),
+        default_factory=lambda: datetime.datetime.now(datetime.UTC),
     )
 
 
-class AppPublicSchema(BaseModel):
+class AppPublic(BaseModel):
     id: UUID = Field(validation_alias=AliasChoices("_id", "id"))
     name: str
     client_id: UUID
