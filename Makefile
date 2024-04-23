@@ -8,7 +8,7 @@ up:
 	docker compose -f ${APP} -f ${MONGO} -f ${REDIS} up -d --build
 
 up-dev:
-	docker compose -f ${DEV} -f ${MONGO} -f ${REDIS} up --build --abort-on-container-exit --attach dev-app --no-log-prefix
+	docker compose -f ${APP} -f ${DEV} -f ${MONGO} -f ${REDIS} up --build --abort-on-container-exit --attach app --no-log-prefix
 
 down:
 	docker compose -f ${DEV} -f ${APP} -f ${MONGO} -f ${REDIS} down
