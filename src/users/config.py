@@ -1,7 +1,16 @@
 from pydantic import BaseModel
+from pydantic_settings import SettingsConfigDict
 
 
 class Settings(BaseModel):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        case_sensitive=True,
+        env_prefix="",
+    )
+
     USERNAME_MIN_LENGTH: int = 3
     USERNAME_MAX_LENGTH: int = 32
 

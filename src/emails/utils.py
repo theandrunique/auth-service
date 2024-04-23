@@ -50,13 +50,13 @@ async def send_reset_password_email(email_to: str) -> None:
         typ="email",
         jti=jti,
         exp=datetime.datetime.now(datetime.UTC)
-        + timedelta(seconds=settings.RESET_PASSWORD_TOKEN_EXPIRE_SECONDS),
+        + timedelta(seconds=settings.RESET_TOKEN_EXPIRE_SECONDS),
     )
     token = gen_email_token(payload=payload)
     await redis_client.set(
         f"reset_password_token_id_{email_to}",
         jti.bytes,
-        ex=settings.RESET_PASSWORD_TOKEN_EXPIRE_SECONDS,
+        ex=settings.RESET_TOKEN_EXPIRE_SECONDS,
     )
     subject = f"{global_settings.PROJECT_NAME} - Password recovery for user {email_to}"
     send_email(
@@ -76,15 +76,15 @@ async def send_verify_email(email_to: str, username: str) -> None:
         typ="email",
         jti=jti,
         exp=datetime.datetime.now(datetime.UTC)
-        + timedelta(seconds=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_SECONDS),
+        + timedelta(seconds=settings.VERIFICATION_TOKEN_EXPIRE_SECONDS),
     )
     token = gen_email_token(payload=payload)
     await redis_client.set(
         f"verify_email_token_id_{email_to}",
         jti.bytes,
-        ex=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_SECONDS,
+        ex=settings.VERIFICATION_TOKEN_EXPIRE_SECONDS,
     )
-    confirm_url = f"{global_settings.FRONTEND_URL}{settings.EMAIL_CONFIRM_FRONTEND_URI}?token={token}"
+    confirm_url = f"{global_settings.FRONTEND_URL}{settings.CONFIRM_FRONTEND_URI}?token={token}"
     send_email(
         email_to=email_to,
         subject=f"{global_settings.PROJECT_NAME} - Verify email for user {username}",

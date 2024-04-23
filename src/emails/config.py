@@ -17,9 +17,18 @@ class Settings(BaseSettings):
 
     FROM_EMAIL: str
     FROM_NAME: str
-    RESET_PASSWORD_TOKEN_EXPIRE_SECONDS: int = 24 * 60 * 60
-    EMAIL_VERIFICATION_TOKEN_EXPIRE_SECONDS: int = 48 * 60 * 60
-    EMAIL_CONFIRM_FRONTEND_URI: str = "/email-confirm"
+
+    RESET_TOKEN_EXPIRE_HOURS: int = 24
+    @property
+    def RESET_TOKEN_EXPIRE_SECONDS(self) -> int:
+        return self.RESET_TOKEN_EXPIRE_HOURS * 60 * 60
+
+    VERIFICATION_TOKEN_EXPIRE_HOURS: int = 24
+    @property
+    def VERIFICATION_TOKEN_EXPIRE_SECONDS(self) -> int:
+        return self.VERIFICATION_TOKEN_EXPIRE_HOURS * 60 * 60
+
+    CONFIRM_FRONTEND_URI: str = "/email-confirm"
 
     OTP_EXPIRES_SECONDS: int = 60
 
