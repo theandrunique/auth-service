@@ -11,6 +11,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+EXPOSE 8000
+
 COPY --from=builder requirements.txt ./
 
 RUN pip install --upgrade pip && pip install -r requirements.txt
