@@ -1,13 +1,8 @@
-version: "3.9"
-name: auth-server
-
 services:
   app:
     build:
       context: ../
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
     environment:
       PROJECT_NAME: ${PROJECT_NAME:-"Auth Server"}
       SERVER_HOST: ${SERVER_HOST:-http://localhost}

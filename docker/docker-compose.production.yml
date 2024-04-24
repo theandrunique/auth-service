@@ -1,0 +1,16 @@
+services:
+  app:
+    labels:
+    - traefik.enable=true
+    - traefik.http.routers.auth-server.rule=Host(`${DOMAIN_NAME?}`)
+    - traefik.http.routers.auth-server.entrypoints=http
+    networks:
+      - traefik-public
+      - default
+    ports: []
+
+networks:
+  traefik-public:
+    external: true
+
+  default:
