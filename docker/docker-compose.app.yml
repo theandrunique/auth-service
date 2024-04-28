@@ -1,3 +1,5 @@
+name: auth-server
+
 services:
   app:
     build:

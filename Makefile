@@ -3,7 +3,7 @@ MONGO=docker/docker-compose.mongo.yml
 MONGO_EXPRESS=docker/docker-compose.mongo-express.yml
 REDIS=docker/docker-compose.redis.yml
 DEV=docker/docker-compose.dev.yml
-PROXY=docker/docker-compose.production.yml
+PROXY=docker/docker-compose.proxy.yml
 
 
 up:
