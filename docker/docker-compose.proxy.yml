@@ -4,17 +4,8 @@ services:
     - traefik.enable=true
     - traefik.docker.network=traefik
 
-    - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
-    - traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
-
     - traefik.http.routers.auth-server.rule=Host(`${DOMAIN_NAME?}`)
     - traefik.http.routers.auth-server.entrypoints=http
-    - traefik.http.routers.auth-server.middlewares=https-redirect
-
-    - traefik.http.routers.auth-server-https.rule=Host(`${DOMAIN_NAME?}`)
-    - traefik.http.routers.auth-server-https.entrypoints=https
-    - traefik.http.routers.auth-server-https.tls.certresolver=le
-    - traefik.http.routers.auth-server-https.tls=true
     networks:
       - traefik
       - default

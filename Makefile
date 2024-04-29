@@ -4,6 +4,7 @@ MONGO_EXPRESS=docker/docker-compose.mongo-express.yml
 REDIS=docker/docker-compose.redis.yml
 DEV=docker/docker-compose.dev.yml
 PROXY=docker/docker-compose.proxy.yml
+PROXY_TLS=docker/docker-compose.proxy-tls.yml
 
 
 up:
@@ -20,3 +21,9 @@ up-proxy:
 
 down-proxy:
 	docker compose -f ${APP} -f ${PROXY} -f ${MONGO} -f ${REDIS} down
+
+up-proxy-tls:
+	docker compose -f ${APP} -f ${PROXY_TLS} -f ${MONGO} -f ${REDIS} up -d --build
+
+down-proxy-tls:
+	docker compose -f ${APP} -f ${PROXY_TLS} -f ${MONGO} -f ${REDIS} down
