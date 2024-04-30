@@ -13,7 +13,7 @@ origins = [
     settings.FRONTEND_URL,
 ]
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, title=settings.PROJECT_NAME)
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,7 +31,9 @@ app.include_router(users_router, prefix="/users", tags=["users"])
 
 if settings.EMAILS_ENABLED:
     from src.emails.views import router as emails_router
+
     app.include_router(emails_router, prefix="/emails", tags=["emails"])
+
 
 @app.get("/ping")
 def ping_pong() -> dict[str, str]:
