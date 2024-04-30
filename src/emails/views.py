@@ -2,7 +2,7 @@ from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Request, status
 
-from src.auth.schemas import UserToken
+from src.auth.schemas import Token
 from src.auth.utils import create_new_session
 from src.dependencies import DbSession
 from src.emails.dependencies import OtpEmailDep, ResetPassEmailDep, VerifyEmailDep
@@ -102,7 +102,7 @@ async def otp_auth(
     email: OtpEmailDep,
     req: Request,
     session: DbSession,
-) -> UserToken:
+) -> Token:
     user = await UsersDB.get_by_email(email=email, session=session)
     if not user:
         raise UserNotFound()

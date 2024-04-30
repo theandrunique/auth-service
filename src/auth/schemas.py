@@ -9,7 +9,7 @@ from pydantic import (
 from src.config import settings
 
 
-class UserTokenPayload(BaseModel):
+class TokenPayload(BaseModel):
     sub: int
     jti: UUID
     exp: datetime.datetime = Field(
@@ -18,7 +18,7 @@ class UserTokenPayload(BaseModel):
     )
 
 
-class UserToken(BaseModel):
+class Token(BaseModel):
     user_id: int
     token: str
 
@@ -26,4 +26,3 @@ class UserToken(BaseModel):
 class Login(BaseModel):
     login: str
     password: str
-

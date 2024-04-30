@@ -21,7 +21,7 @@ from .exceptions import (
 )
 from .schemas import (
     Login,
-    UserToken,
+    Token,
 )
 from .utils import (
     check_password,
@@ -63,7 +63,7 @@ async def login(
     login: Login,
     req: Request,
     session: DbSession,
-) -> UserToken:
+) -> Token:
     if "@" in login.login:
         user = await UsersDB.get_by_email(email=login.login, session=session)
     else:
@@ -90,4 +90,3 @@ async def revoke_token(
         user_session=user_session,
         session=session,
     )
-

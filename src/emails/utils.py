@@ -84,7 +84,9 @@ async def send_verify_email(email_to: str, username: str) -> None:
         jti.bytes,
         ex=settings.VERIFICATION_TOKEN_EXPIRE_SECONDS,
     )
-    confirm_url = f"{global_settings.FRONTEND_URL}{settings.CONFIRM_FRONTEND_URI}?token={token}"
+    confirm_url = (
+        f"{global_settings.FRONTEND_URL}{settings.CONFIRM_FRONTEND_URI}?token={token}"
+    )
     send_email(
         email_to=email_to,
         subject=f"{global_settings.PROJECT_NAME} - Verify email for user {username}",

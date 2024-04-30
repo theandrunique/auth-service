@@ -12,8 +12,8 @@ from src.users.models import UserInDB
 from src.utils import UUIDEncoder
 
 from .schemas import (
-    UserToken,
-    UserTokenPayload,
+    Token,
+    TokenPayload,
 )
 
 
@@ -31,17 +31,13 @@ def _create_token(
     return encoded_jwt
 
 
-def decode_token(token: str) -> dict[str, Any]:
-    return jwt.decode(  # type: ignore
+def decode_token(token: str) -> TokenPayload:
+    payload = jwt.decode(
         jwt=token,
         key=settings.SECRET_KEY,
         algorithms=[settings.ALGORITHM],
     )
-
-
-def validate_user_token(token: str) -> UserTokenPayload:
-    payload = decode_token(token=token)
-    return UserTokenPayload(**payload)
+    return TokenPayload(**payload)
 
 
 def check_password(
@@ -62,12 +58,12 @@ def hash_password(password: str) -> bytes:
 
 
 def create_user_token(
-    payload: UserTokenPayload,
-) -> UserToken:
+    payload: TokenPayload,
+) -> Token:
     token = _create_token(
         data=payload.model_dump(),
     )
-    return UserToken(
+    return Token(
         user_id=payload.sub,
         token=token,
     )
@@ -77,7 +73,7 @@ async def create_new_session(
     req: Request,
     user: UserInDB,
     session: AsyncSession,
-) -> UserToken:
+) -> Token:
     jti = uuid.uuid4()
     await SessionsDB.create_new(
         user_id=user.id,
@@ -85,4 +81,4 @@ async def create_new_session(
         ip_address=req.client.host if req.client else None,
         session=session,
     )
-    return create_user_token(payload=UserTokenPayload(sub=user.id, jti=jti))
+    return create_user_token(payload=TokenPayload(sub=user.id, jti=jti))
