@@ -97,6 +97,6 @@ async def get_user_optional(
 
 
 UserAuthorizationOptional = Annotated[
-    tuple[UserSchema | None],
+    UserSchema | None,
     Security(get_user_optional),
 ]

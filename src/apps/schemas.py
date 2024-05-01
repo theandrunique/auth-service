@@ -15,7 +15,7 @@ class AppInMongo(BaseModel):
     client_secret: UUID = Field(default_factory=lambda: uuid4())
     redirect_uris: list[str]
     scopes: list[str] = Field(default=[])
-    creator_id: int
+    creator_id: UUID
     description: str | None = Field(default=None)
     website: str | None = Field(default=None)
     created_at: datetime.datetime = Field(
@@ -27,7 +27,7 @@ class AppPublic(BaseModel):
     id: UUID = Field(validation_alias=AliasChoices("_id", "id"))
     name: str
     client_id: UUID
-    creator_id: int
+    creator_id: UUID
     redirect_uris: list[str]
     scopes: list[str] = Field(default=[])
     description: str | None = Field(default=None)
