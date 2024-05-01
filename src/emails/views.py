@@ -3,10 +3,10 @@ from typing import Any
 from fastapi import APIRouter, BackgroundTasks, Request, status
 
 from src.auth.schemas import Token
-from src.auth.utils import create_new_session
-from src.dependencies import DbSession
+from src.auth.utils import create_session
 from src.emails.dependencies import OtpEmailDep, ResetPassEmailDep, VerifyEmailDep
-from src.users.crud import UsersDB
+from src.mongo.dependencies import MongoSession
+from src.users.dependencies import UsersRepositoryDep
 from src.users.exceptions import InactiveUser, UserNotFound
 from src.users.schemas import ResetPasswordSchema, UserSchema
 
@@ -26,9 +26,9 @@ router = APIRouter(tags=["emails"])
 async def send_confirmation_email(
     email: EmailRequest,
     worker: BackgroundTasks,
-    session: DbSession,
+    repository: UsersRepositoryDep,
 ) -> None:
-    user = await UsersDB.get_by_email(email=email.email, session=session)
+    user = await repository.get_by_email(email=email.email)
     if user and not user.email_verified:
         return worker.add_task(send_verify_email, user.email, user.username)
 
@@ -36,22 +36,22 @@ async def send_confirmation_email(
 @router.post("/verify/", status_code=status.HTTP_204_NO_CONTENT)
 async def verify_email(
     email: VerifyEmailDep,
-    session: DbSession,
+    repository: UsersRepositoryDep,
 ) -> None:
-    user = await UsersDB.get_by_email(email=email, session=session)
+    user = await repository.get_by_email(email=email)
     if not user or not user.active:
         return
-    await UsersDB.verify_email(user=user, session=session)
+    await repository.verify_email(id=user.id)
 
 
 @router.post("/forgot/", status_code=status.HTTP_204_NO_CONTENT)
 async def recover_password(
     data: EmailRequest,
-    session: DbSession,
+    repository: UsersRepositoryDep,
     worker: BackgroundTasks,
 ) -> None:
     # TODO: dont return any errors
-    user = await UsersDB.get_by_email(email=data.email, session=session)
+    user = await repository.get_by_email(email=data.email)
     if not user:
         raise UserNotFound()
     elif not user.active:
@@ -65,27 +65,25 @@ async def recover_password(
 async def reset_password(
     data: ResetPasswordSchema,
     email: ResetPassEmailDep,
-    session: DbSession,
+    repository: UsersRepositoryDep,
 ) -> Any:
     # TODO: refactor
-    user = await UsersDB.get_by_email(email=email, session=session)
+    user = await repository.get_by_email(email=email)
     if not user:
         raise UserNotFound()
     elif not user.active:
         raise InactiveUser()
-    await UsersDB.update_password(
-        user=user,
-        new_password=data.password,
-        session=session,
-    )
+    await repository.update_password(id=user.id, new_password=data.password)
     return user
 
 
 @router.put("/otp/")
 async def send_opt(
-    otp_data: EmailRequest, session: DbSession, worker: BackgroundTasks
+    otp_data: EmailRequest,
+    worker: BackgroundTasks,
+    repository: UsersRepositoryDep,
 ) -> dict[str, Any]:
-    user = await UsersDB.get_by_email(email=otp_data.email, session=session)
+    user = await repository.get_by_email(email=otp_data.email)
     if not user:
         raise UserNotFound()
     elif not user.email_verified:
@@ -101,11 +99,13 @@ async def send_opt(
 async def otp_auth(
     email: OtpEmailDep,
     req: Request,
-    session: DbSession,
+    repository: UsersRepositoryDep,
+    mongo_session: MongoSession,
 ) -> Token:
-    user = await UsersDB.get_by_email(email=email, session=session)
+    user = await repository.get_by_email(email=email)
     if not user:
         raise UserNotFound()
     if not user.active:
         raise InactiveUser()
-    return await create_new_session(req=req, user=user, session=session)
+
+    return await create_session(session=mongo_session, user_id=user.id, req=req)

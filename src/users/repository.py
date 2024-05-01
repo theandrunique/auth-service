@@ -76,9 +76,7 @@ class UsersRepository(Repository):
             return_document=ReturnDocument.AFTER,
             session=self.session,
         )
-        if updated:
-            return UserSchema(**updated)
-        return None
+        return UserSchema(**updated)
 
     async def update_password(self, new_password: str, id: UUID) -> None:
         await users_collection.update_one(
