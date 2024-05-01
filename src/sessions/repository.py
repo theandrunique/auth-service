@@ -48,6 +48,9 @@ class SessionsRepository(Repository):
         )
         return SessionSchema(**updated)
 
+    async def update_last_used(self, id: UUID) -> None:
+        await self.update(id=id, new_values={"last_used": datetime.now(UTC)})
+
     async def delete(self, id: UUID) -> int:
         result = await self.collection.delete_one({"_id": id}, session=self.session)
         return result.deleted_count
@@ -72,4 +75,3 @@ class SessionsRepository(Repository):
 
     async def delete_all(self) -> None:
         await db.drop_collection(self.collection.name, session=self.session)
-
