@@ -1,11 +1,26 @@
-from datetime import datetime
-from uuid import UUID
+from datetime import UTC, datetime, timedelta
+from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
+
+from .config import settings
+
+
+class SessionCreate(BaseModel):
+    id: UUID = Field(
+        default_factory=lambda: uuid4(),
+        serialization_alias="_id",
+    )
+    last_used: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    expires_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC)
+        + timedelta(hours=settings.EXPIRE_HOURS)
+    )
+    ip_address: str | None = Field(default=None)
 
 
 class SessionSchema(BaseModel):
-    session_id: UUID = Field(..., serialization_alias="session_id")
+    id: UUID = Field(validation_alias=AliasChoices("_id", "id"))
     last_used: datetime
     ip_address: str | None = None
     expires_at: datetime

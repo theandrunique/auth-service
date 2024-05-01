@@ -1,12 +1,12 @@
-import datetime
 from typing import Any
 from uuid import UUID
 
+from dependencies import SessionRepositoryDep
 from fastapi import APIRouter, status
+from pydantic import NonNegativeInt
 
-from src.dependencies import DbSession, UserAuthorization, UserAuthorizationWithSession
+from src.dependencies import UserAuthorizationWithSession
 
-from .crud import SessionsDB
 from .schemas import SessionSchema, UserSessions
 
 router = APIRouter()
@@ -14,38 +14,13 @@ router = APIRouter()
 
 @router.get("/", response_model=UserSessions)
 async def get_my_sessions(
-    user: UserAuthorization,
-    session: DbSession,
+    repository: SessionRepositoryDep,
+    offset: NonNegativeInt = 0,
+    count: NonNegativeInt = 20,
 ) -> UserSessions:
-    user_sessions = await SessionsDB.get_by_user_id(
-        user_id=user.id,
-        session=session,
-    )
-    time_now = datetime.datetime.now()
-
-    expired_ids = [
-        user_session.session_id
-        for user_session in user_sessions
-        if user_session.expires_at < time_now
-    ]
-    if expired_ids:
-        await SessionsDB.revoke_by_ids(
-            user_id=user.id,
-            session_ids=expired_ids,
-            session=session,
-        )
-    session_schemas = [
-        SessionSchema(
-            session_id=user_session.session_id,
-            last_used=user_session.last_used,
-            ip_address=user_session.ip_address,
-            expires_at=user_session.expires_at,
-        )
-        for user_session in user_sessions
-        if user_session.expires_at >= time_now
-    ]
+    user_sessions = await repository.get_many(count=count, offset=offset)
     return UserSessions(
-        user_sessions=session_schemas,
+        user_sessions=user_sessions,
     )
 
 
@@ -60,24 +35,22 @@ async def get_current_session(
 @router.delete("/logout-others/", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_all_sessions_except_current(
     user_with_session: UserAuthorizationWithSession,
-    session: DbSession,
+    repository: SessionRepositoryDep,
 ) -> None:
-    user, user_session = user_with_session
-    await SessionsDB.revoke_except(
-        user_id=user.id,
-        except_id=user_session.session_id,
-        session=session,
-    )
+    _, user_session = user_with_session
+    await repository.delete_except(except_id=user_session.id)
 
 
 @router.delete("/{session_id}/", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_session(
-    user: UserAuthorization,
-    session: DbSession,
+    repository: SessionRepositoryDep,
     session_id: UUID,
 ) -> None:
-    await SessionsDB.revoke_by_id(
-        user_id=user.id,
-        session_id=session_id,
-        session=session,
-    )
+    await repository.delete(id=session_id)
+
+
+@router.delete("/logout-all/", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_all_sessions(
+    repository: SessionRepositoryDep,
+) -> None:
+    await repository.delete_all()
