@@ -27,3 +27,13 @@ async def valid_access_app(app: AppDep, user: UserAuthorization) -> AppInMongo:
 
 
 AppAccessControlDep = Annotated[AppInMongo, Depends(valid_access_app)]
+
+
+async def existed_app_by_client_id(client_id: UUID) -> AppInMongo:
+    found_app = await repository.get_by_client_id(client_id)
+    if not found_app:
+        raise AppNotFound()
+    return found_app
+
+
+ExistedAppByClientId = Annotated[AppInMongo, Depends(existed_app_by_client_id)]
