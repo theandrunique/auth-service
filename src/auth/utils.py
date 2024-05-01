@@ -1,14 +1,14 @@
-import uuid
 from typing import Any
+from uuid import UUID
 
 import bcrypt
 import jwt
 from fastapi import Request
-from sqlalchemy.ext.asyncio import AsyncSession
+from motor.motor_asyncio import AsyncIOMotorClientSession
 
 from src.config import settings
-from src.sessions.crud import SessionsDB
-from src.users.models import UserInDB
+from src.sessions.repository import SessionsRepository
+from src.sessions.schemas import SessionCreate
 from src.utils import UUIDEncoder
 
 from .schemas import (
@@ -57,7 +57,7 @@ def hash_password(password: str) -> bytes:
     )
 
 
-def create_user_token(
+def create_token(
     payload: TokenPayload,
 ) -> Token:
     token = _create_token(
@@ -69,16 +69,12 @@ def create_user_token(
     )
 
 
-async def create_new_session(
-    req: Request,
-    user: UserInDB,
-    session: AsyncSession,
+async def create_session(
+    session: AsyncIOMotorClientSession, user_id: UUID, req: Request
 ) -> Token:
-    jti = uuid.uuid4()
-    await SessionsDB.create_new(
-        user_id=user.id,
-        session_id=jti,
-        ip_address=req.client.host if req.client else None,
-        session=session,
+    sessions_repository = SessionsRepository(session=session, user_id=user_id)
+
+    new_session = await sessions_repository.add(
+        SessionCreate(ip_address=req.client.host if req.client else None)
     )
-    return create_user_token(payload=TokenPayload(sub=user.id, jti=jti))
+    return create_token(payload=TokenPayload(sub=user_id, jti=new_session.id))

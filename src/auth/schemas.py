@@ -10,7 +10,7 @@ from src.config import settings
 
 
 class TokenPayload(BaseModel):
-    sub: int
+    sub: UUID
     jti: UUID
     exp: datetime.datetime = Field(
         default_factory=lambda: datetime.datetime.now(datetime.timezone.utc)
@@ -19,7 +19,7 @@ class TokenPayload(BaseModel):
 
 
 class Token(BaseModel):
-    user_id: int
+    user_id: UUID
     token: str
 
 

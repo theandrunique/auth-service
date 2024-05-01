@@ -6,9 +6,10 @@ from fastapi import (
     status,
 )
 
-from src.dependencies import DbSession, UserAuthorizationWithSession
-from src.sessions.crud import SessionsDB
-from src.users.crud import UsersDB
+from src.dependencies import UserAuthorizationWithSession
+from src.mongo.dependencies import MongoSession
+from src.sessions.dependencies import SessionRepositoryDep
+from src.users.dependencies import UsersRepositoryDep
 from src.users.schemas import (
     RegistrationSchema,
     UserSchema,
@@ -25,7 +26,7 @@ from .schemas import (
 )
 from .utils import (
     check_password,
-    create_new_session,
+    create_session,
 )
 
 router = APIRouter()
@@ -38,23 +39,16 @@ router = APIRouter()
 )
 async def register(
     data: RegistrationSchema,
-    session: DbSession,
+    repository: UsersRepositoryDep,
 ) -> Any:
-    existed_email = await UsersDB.get_by_email(email=data.email, session=session)
+    existed_email = await repository.get_by_email(email=data.email)
     if existed_email:
         raise EmailAlreadyExists()
-    existed_username = await UsersDB.get_by_username(
-        username=data.username, session=session
-    )
+    existed_username = await repository.get_by_username(username=data.username)
     if existed_username:
         raise UsernameAlreadyExists()
 
-    new_user = await UsersDB.create_new(
-        username=data.username,
-        password=data.password,
-        email=data.email,
-        session=session,
-    )
+    new_user = await repository.add(data)
     return new_user
 
 
@@ -62,12 +56,13 @@ async def register(
 async def login(
     login: Login,
     req: Request,
-    session: DbSession,
+    repository: UsersRepositoryDep,
+    mongo_session: MongoSession,
 ) -> Token:
     if "@" in login.login:
-        user = await UsersDB.get_by_email(email=login.login, session=session)
+        user = await repository.get_by_email(email=login.login)
     else:
-        user = await UsersDB.get_by_username(username=login.login, session=session)
+        user = await repository.get_by_username(username=login.login)
     if user is None:
         raise InvalidCredentials()
     elif not user.active:
@@ -77,16 +72,13 @@ async def login(
         hashed_password=user.hashed_password,
     ):
         raise InvalidCredentials()
-    return await create_new_session(req=req, user=user, session=session)
+    return await create_session(session=mongo_session, user_id=user.id, req=req)
 
 
 @router.delete("/logout/", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_token(
-    session: DbSession,
     user_with_session: UserAuthorizationWithSession,
+    repository: SessionRepositoryDep,
 ) -> None:
     _, user_session = user_with_session
-    await SessionsDB.revoke(
-        user_session=user_session,
-        session=session,
-    )
+    await repository.delete(id=user_session.id)
