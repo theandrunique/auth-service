@@ -15,6 +15,8 @@ class MongoSettings(BaseSettings):
     PORT: int = 27017
     DATABASE_NAME: str
 
+    PING_ATTEMPTS: int = 5
+
     @property
     def MONGO_URI(self) -> str:
         return f"mongodb://{self.USERNAME}:{self.PASSWORD}@{self.HOST}:{self.PORT}"
