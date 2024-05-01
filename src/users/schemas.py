@@ -1,5 +1,6 @@
 import datetime
 import re
+from uuid import UUID, uuid4
 
 from pydantic import (
     BaseModel,
@@ -13,12 +14,35 @@ from src.users.config import settings
 from .exceptions import PasswordValidationError
 
 
-class UserSchema(BaseModel):
-    id: int
+class UserPublic(BaseModel):
+    id: UUID
     username: str
     email: EmailStr
+    email_verified: bool
     active: bool
     created_at: datetime.datetime
+
+
+class UserSchema(BaseModel):
+    id: UUID
+    username: str
+    email: EmailStr
+    email_verified: bool
+    hashed_password: bytes
+    active: bool
+    created_at: datetime.datetime
+
+
+class UserCreate(BaseModel):
+    id: UUID = Field(default_factory=lambda: uuid4(), serialization_alias="_id")
+    username: str
+    email: EmailStr
+    email_verified: bool = Field(default=False)
+    hashed_password: bytes
+    active: bool = Field(default=True)
+    created_at: datetime.datetime = Field(
+        default_factory=lambda: datetime.datetime.now(datetime.UTC)
+    )
 
 
 class RegistrationSchema(BaseModel):
