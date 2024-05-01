@@ -25,14 +25,6 @@ class AuthorizationTypeIsNotSupported(HTTPException):
         )
 
 
-class InvalidClientSecret(HTTPException):
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid client secret",
-        )
-
-
 class InvalidAuthorizationCode(HTTPException):
     def __init__(self) -> None:
         super().__init__(
@@ -46,4 +38,12 @@ class InvalidSession(HTTPException):
         super().__init__(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid session",
+        )
+
+
+class InvalidAppCredentials(HTTPException):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid app credentials",
         )

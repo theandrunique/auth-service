@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, status
 from pydantic import NonNegativeInt
 
-from src.dependencies import UserAuthorizationWithSession
+from src.auth.dependencies import UserAuthorizationWithSession
 
 from .dependencies import SessionRepositoryDep
 from .schemas import SessionSchema, UserSessions

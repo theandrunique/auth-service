@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from src.dependencies import UserAuthorization
+from src.auth.dependencies import UserAuthorization
 from src.mongo import MongoSession
 
 from .repository import SessionsRepository

@@ -54,6 +54,3 @@ class AppsRepository:
     async def delete(self, id: UUID) -> int:
         result = await self.app_collection.delete_one({"_id": id}, session=self.session)
         return result.deleted_count
-
-
-repository = AppsRepository()

@@ -39,6 +39,15 @@ class OAuth2SessionsRepository(Repository):
             return OAuth2SessionSchema(**found)
         return None
 
+    async def get_by_jti(self, jti: UUID) -> OAuth2SessionSchema | None:
+        found = await self.collection.find_one(
+            {"refresh_token_id": jti},
+            session=self.session,
+        )
+        if found:
+            return OAuth2SessionSchema(**found)
+        return None
+
     async def update(self, id: UUID, new_values: dict[str, Any]) -> OAuth2SessionSchema:
         updated = await self.collection.find_one_and_update(
             {"_id": id},
@@ -47,6 +56,9 @@ class OAuth2SessionsRepository(Repository):
             session=self.session,
         )
         return OAuth2SessionSchema(**updated)
+
+    async def update_jti(self, id: UUID, new_jti: UUID) -> OAuth2SessionSchema:
+        return await self.update(id=id, new_values={"refresh_token_id": new_jti})
 
     async def delete(self, id: UUID) -> int:
         result = await self.collection.delete_one({"_id": id}, session=self.session)

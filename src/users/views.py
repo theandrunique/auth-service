@@ -2,7 +2,7 @@ from typing import Any
 
 from fastapi import APIRouter
 
-from src.dependencies import UserAuthorization
+from src.auth.dependencies import UserAuthorization
 
 from .schemas import UserPublic
 

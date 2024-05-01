@@ -1,24 +1,22 @@
 import datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, field_validator
 
 from .config import settings
 
 
-class OAuth2AuthorizeRequest(BaseModel):
-    client_id: UUID
-    redirect_uri: str
-    response_type: str
-    scopes: list[str]
-    state: str | None = Field(default=None)
-    nonce: str | None = Field(default=None)
-
-
 class OAuth2CodeExchangeRequest(BaseModel):
-    client_id: UUID
-    client_secret: UUID
     code: str
+    redirect_uri: str
+    grant_type: str
+
+    @field_validator("grant_type")
+    @classmethod
+    def check_grant_type(cls, v: str) -> str:
+        if v != "authorization_code":
+            raise ValueError("grant_type must be 'authorization_code'")
+        return v
 
 
 class OAuth2AuthorizeResponse(BaseModel):
@@ -27,12 +25,37 @@ class OAuth2AuthorizeResponse(BaseModel):
 
 
 class OAuth2AccessTokenPayload(BaseModel):
-    sub: str
+    sub: UUID
     scopes: list[str]
     exp: datetime.datetime = Field(
         default_factory=lambda: datetime.datetime.now()
         + datetime.timedelta(seconds=settings.ACCESS_TOKEN_EXPIRE_SECONDS)
     )
+    typ: str = Field(default="access")
+
+    @field_validator("typ")
+    @classmethod
+    def check_type(cls, v: str) -> str:
+        if v != "access":
+            raise ValueError("Invalid typ")
+        return v
+
+
+class OAuth2RefreshTokenPayload(BaseModel):
+    sub: UUID
+    jti: UUID = Field(default_factory=lambda: uuid4())
+    exp: datetime.datetime = Field(
+        default_factory=lambda: datetime.datetime.now()
+        + datetime.timedelta(hours=settings.REFRESH_TOKEN_EXPIRE_HOURS)
+    )
+    typ: str = Field(default="refresh")
+
+    @field_validator("typ")
+    @classmethod
+    def check_type(cls, v: str) -> str:
+        if v != "refresh":
+            raise ValueError("Invalid typ")
+        return v
 
 
 class OAuth2CodeExchangeResponse(BaseModel):
@@ -40,7 +63,7 @@ class OAuth2CodeExchangeResponse(BaseModel):
     refresh_token: str
     token_type: str = Field(default="Bearer")
     expires_in: int = Field(default=settings.ACCESS_TOKEN_EXPIRE_SECONDS)
-    scope: str
+    scopes: list[str]
 
 
 class RefreshTokenRequest(BaseModel):

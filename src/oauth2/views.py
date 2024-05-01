@@ -1,108 +1,136 @@
-from enum import Enum
+from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
+from jwt import PyJWTError
+from pydantic import ValidationError
 
-from src.apps.exceptions import AppNotFound
-from src.apps.registry import AppsRegistry
-from src.dependencies import DbSession, UserAuthorization
-from src.oauth2.crud import OAuth2SessionsDB
+from src.apps.dependencies import ExistedAppByClientId
+from src.dependencies import UserAuthorization
+from src.mongo.dependencies import MongoSession
+from src.oauth2_sessions.repository import OAuth2SessionsRepository
+from src.oauth2_sessions.schemas import OAuth2SessionCreate
 from src.redis_helper import redis_client
 
 from .config import settings
+from .dependencies import AppAuth
 from .exceptions import (
-    AuthorizationTypeIsNotSupported,
     InvalidAuthorizationCode,
-    InvalidClientSecret,
     InvalidSession,
     NotAllowedScope,
     RedirectUriNotAllowed,
 )
 from .schemas import (
-    OAuth2AuthorizeRequest,
+    OAuth2AccessTokenPayload,
     OAuth2AuthorizeResponse,
     OAuth2CodeExchangeRequest,
     OAuth2CodeExchangeResponse,
+    OAuth2RefreshTokenPayload,
     RefreshTokenRequest,
 )
 from .utils import (
+    create_token_pair,
     gen_authorization_code,
-    gen_token_pair_and_create_session,
-    get_bytes_from_token,
-    hash_token,
-    update_session_and_gen_new_token,
+    validate_refresh_token,
 )
 
 router = APIRouter(prefix="", tags=["oauth2"])
 
 
-class ResponseType(Enum):
-    CODE = "code"
-
-
 @router.post("/authorize/", response_model_exclude_none=True)
 async def oauth2_authorize(
-    data: OAuth2AuthorizeRequest,
     user: UserAuthorization,
+    app: ExistedAppByClientId,
+    redirect_uri: str,
+    scopes: list[str],
+    response_type: str = Query(pattern="code"),
+    state: str | None = None,
 ) -> OAuth2AuthorizeResponse:
-    app = await AppsRegistry.get_by_client_id(data.client_id)
-    if not app:
-        raise AppNotFound()
-
-    if data.redirect_uri not in app.redirect_uris:
+    if redirect_uri not in app.redirect_uris:
         raise RedirectUriNotAllowed()
 
-    disallowed_scopes = [scope for scope in data.scopes if scope not in app.scopes]
+    disallowed_scopes = [scope for scope in scopes if scope not in app.scopes]
     if disallowed_scopes:
         raise NotAllowedScope(disallowed_scopes)
-
-    if data.response_type != ResponseType.CODE.value:
-        raise AuthorizationTypeIsNotSupported()
 
     auth_code = gen_authorization_code()
 
     await redis_client.set(
-        f"auth_code_{app.client_id}_{auth_code}",
+        f"auth_code_{redirect_uri}_{app.client_id}_{auth_code}",
         user.id,
         ex=settings.AUTHORIZATION_CODE_EXPIRE_SECONDS,
     )
 
     return OAuth2AuthorizeResponse(
         code=auth_code,
-        state=data.state,
+        state=state,
     )
 
 
 @router.post("/token/")
 async def oauth2_exchange_code(
-    data: OAuth2CodeExchangeRequest, session: DbSession
+    app: AppAuth,
+    data: OAuth2CodeExchangeRequest,
+    mongo_session: MongoSession,
 ) -> OAuth2CodeExchangeResponse:
-    app = await AppsRegistry.get_by_client_id(data.client_id)
-    if not app:
-        raise AppNotFound()
-    if data.client_secret != app.client_secret:
-        raise InvalidClientSecret()
-
-    user_id = await redis_client.get(f"auth_code_{app.client_id}_{data.code}")
+    user_id = await redis_client.get(
+        f"auth_code_{data.redirect_uri}_{app.client_id}_{data.code}"
+    )
     if not user_id:
         raise InvalidAuthorizationCode()
 
-    await redis_client.delete(f"auth_code_{app.client_id}_{data.code}")
+    await redis_client.delete(
+        f"auth_code_{data.redirect_uri}_{app.client_id}_{data.code}"
+    )
 
-    return await gen_token_pair_and_create_session(
+    refresh_payload = OAuth2RefreshTokenPayload(sub=UUID(user_id))
+    access_token, refresh_token = create_token_pair(
+        payload=OAuth2AccessTokenPayload(sub=UUID(user_id), scopes=app.scopes),
+        refresh_payload=refresh_payload,
+    )
+
+    repository = OAuth2SessionsRepository(session=mongo_session, user_id=user_id)
+
+    await repository.add(
+        OAuth2SessionCreate(
+            refresh_token_id=refresh_payload.jti,
+            app_id=app.id,
+            scopes=app.scopes,
+        )
+    )
+
+    return OAuth2CodeExchangeResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
         scopes=app.scopes,
-        user_id=user_id,
-        app_id=app.id,
-        session=session,
     )
 
 
 @router.post("/refresh/")
 async def refresh_token(
-    data: RefreshTokenRequest, session: DbSession
+    app: AppAuth,
+    data: RefreshTokenRequest,
+    mongo_session: MongoSession,
 ) -> OAuth2CodeExchangeResponse:
-    oauth2_session = await OAuth2SessionsDB.get_by_token(
-        hash_token(get_bytes_from_token(data.refresh_token)), session=session
-    )
-    if not oauth2_session:
+    try:
+        payload = validate_refresh_token(data.refresh_token)
+        ...
+    except (PyJWTError, ValidationError):
         raise InvalidSession()
-    return await update_session_and_gen_new_token(oauth2_session, session)
+
+    repository = OAuth2SessionsRepository(session=mongo_session, user_id=payload.sub)
+    session = await repository.get_by_jti(payload.jti)
+    if not session:
+        raise InvalidSession()
+
+    refresh_payload = OAuth2RefreshTokenPayload(sub=payload.sub)
+    access_token, refresh_token = create_token_pair(
+        payload=OAuth2AccessTokenPayload(sub=payload.sub, scopes=session.scopes),
+        refresh_payload=refresh_payload,
+    )
+    await repository.update_jti(id=session.id, new_jti=refresh_payload.jti)
+
+    return OAuth2CodeExchangeResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        scopes=app.scopes,
+    )

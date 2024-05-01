@@ -6,7 +6,7 @@ from fastapi import (
     status,
 )
 
-from src.dependencies import UserAuthorizationWithSession
+from src.auth.dependencies import UserAuthorizationWithSession
 from src.mongo.dependencies import MongoSession
 from src.sessions.dependencies import SessionRepositoryDep
 from src.users.dependencies import UsersRepositoryDep

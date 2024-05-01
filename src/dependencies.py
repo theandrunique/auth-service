@@ -1,6 +1,10 @@
 from src.auth.dependencies import (
-    UserAuthorization,  # noqa: F401
-    UserAuthorizationOptional,  # noqa: F401
-    UserAuthorizationWithSession,  # noqa: F401
+    UserAuthorization as UserAuthorization,  # noqa: F401
 )
-from src.database import DbSession  # noqa: F401
+from src.auth.dependencies import (
+    UserAuthorizationOptional as UserAuthorizationOptional,  # noqa: F401
+)
+from src.auth.dependencies import (
+    UserAuthorizationWithSession as UserAuthorizationWithSession,  # noqa: F401
+)
+from src.database import DbSession as DbSession  # noqa: F401
