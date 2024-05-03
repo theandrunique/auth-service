@@ -6,14 +6,13 @@ from datetime import timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Any
-from uuid import uuid4
+from uuid import UUID
 
 import jinja2
 
 from src.config import settings as global_settings
 from src.emails.schemas import EmailTokenPayload
 from src.emails.token_utils import gen_email_token
-from src.redis_helper import redis_client
 
 from .config import settings
 
@@ -43,8 +42,7 @@ def send_email(
     server.quit()
 
 
-async def send_reset_password_email(email_to: str) -> None:
-    jti = uuid4()
+async def send_reset_password_email(email_to: str, jti: UUID) -> None:
     payload = EmailTokenPayload(
         sub=email_to,
         typ="email",
@@ -53,11 +51,6 @@ async def send_reset_password_email(email_to: str) -> None:
         + timedelta(seconds=settings.RESET_TOKEN_EXPIRE_SECONDS),
     )
     token = gen_email_token(payload=payload)
-    await redis_client.set(
-        f"reset_password_token_id_{email_to}",
-        jti.bytes,
-        ex=settings.RESET_TOKEN_EXPIRE_SECONDS,
-    )
     subject = f"{global_settings.PROJECT_NAME} - Password recovery for user {email_to}"
     send_email(
         email_to=email_to,
@@ -69,8 +62,7 @@ async def send_reset_password_email(email_to: str) -> None:
     )
 
 
-async def send_verify_email(email_to: str, username: str) -> None:
-    jti = uuid4()
+async def send_verify_email(email_to: str, username: str, jti: UUID) -> None:
     payload = EmailTokenPayload(
         sub=email_to,
         typ="email",
@@ -79,11 +71,6 @@ async def send_verify_email(email_to: str, username: str) -> None:
         + timedelta(seconds=settings.VERIFICATION_TOKEN_EXPIRE_SECONDS),
     )
     token = gen_email_token(payload=payload)
-    await redis_client.set(
-        f"verify_email_token_id_{email_to}",
-        jti.bytes,
-        ex=settings.VERIFICATION_TOKEN_EXPIRE_SECONDS,
-    )
     confirm_url = (
         f"{global_settings.FRONTEND_URL}{settings.CONFIRM_FRONTEND_URI}?token={token}"
     )
@@ -101,9 +88,6 @@ async def send_verify_email(email_to: str, username: str) -> None:
 
 
 async def send_otp_email(email_to: str, username: str, otp: str, token: str) -> None:
-    await redis_client.set(
-        f"otp_{email_to}_{token}", otp, ex=settings.OTP_EXPIRES_SECONDS
-    )
     send_email(
         email_to=email_to,
         subject="OTP",

@@ -1,4 +1,4 @@
-from pydantic import AnyUrl, RedisDsn
+from pydantic import AnyUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,7 +21,6 @@ class Settings(BaseSettings):
     KEYS_LENGTH: int = 40
     OTP_EXPIRE_SECONDS: int = 5 * 60
 
-    REDIS_URL: RedisDsn
     FRONTEND_URL: str = "http://localhost:5173"
 
     EMAILS_ENABLED: bool

@@ -9,7 +9,7 @@ from src.dependencies import UserAuthorization
 from src.mongo.dependencies import MongoSession
 from src.oauth2_sessions.repository import OAuth2SessionsRepository
 from src.oauth2_sessions.schemas import OAuth2SessionCreate
-from src.redis_helper import redis_client
+from src.redis import RedisClient
 
 from .config import settings
 from .dependencies import AppAuth
@@ -40,6 +40,7 @@ router = APIRouter(prefix="", tags=["oauth2"])
 async def oauth2_authorize(
     user: UserAuthorization,
     app: ExistedAppByClientId,
+    redis: RedisClient,
     redirect_uri: str,
     scopes: list[str],
     response_type: str = Query(pattern="code"),
@@ -54,9 +55,9 @@ async def oauth2_authorize(
 
     auth_code = gen_authorization_code()
 
-    await redis_client.set(
+    await redis.set(
         f"auth_code_{redirect_uri}_{app.client_id}_{auth_code}",
-        user.id,
+        user.id.hex,
         ex=settings.AUTHORIZATION_CODE_EXPIRE_SECONDS,
     )
 
@@ -71,16 +72,15 @@ async def oauth2_exchange_code(
     app: AppAuth,
     data: OAuth2CodeExchangeRequest,
     mongo_session: MongoSession,
+    redis: RedisClient,
 ) -> OAuth2CodeExchangeResponse:
-    user_id = await redis_client.get(
+    user_id = await redis.get(
         f"auth_code_{data.redirect_uri}_{app.client_id}_{data.code}"
     )
     if not user_id:
         raise InvalidAuthorizationCode()
 
-    await redis_client.delete(
-        f"auth_code_{data.redirect_uri}_{app.client_id}_{data.code}"
-    )
+    await redis.delete(f"auth_code_{data.redirect_uri}_{app.client_id}_{data.code}")
 
     refresh_payload = OAuth2RefreshTokenPayload(sub=UUID(user_id))
     access_token, refresh_token = create_token_pair(
