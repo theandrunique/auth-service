@@ -39,3 +39,5 @@ services:
       MONGO_HOST: ${MONGO_HOST:-mongo}
       MONGO_PORT: ${MONGO_PORT:-27017}
       MONGO_DATABASE_NAME: ${MONGO_DATABASE_NAME:-auth_server}
+
+      OAUTH2_SECRET_KEY: ${OAUTH2_SECRET_KEY:?}
