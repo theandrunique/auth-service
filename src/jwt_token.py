@@ -10,6 +10,7 @@ from src.utils import UUIDEncoder
 def create(
     payload: dict[str, Any],
 ) -> str:
+    payload["iss"] = settings.DOMAIN_URL
     encoded = jwt.encode(
         payload=payload,
         key=settings.SECRET_KEY,
@@ -25,6 +26,7 @@ def decode(token: str) -> dict[str, Any] | None:
             jwt=token,
             key=settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM],
+            issuer=settings.DOMAIN_URL,
         )
     except InvalidTokenError:
         return None
