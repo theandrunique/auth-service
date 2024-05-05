@@ -9,14 +9,6 @@ class InvalidToken(HTTPException):
         )
 
 
-class InvalidOtp(HTTPException):
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid OTP",
-        )
-
-
 class EmailAlreadyVerified(HTTPException):
     def __init__(self) -> None:
         super().__init__(

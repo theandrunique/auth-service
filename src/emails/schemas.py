@@ -22,11 +22,5 @@ class EmailToken(BaseModel):
     token: str
 
 
-class OtpAuthSchema(BaseModel):
-    otp: str
-    token: str
-    email: EmailStr
-
-
 class EmailRequest(BaseModel):
     email: EmailStr

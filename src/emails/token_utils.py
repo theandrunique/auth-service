@@ -1,4 +1,3 @@
-
 from pydantic import ValidationError
 
 from src import jwt_token

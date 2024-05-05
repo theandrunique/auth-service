@@ -1,7 +1,5 @@
 import datetime
-import secrets
 import smtplib
-import string
 from datetime import timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -86,19 +84,3 @@ async def send_verify_email(email_to: str, username: str, jti: UUID) -> None:
         ),
     )
 
-
-async def send_otp_email(email_to: str, username: str, otp: str, token: str) -> None:
-    send_email(
-        email_to=email_to,
-        subject="OTP",
-        html_body=await render_email_template(
-            template_name="otp.html",
-            context={"username": username, "otp": otp},
-        ),
-    )
-
-
-def gen_otp_with_token() -> tuple[str, str]:
-    otp = "".join(secrets.choice(string.digits) for _ in range(6))
-    token = secrets.token_urlsafe(40)
-    return otp, token

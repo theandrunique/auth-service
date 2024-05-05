@@ -1,12 +1,9 @@
 from typing import Any
 from uuid import uuid4
 
-from fastapi import APIRouter, BackgroundTasks, Request, status
+from fastapi import APIRouter, BackgroundTasks, status
 
-from src.auth.schemas import Token
-from src.auth.utils import create_session
-from src.emails.dependencies import OtpEmailDep, ResetPassEmailDep, VerifyEmailDep
-from src.mongo.dependencies import MongoSession
+from src.emails.dependencies import ResetPassEmailDep, VerifyEmailDep
 from src.redis import RedisClient
 from src.users.dependencies import UsersRepositoryDep
 from src.users.exceptions import InactiveUser, UserNotFound
@@ -16,8 +13,6 @@ from .config import settings
 from .exceptions import EmailNotVerified
 from .schemas import EmailRequest
 from .utils import (
-    gen_otp_with_token,
-    send_otp_email,
     send_reset_password_email,
     send_verify_email,
 )
@@ -92,39 +87,3 @@ async def reset_password(
         raise InactiveUser()
     await repository.update_password(id=user.id, new_password=data.password)
     return user
-
-
-@router.put("/otp/")
-async def send_opt(
-    otp_data: EmailRequest,
-    worker: BackgroundTasks,
-    repository: UsersRepositoryDep,
-    redis: RedisClient,
-) -> dict[str, Any]:
-    user = await repository.get_by_email(email=otp_data.email)
-    if not user:
-        raise UserNotFound()
-    elif not user.email_verified:
-        raise EmailNotVerified()
-    otp, token = gen_otp_with_token()
-    await redis.set(f"otp_{user.email}_{token}", otp, ex=settings.OTP_EXPIRES_SECONDS)
-    worker.add_task(send_otp_email, otp_data.email, user.username, otp, token)
-    return {
-        "token": token,
-    }
-
-
-@router.post("/otp/")
-async def otp_auth(
-    email: OtpEmailDep,
-    req: Request,
-    repository: UsersRepositoryDep,
-    mongo_session: MongoSession,
-) -> Token:
-    user = await repository.get_by_email(email=email)
-    if not user:
-        raise UserNotFound()
-    if not user.active:
-        raise InactiveUser()
-
-    return await create_session(session=mongo_session, user_id=user.id, req=req)

@@ -6,8 +6,8 @@ from redis.asyncio import Redis
 
 from src.redis import RedisClient
 
-from .exceptions import InvalidOtp, InvalidToken
-from .schemas import EmailToken, OtpAuthSchema
+from .exceptions import InvalidToken
+from .schemas import EmailToken
 from .token_utils import validate_email_token
 
 
@@ -40,17 +40,3 @@ async def check_verify_email_token(data: EmailToken, redis: RedisClient) -> str:
 
 
 VerifyEmailDep = Annotated[str, Security(check_verify_email_token)]
-
-
-async def get_otp(data: OtpAuthSchema, redis: RedisClient) -> str:
-    expected_otp = await redis.get(f"otp_{data.email}_{data.token}")
-
-    if data.otp != expected_otp:
-        raise InvalidOtp()
-
-    await redis.delete(f"otp_{data.email}_{data.token}")
-
-    return data.email
-
-
-OtpEmailDep = Annotated[str, Security(get_otp)]
