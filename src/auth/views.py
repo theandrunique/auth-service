@@ -21,13 +21,8 @@ from .exceptions import (
     InvalidCredentials,
     UsernameAlreadyExists,
 )
-from .schemas import (
-    Login,
-    Token,
-)
-from .utils import (
-    create_session,
-)
+from .schemas import Login, Token
+from .utils import create_session
 
 router = APIRouter()
 

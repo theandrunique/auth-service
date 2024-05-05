@@ -1,5 +1,4 @@
 from typing import Any
-from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, status
 
@@ -11,7 +10,7 @@ from src.users.schemas import ResetPasswordSchema, UserSchema
 
 from .config import settings
 from .exceptions import EmailNotVerified
-from .schemas import EmailRequest
+from .schemas import EmailRequest, ResetPasswordTokenPayload, VerificationTokenPayload
 from .utils import (
     send_reset_password_email,
     send_verify_email,
@@ -29,13 +28,13 @@ async def send_confirmation_email(
 ) -> None:
     user = await repository.get_by_email(email=email.email)
     if user and not user.email_verified:
-        jti = uuid4()
+        payload = VerificationTokenPayload(sub=user.id)
         await redis.set(
             f"verify_email_token_id_{user.email}",
-            jti.hex,
+            payload.jti.hex,
             ex=settings.VERIFICATION_TOKEN_EXPIRE_SECONDS,
         )
-        return worker.add_task(send_verify_email, user.email, user.username, jti)
+        return worker.add_task(send_verify_email, user.email, user.username, payload)
 
 
 @router.post("/verify/", status_code=status.HTTP_204_NO_CONTENT)
@@ -64,13 +63,13 @@ async def recover_password(
         raise InactiveUser()
     elif not user.email_verified:
         raise EmailNotVerified()
-    jti = uuid4()
+    payload = ResetPasswordTokenPayload(sub=user.id)
     await redis.set(
         f"reset_password_token_id_{data.email}",
-        jti.hex,
+        payload.jti.hex,
         ex=settings.RESET_TOKEN_EXPIRE_SECONDS,
     )
-    worker.add_task(send_reset_password_email, data.email, jti)
+    worker.add_task(send_reset_password_email, data.email, payload)
 
 
 @router.post("/reset/", response_model=UserSchema)

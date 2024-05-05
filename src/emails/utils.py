@@ -1,53 +1,39 @@
-import datetime
-import smtplib
-from datetime import timedelta
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from typing import Any
-from uuid import UUID
+from dataclasses import asdict
 
-import jinja2
+from pydantic import ValidationError
 
+from src import jwt_token
 from src.config import settings as global_settings
-from src.emails.schemas import EmailTokenPayload
-from src.emails.token_utils import gen_email_token
+from src.emails.schemas import (
+    EmailTokenPayloadValidator,
+    ResetPasswordTokenPayload,
+    VerificationTokenPayload,
+)
 
 from .config import settings
-
-template_loader = jinja2.FileSystemLoader(settings.TEMPLATES_DIR)
-template_env = jinja2.Environment(enable_async=True, loader=template_loader)
-
-
-async def render_email_template(*, template_name: str, context: dict[str, Any]) -> str:
-    template = template_env.get_template(template_name)
-    return await template.render_async(context)
+from .smtp import send_email
+from .templates import render_email_template
 
 
-def send_email(
-    email_to: str,
-    subject: str,
-    html_body: str,
+def gen_email_token(
+    payload: ResetPasswordTokenPayload | VerificationTokenPayload,
+) -> str:
+    return jwt_token.create(payload=asdict(payload))
+
+
+def validate_email_token(token: str) -> EmailTokenPayloadValidator | None:
+    payload = jwt_token.decode(token)
+    if not payload:
+        return None
+    try:
+        return EmailTokenPayloadValidator(**payload)
+    except ValidationError:
+        return None
+
+
+async def send_reset_password_email(
+    email_to: str, payload: ResetPasswordTokenPayload
 ) -> None:
-    msg = MIMEMultipart()
-    msg["From"] = f"{settings.FROM_NAME} {settings.FROM_EMAIL}"
-    msg["To"] = email_to
-    msg["Subject"] = subject
-    msg.attach(MIMEText(html_body, "html"))
-
-    server = smtplib.SMTP_SSL(settings.SMTP_SERVER, settings.SMTP_PORT)
-    server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-    server.send_message(msg=msg)
-    server.quit()
-
-
-async def send_reset_password_email(email_to: str, jti: UUID) -> None:
-    payload = EmailTokenPayload(
-        sub=email_to,
-        typ="email",
-        jti=jti,
-        exp=datetime.datetime.now(datetime.UTC)
-        + timedelta(seconds=settings.RESET_TOKEN_EXPIRE_SECONDS),
-    )
     token = gen_email_token(payload=payload)
     subject = f"{global_settings.PROJECT_NAME} - Password recovery for user {email_to}"
     send_email(
@@ -60,14 +46,9 @@ async def send_reset_password_email(email_to: str, jti: UUID) -> None:
     )
 
 
-async def send_verify_email(email_to: str, username: str, jti: UUID) -> None:
-    payload = EmailTokenPayload(
-        sub=email_to,
-        typ="email",
-        jti=jti,
-        exp=datetime.datetime.now(datetime.UTC)
-        + timedelta(seconds=settings.VERIFICATION_TOKEN_EXPIRE_SECONDS),
-    )
+async def send_verify_email(
+    email_to: str, username: str, payload: VerificationTokenPayload
+) -> None:
     token = gen_email_token(payload=payload)
     confirm_url = (
         f"{global_settings.FRONTEND_URL}{settings.CONFIRM_FRONTEND_URI}?token={token}"
@@ -83,4 +64,3 @@ async def send_verify_email(email_to: str, username: str, jti: UUID) -> None:
             },
         ),
     )
-
