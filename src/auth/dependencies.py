@@ -2,8 +2,6 @@ from typing import Annotated
 
 from fastapi import Security
 from fastapi.security import OAuth2PasswordBearer
-from jwt.exceptions import PyJWTError
-from pydantic import ValidationError
 
 from src.mongo.dependencies import MongoSession
 from src.sessions.repository import SessionsRepository
@@ -44,9 +42,8 @@ async def get_user_with_session(
     users_repository: UsersRepositoryDep,
     token: str = Security(get_authorization),
 ) -> tuple[UserSchema, SessionSchema]:
-    try:
-        payload = decode_token(token=token)
-    except (PyJWTError, ValidationError):
+    payload = decode_token(token=token)
+    if payload is None:
         raise InvalidToken()
 
     user = await users_repository.get(id=payload.sub)

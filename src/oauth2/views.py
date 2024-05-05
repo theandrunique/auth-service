@@ -1,8 +1,6 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Query
-from jwt import PyJWTError
-from pydantic import ValidationError
 
 from src.apps.dependencies import ExistedAppByClientId
 from src.dependencies import UserAuthorization
@@ -111,10 +109,8 @@ async def refresh_token(
     data: RefreshTokenRequest,
     mongo_session: MongoSession,
 ) -> OAuth2CodeExchangeResponse:
-    try:
-        payload = validate_refresh_token(data.refresh_token)
-        ...
-    except (PyJWTError, ValidationError):
+    payload = validate_refresh_token(data.refresh_token)
+    if payload is None:
         raise InvalidSession()
 
     repository = OAuth2SessionsRepository(session=mongo_session, user_id=payload.sub)
