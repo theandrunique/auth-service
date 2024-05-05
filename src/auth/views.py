@@ -6,6 +6,7 @@ from fastapi import (
     status,
 )
 
+from src import hash
 from src.auth.dependencies import UserAuthorizationWithSession
 from src.mongo.dependencies import MongoSession
 from src.sessions.dependencies import SessionRepositoryDep
@@ -25,7 +26,6 @@ from .schemas import (
     Token,
 )
 from .utils import (
-    check_password,
     create_session,
 )
 
@@ -67,9 +67,9 @@ async def login(
         raise InvalidCredentials()
     elif not user.active:
         raise InvalidCredentials()
-    elif not check_password(
-        password=login.password,
-        hashed_password=user.hashed_password,
+    elif not hash.check(
+        value=login.password,
+        hashed_value=user.hashed_password,
     ):
         raise InvalidCredentials()
     return await create_session(session=mongo_session, user_id=user.id, req=req)

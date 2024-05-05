@@ -4,7 +4,7 @@ from uuid import UUID
 from motor.motor_asyncio import AsyncIOMotorClientSession
 from pymongo import ReturnDocument
 
-from src.auth.utils import hash_password
+from src import hash
 from src.mongo import Repository, db
 from src.users.schemas import RegistrationSchema, UserCreate, UserSchema
 
@@ -19,7 +19,7 @@ class UsersRepository(Repository):
         new_user = UserCreate(
             username=item.username,
             email=item.email,
-            hashed_password=hash_password(item.password),
+            hashed_password=hash.create(item.password),
         )
         result = await users_collection.insert_one(
             new_user.model_dump(by_alias=True),
@@ -81,7 +81,7 @@ class UsersRepository(Repository):
     async def update_password(self, new_password: str, id: UUID) -> None:
         await users_collection.update_one(
             {"_id": id},
-            {"$set": {"password": hash_password(new_password)}},
+            {"$set": {"password": hash.create(new_password)}},
             session=self.session,
         )
 

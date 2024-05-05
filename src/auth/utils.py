@@ -1,7 +1,6 @@
 from typing import Any
 from uuid import UUID
 
-import bcrypt
 import jwt
 from fastapi import Request
 from motor.motor_asyncio import AsyncIOMotorClientSession
@@ -38,23 +37,6 @@ def decode_token(token: str) -> TokenPayload:
         algorithms=[settings.ALGORITHM],
     )
     return TokenPayload(**payload)
-
-
-def check_password(
-    password: str,
-    hashed_password: bytes,
-) -> bool:
-    return bcrypt.checkpw(
-        password=password.encode(),
-        hashed_password=hashed_password,
-    )
-
-
-def hash_password(password: str) -> bytes:
-    return bcrypt.hashpw(
-        password=password.encode(),
-        salt=bcrypt.gensalt(),
-    )
 
 
 def create_token(
