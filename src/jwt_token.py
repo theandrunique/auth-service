@@ -20,13 +20,15 @@ def create(
     return encoded
 
 
-def decode(token: str) -> dict[str, Any] | None:
+def decode(token: str, audience: str | None = None) -> dict[str, Any] | None:
     try:
         return jwt.decode(  # type: ignore
             jwt=token,
             key=settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM],
             issuer=settings.DOMAIN_URL,
+            audience=audience,
         )
-    except InvalidTokenError:
+    except InvalidTokenError as e:
+        print(e)
         return None

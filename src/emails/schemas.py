@@ -1,24 +1,23 @@
+import enum
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr
 
 from .config import settings
+
+
+class EmailAudience(str, enum.Enum):
+    EMAIL_CONFIRMATION = "email-confirmation"
+    RESET_PASSWORD = "email-reset-password"
 
 
 class EmailTokenPayloadValidator(BaseModel):
     sub: UUID
     jti: UUID
     exp: datetime
-    aud: str
-
-    @field_validator("aud")
-    @classmethod
-    def check_type(cls, v: str) -> str:
-        if v != "email":
-            raise ValueError
-        return v
+    aud: EmailAudience
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -26,7 +25,7 @@ class BaseEmailTokenPayload:
     sub: UUID
     jti: UUID = field(default_factory=lambda: uuid4())
     exp: datetime
-    aud: str = field(default="email")
+    aud: str
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -35,6 +34,7 @@ class VerificationTokenPayload(BaseEmailTokenPayload):
         default_factory=lambda: datetime.now()
         + timedelta(hours=settings.VERIFICATION_TOKEN_EXPIRE_HOURS)
     )
+    aud: EmailAudience = EmailAudience.EMAIL_CONFIRMATION
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -43,6 +43,7 @@ class ResetPasswordTokenPayload(BaseEmailTokenPayload):
         default_factory=lambda: datetime.now()
         + timedelta(hours=settings.RESET_TOKEN_EXPIRE_HOURS)
     )
+    aud: EmailAudience = EmailAudience.RESET_PASSWORD
 
 
 class EmailToken(BaseModel):

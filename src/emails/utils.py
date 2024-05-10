@@ -9,6 +9,7 @@ from src.emails.schemas import (
     ResetPasswordTokenPayload,
     VerificationTokenPayload,
 )
+from src.users.schemas import UserSchema
 
 from .config import settings
 from .smtp import send_email
@@ -21,8 +22,10 @@ def gen_email_token(
     return jwt_token.create(payload=asdict(payload))
 
 
-def validate_email_token(token: str) -> EmailTokenPayloadValidator | None:
-    payload = jwt_token.decode(token)
+def validate_email_token(
+    token: str, audience: str
+) -> EmailTokenPayloadValidator | None:
+    payload = jwt_token.decode(token, audience=audience)
     if not payload:
         return None
     try:
@@ -31,13 +34,13 @@ def validate_email_token(token: str) -> EmailTokenPayloadValidator | None:
         return None
 
 
-async def send_reset_password_email(
-    email_to: str, payload: ResetPasswordTokenPayload
-) -> None:
-    token = gen_email_token(payload=payload)
-    subject = f"{global_settings.PROJECT_NAME} - Password recovery for user {email_to}"
-    send_email(
-        email_to=email_to,
+async def send_reset_password_email(user: UserSchema) -> None:
+    token = gen_email_token(payload=ResetPasswordTokenPayload(sub=user.id))
+    subject = (
+        f"{global_settings.PROJECT_NAME} - Password recovery for user {user.username}"
+    )
+    await send_email(
+        email_to=user.email,
         subject=subject,
         html_body=await render_email_template(
             template_name="reset_password.html",
@@ -46,20 +49,19 @@ async def send_reset_password_email(
     )
 
 
-async def send_verify_email(
-    email_to: str, username: str, payload: VerificationTokenPayload
-) -> None:
-    token = gen_email_token(payload=payload)
+async def send_verify_email(user: UserSchema) -> None:
+    token = gen_email_token(payload=VerificationTokenPayload(sub=user.id))
     confirm_url = (
         f"{global_settings.FRONTEND_URL}{settings.CONFIRM_FRONTEND_URI}?token={token}"
     )
-    send_email(
-        email_to=email_to,
-        subject=f"{global_settings.PROJECT_NAME} - Verify email for user {username}",
+    subject = f"{global_settings.PROJECT_NAME} - Verify email for user {user.username}"
+    await send_email(
+        email_to=user.email,
+        subject=subject,
         html_body=await render_email_template(
             template_name="confirm_email.html",
             context={
-                "username": username,
+                "username": user.username,
                 "confirm_url": confirm_url,
             },
         ),

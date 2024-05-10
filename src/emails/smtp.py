@@ -1,22 +1,29 @@
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 
 from .config import settings
 
+conf = ConnectionConfig(
+    MAIL_USERNAME=settings.SMTP_USER,
+    MAIL_PASSWORD=settings.SMTP_PASSWORD,
+    MAIL_FROM=settings.FROM_EMAIL,
+    MAIL_PORT=settings.SMTP_PORT,
+    MAIL_SERVER=settings.SMTP_SERVER,
+    MAIL_FROM_NAME=settings.FROM_NAME,
+    MAIL_STARTTLS=True,
+    MAIL_SSL_TLS=False,
+    USE_CREDENTIALS=True,
+    VALIDATE_CERTS=True,
+)
 
-def send_email(
+fm = FastMail(conf)
+
+
+async def send_email(
     email_to: str,
     subject: str,
     html_body: str,
 ) -> None:
-    msg = MIMEMultipart()
-    msg["From"] = f"{settings.FROM_NAME} {settings.FROM_EMAIL}"
-    msg["To"] = email_to
-    msg["Subject"] = subject
-    msg.attach(MIMEText(html_body, "html"))
-
-    server = smtplib.SMTP_SSL(settings.SMTP_SERVER, settings.SMTP_PORT)
-    server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-    server.send_message(msg=msg)
-    server.quit()
+    message = MessageSchema(
+        subject=subject, recipients=[email_to], body=html_body, subtype=MessageType.html
+    )
+    await fm.send_message(message)
