@@ -24,10 +24,12 @@ app.add_middleware(
 )
 
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
-app.include_router(sessions_router, prefix="/auth/sessions", tags=["sessions"])
 app.include_router(apps_router, prefix="/apps", tags=["apps"])
 app.include_router(oauth2_router, prefix="/oauth2", tags=["oauth2"])
 app.include_router(users_router, prefix="/users", tags=["users"])
+app.include_router(
+    sessions_router, prefix="/users/{user_id}/sessions", tags=["sessions"]
+)
 
 if settings.EMAILS_ENABLED:
     from src.emails.views import router as emails_router
@@ -35,6 +37,6 @@ if settings.EMAILS_ENABLED:
     app.include_router(emails_router, prefix="/emails", tags=["emails"])
 
 
-@app.get("/ping")
+@app.get("/ping", tags=["healthcheck"])
 def ping_pong() -> dict[str, str]:
     return {"ping": "pong"}

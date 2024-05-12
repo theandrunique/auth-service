@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
+from src.mongo import db
 from src.sessions.schemas import SessionCreate, SessionSchema
 
 from .repository import SessionsRepository
@@ -44,3 +45,11 @@ class SessionsService:
 
     async def delete_all(self) -> None:
         await self.repository.delete_all()
+
+
+def sessions_service_factory(user_id: UUID) -> SessionsService:
+    return SessionsService(
+        repository=SessionsRepository(
+            collection=db[f"sessions_{user_id.hex}"],
+        )
+    )

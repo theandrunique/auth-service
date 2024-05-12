@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import Security
 from fastapi.security import OAuth2PasswordBearer
 
-from src.sessions.dependencies import get_user_sessions_service_by_id
 from src.sessions.schemas import SessionSchema
+from src.sessions.service import sessions_service_factory
 from src.users.dependencies import UsersServiceDep
 from src.users.exceptions import (
     InactiveUser,
@@ -50,7 +50,7 @@ async def get_user_with_session(
     elif not user.active:
         raise InactiveUser()
 
-    sessions_service = get_user_sessions_service_by_id(user.id)
+    sessions_service = sessions_service_factory(user.id)
     session = await sessions_service.get(id=payload.jti)
     if session is None:
         raise InvalidToken()

@@ -1,5 +1,3 @@
-from typing import Any
-
 from fastapi import APIRouter, BackgroundTasks, status
 
 from src.emails.dependencies import ResetPassEmailDep, VerifyEmailDep
@@ -58,7 +56,7 @@ async def reset_password(
     data: ResetPasswordSchema,
     user_id: ResetPassEmailDep,
     service: UsersServiceDep,
-) -> Any:
+) -> None:
     user = await service.get(user_id)
     if not user:
         raise UserNotFound()

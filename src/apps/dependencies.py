@@ -25,7 +25,7 @@ async def get_apps_service() -> AppsService:
 AppsServiceDep = Annotated[AppsService, Depends(get_apps_service)]
 
 
-async def get_existed_app(app_id: UUID, service: AppsService) -> AppInMongo:
+async def get_existed_app(app_id: UUID, service: AppsServiceDep) -> AppInMongo:
     found_app = await service.get(app_id)
     if not found_app:
         raise AppNotFound()

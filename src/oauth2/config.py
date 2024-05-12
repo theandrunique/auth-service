@@ -10,10 +10,6 @@ class Settings(BaseSettings):
         env_prefix="OAUTH2_",
     )
 
-    SECRET_KEY: str
-    ALGORITHM: str = "HS256"
-
-    REFRESH_TOKEN_BYTES_LENGTH: int = 120
     REFRESH_TOKEN_EXPIRE_HOURS: int = 24 * 7
     AUTHORIZATION_CODE_LENGTH: int = 120
     AUTHORIZATION_CODE_EXPIRE_SECONDS: int = 60

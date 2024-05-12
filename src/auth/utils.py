@@ -4,8 +4,8 @@ from fastapi import Request
 from pydantic import ValidationError
 
 from src import jwt_token
-from src.sessions.dependencies import get_user_sessions_service_by_id
 from src.sessions.schemas import SessionCreate
+from src.sessions.service import sessions_service_factory
 
 from .schemas import (
     Token,
@@ -35,7 +35,7 @@ def create_token(
 
 
 async def create_session(user_id: UUID, req: Request) -> Token:
-    service = get_user_sessions_service_by_id(user_id)
+    service = sessions_service_factory(user_id)
 
     new_session = await service.add(
         SessionCreate(ip_address=req.client.host if req.client else None)
