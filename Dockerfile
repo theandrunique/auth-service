@@ -1,21 +1,25 @@
-FROM python:3.11-slim as builder
+FROM python:3.12.2-slim-bullseye as builder
 
-RUN python -m pip install poetry==1.8.2 
+COPY pyproject.toml poetry.lock ./
 
-COPY pyproject.toml ./
+RUN python -m pip --no-cache-dir install poetry==1.8.2 && \
+    apt update && \
+    apt install -y --no-install-recommends gcc && \
+    poetry export -o requirements.txt --without-hashes && \
+    pip wheel --no-cache-dir --no-deps --wheel-dir /wheels -r requirements.txt
 
-RUN poetry export -o requirements.txt --without-hashes
+FROM python:3.12.2-slim-bullseye
 
-
-FROM python:3.11-slim
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
 WORKDIR /app
 
 EXPOSE 8000
 
-COPY --from=builder requirements.txt ./
+COPY --from=builder /wheels /wheels
 
-RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN pip install --no-cache /wheels/* 
 
 COPY src src/
 
