@@ -4,7 +4,7 @@ from uuid import UUID
 
 
 class UUIDEncoder(json.JSONEncoder):
-    def default(self, obj: Any) -> Any:
-        if isinstance(obj, UUID):
-            return obj.hex
-        return super().default(obj)
+    def default(self, o: Any) -> Any:
+        if isinstance(o, UUID):
+            return o.hex
+        return super().default(o)
