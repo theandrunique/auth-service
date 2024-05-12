@@ -2,13 +2,20 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from src.mongo import MongoSession
+from src.mongo import db
 
 from .repository import UsersRepository
+from .service import UsersService
+
+service = UsersService(
+    repository=UsersRepository(
+        collection=db["users"],
+    )
+)
 
 
-async def get_users_repository(session: MongoSession) -> UsersRepository:
-    return UsersRepository(session=session)
+def get_users_service() -> UsersService:
+    return service
 
 
-UsersRepositoryDep = Annotated[UsersRepository, Depends(get_users_repository)]
+UsersServiceDep = Annotated[UsersService, Depends(get_users_service)]

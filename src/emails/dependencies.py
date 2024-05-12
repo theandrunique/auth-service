@@ -27,7 +27,8 @@ ResetPassEmailDep = Annotated[UUID, Security(check_reset_password_token)]
 
 def check_verify_email_token(data: EmailToken) -> UUID:
     return check_token(
-        token=data.token, audience=EmailAudience.EMAIL_CONFIRMATION,
+        token=data.token,
+        audience=EmailAudience.EMAIL_CONFIRMATION,
     )
 
 

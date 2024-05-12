@@ -1,19 +1,25 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends
 
 from src.auth.dependencies import UserAuthorization
-from src.mongo import MongoSession
+from src.mongo import db
+from src.sessions.service import SessionsService
 
 from .repository import SessionsRepository
 
 
-async def get_users_repository(
-    session: MongoSession, user: UserAuthorization
-) -> SessionsRepository:
-    repository = SessionsRepository(session=session, user_id=user.id)
-    await repository.delete_expired_sessions()
-    return repository
+def get_user_sessions_service(user: UserAuthorization) -> SessionsService:
+    return get_user_sessions_service_by_id(user.id)
 
 
-SessionRepositoryDep = Annotated[SessionsRepository, Depends(get_users_repository)]
+def get_user_sessions_service_by_id(user_id: UUID) -> SessionsService:
+    return SessionsService(
+        repository=SessionsRepository(
+            collection=db[f"sessions_{user_id.hex}"],
+        )
+    )
+
+
+SessionServiceDep = Annotated[SessionsService, Depends(get_user_sessions_service)]

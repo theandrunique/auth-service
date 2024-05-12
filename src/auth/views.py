@@ -8,9 +8,8 @@ from fastapi import (
 
 from src import hash
 from src.auth.dependencies import UserAuthorizationWithSession
-from src.mongo.dependencies import MongoSession
-from src.sessions.dependencies import SessionRepositoryDep
-from src.users.dependencies import UsersRepositoryDep
+from src.sessions.dependencies import SessionServiceDep
+from src.users.dependencies import UsersServiceDep
 from src.users.schemas import (
     RegistrationSchema,
     UserSchema,
@@ -34,16 +33,16 @@ router = APIRouter()
 )
 async def register(
     data: RegistrationSchema,
-    repository: UsersRepositoryDep,
+    service: UsersServiceDep,
 ) -> Any:
-    existed_email = await repository.get_by_email(email=data.email)
+    existed_email = await service.get_by_email(email=data.email)
     if existed_email:
         raise EmailAlreadyExists()
-    existed_username = await repository.get_by_username(username=data.username)
+    existed_username = await service.get_by_username(username=data.username)
     if existed_username:
         raise UsernameAlreadyExists()
 
-    new_user = await repository.add(data)
+    new_user = await service.add(data)
     return new_user
 
 
@@ -51,13 +50,12 @@ async def register(
 async def login(
     login: Login,
     req: Request,
-    repository: UsersRepositoryDep,
-    mongo_session: MongoSession,
+    service: UsersServiceDep,
 ) -> Token:
     if "@" in login.login:
-        user = await repository.get_by_email(email=login.login)
+        user = await service.get_by_email(email=login.login)
     else:
-        user = await repository.get_by_username(username=login.login)
+        user = await service.get_by_username(username=login.login)
     if user is None:
         raise InvalidCredentials()
     elif not user.active:
@@ -67,13 +65,13 @@ async def login(
         hashed_value=user.hashed_password,
     ):
         raise InvalidCredentials()
-    return await create_session(session=mongo_session, user_id=user.id, req=req)
+    return await create_session(user_id=user.id, req=req)
 
 
 @router.delete("/logout/", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_token(
     user_with_session: UserAuthorizationWithSession,
-    repository: SessionRepositoryDep,
+    service: SessionServiceDep,
 ) -> None:
     _, user_session = user_with_session
-    await repository.delete(id=user_session.id)
+    await service.delete(id=user_session.id)

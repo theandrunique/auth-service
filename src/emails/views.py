@@ -3,7 +3,7 @@ from typing import Any
 from fastapi import APIRouter, BackgroundTasks, status
 
 from src.emails.dependencies import ResetPassEmailDep, VerifyEmailDep
-from src.users.dependencies import UsersRepositoryDep
+from src.users.dependencies import UsersServiceDep
 from src.users.exceptions import UserNotFound
 from src.users.schemas import ResetPasswordSchema
 
@@ -21,9 +21,9 @@ router = APIRouter(tags=["emails"])
 async def send_confirmation_email(
     email: EmailRequest,
     worker: BackgroundTasks,
-    repository: UsersRepositoryDep,
+    service: UsersServiceDep,
 ) -> None:
-    user = await repository.get_by_email(email=email.email)
+    user = await service.get_by_email(email=email.email)
     if user and not user.email_verified:
         return worker.add_task(send_verify_email, user)
 
@@ -31,21 +31,21 @@ async def send_confirmation_email(
 @router.post("/verification/confirm", status_code=status.HTTP_204_NO_CONTENT)
 async def verify_email(
     user_id: VerifyEmailDep,
-    repository: UsersRepositoryDep,
+    service: UsersServiceDep,
 ) -> None:
-    user = await repository.get(user_id)
+    user = await service.get(user_id)
     if not user or not user.active:
         return
-    await repository.verify_email(id=user.id)
+    await service.verify_email(id=user.id)
 
 
 @router.post("/password-recovery", status_code=status.HTTP_202_ACCEPTED)
 async def recover_password(
     data: EmailRequest,
-    repository: UsersRepositoryDep,
+    service: UsersServiceDep,
     worker: BackgroundTasks,
 ) -> None:
-    user = await repository.get_by_email(email=data.email)
+    user = await service.get_by_email(email=data.email)
     if not user:
         raise UserNotFound()
     elif not user.email_verified:
@@ -57,9 +57,9 @@ async def recover_password(
 async def reset_password(
     data: ResetPasswordSchema,
     user_id: ResetPassEmailDep,
-    repository: UsersRepositoryDep,
+    service: UsersServiceDep,
 ) -> Any:
-    user = await repository.get(user_id)
+    user = await service.get(user_id)
     if not user:
         raise UserNotFound()
-    await repository.update_password(id=user.id, new_password=data.password)
+    await service.update_password(id=user.id, new_password=data.password)

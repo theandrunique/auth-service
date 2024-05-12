@@ -4,8 +4,7 @@ from fastapi import APIRouter, Query
 
 from src.apps.dependencies import ExistedAppByClientId
 from src.dependencies import UserAuthorization
-from src.mongo.dependencies import MongoSession
-from src.oauth2_sessions.repository import OAuth2SessionsRepository
+from src.oauth2_sessions.dependencies import get_oauth2_sessions_service_by_id
 from src.oauth2_sessions.schemas import OAuth2SessionCreate
 from src.redis import RedisClient
 
@@ -69,7 +68,6 @@ async def oauth2_authorize(
 async def oauth2_exchange_code(
     app: AppAuth,
     data: OAuth2CodeExchangeRequest,
-    mongo_session: MongoSession,
     redis: RedisClient,
 ) -> OAuth2CodeExchangeResponse:
     user_id = await redis.get(
@@ -85,10 +83,9 @@ async def oauth2_exchange_code(
         payload=OAuth2AccessTokenPayload(sub=UUID(user_id), scopes=app.scopes),
         refresh_payload=refresh_payload,
     )
+    service = get_oauth2_sessions_service_by_id(user_id)
 
-    repository = OAuth2SessionsRepository(session=mongo_session, user_id=user_id)
-
-    await repository.add(
+    await service.add(
         OAuth2SessionCreate(
             refresh_token_id=refresh_payload.jti,
             app_id=app.id,
@@ -107,14 +104,13 @@ async def oauth2_exchange_code(
 async def refresh_token(
     app: AppAuth,
     data: RefreshTokenRequest,
-    mongo_session: MongoSession,
 ) -> OAuth2CodeExchangeResponse:
     payload = validate_refresh_token(data.refresh_token)
     if payload is None:
         raise InvalidSession()
 
-    repository = OAuth2SessionsRepository(session=mongo_session, user_id=payload.sub)
-    session = await repository.get_by_jti(payload.jti)
+    service = get_oauth2_sessions_service_by_id(payload.sub)
+    session = await service.get_by_jti(payload.jti)
     if not session:
         raise InvalidSession()
 
@@ -123,7 +119,7 @@ async def refresh_token(
         payload=OAuth2AccessTokenPayload(sub=payload.sub, scopes=session.scopes),
         refresh_payload=refresh_payload,
     )
-    await repository.update_jti(id=session.id, new_jti=refresh_payload.jti)
+    await service.update_jti(id=session.id, new_jti=refresh_payload.jti)
 
     return OAuth2CodeExchangeResponse(
         access_token=access_token,

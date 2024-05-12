@@ -1,3 +1,4 @@
+from pydantic import MongoDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,17 +10,10 @@ class MongoSettings(BaseSettings):
         case_sensitive=True,
         env_prefix="MONGO_",
     )
-    USERNAME: str
-    PASSWORD: str
-    HOST: str = "localhost"
-    PORT: int = 27017
-    DATABASE_NAME: str
+    DATABASE_NAME: str = "items"
 
     PING_ATTEMPTS: int = 5
-
-    @property
-    def MONGO_URI(self) -> str:
-        return f"mongodb://{self.USERNAME}:{self.PASSWORD}@{self.HOST}:{self.PORT}"
+    URI: MongoDsn
 
 
 settings = MongoSettings()  # type: ignore

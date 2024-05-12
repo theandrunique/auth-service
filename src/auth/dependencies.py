@@ -3,10 +3,9 @@ from typing import Annotated
 from fastapi import Security
 from fastapi.security import OAuth2PasswordBearer
 
-from src.mongo.dependencies import MongoSession
-from src.sessions.repository import SessionsRepository
+from src.sessions.dependencies import get_user_sessions_service_by_id
 from src.sessions.schemas import SessionSchema
-from src.users.dependencies import UsersRepositoryDep
+from src.users.dependencies import UsersServiceDep
 from src.users.exceptions import (
     InactiveUser,
 )
@@ -38,27 +37,25 @@ def get_authorization_optional(token: BearerToken) -> str | None:
 
 
 async def get_user_with_session(
-    mongo_session: MongoSession,
-    users_repository: UsersRepositoryDep,
+    service: UsersServiceDep,
     token: str = Security(get_authorization),
 ) -> tuple[UserSchema, SessionSchema]:
     payload = decode_token(token=token)
     if payload is None:
         raise InvalidToken()
 
-    user = await users_repository.get(id=payload.sub)
+    user = await service.get(id=payload.sub)
     if user is None:
         raise InvalidToken()
     elif not user.active:
         raise InactiveUser()
 
-    sessions_repository = SessionsRepository(session=mongo_session, user_id=user.id)
-
-    session = await sessions_repository.get(id=payload.jti)
+    sessions_service = get_user_sessions_service_by_id(user.id)
+    session = await sessions_service.get(id=payload.jti)
     if session is None:
         raise InvalidToken()
 
-    await sessions_repository.update_last_used(id=session.id)
+    await sessions_service.update_last_used(id=session.id)
     return user, session
 
 
@@ -78,16 +75,14 @@ UserAuthorization = Annotated[UserSchema, Security(get_user)]
 
 
 async def get_user_optional(
-    mongo_session: MongoSession,
-    users_repository: UsersRepositoryDep,
+    service: UsersServiceDep,
     token: str | None = Security(get_authorization_optional),
 ) -> UserSchema | None:
     if token is None:
         return None
     else:
         user, _ = await get_user_with_session(
-            mongo_session=mongo_session,
-            users_repository=users_repository,
+            service=service,
             token=token,
         )
         return user

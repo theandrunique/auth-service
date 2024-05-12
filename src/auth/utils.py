@@ -1,11 +1,10 @@
 from uuid import UUID
 
 from fastapi import Request
-from motor.motor_asyncio import AsyncIOMotorClientSession
 from pydantic import ValidationError
 
 from src import jwt_token
-from src.sessions.repository import SessionsRepository
+from src.sessions.dependencies import get_user_sessions_service_by_id
 from src.sessions.schemas import SessionCreate
 
 from .schemas import (
@@ -35,12 +34,10 @@ def create_token(
     )
 
 
-async def create_session(
-    session: AsyncIOMotorClientSession, user_id: UUID, req: Request
-) -> Token:
-    sessions_repository = SessionsRepository(session=session, user_id=user_id)
+async def create_session(user_id: UUID, req: Request) -> Token:
+    service = get_user_sessions_service_by_id(user_id)
 
-    new_session = await sessions_repository.add(
+    new_session = await service.add(
         SessionCreate(ip_address=req.client.host if req.client else None)
     )
     return create_token(payload=TokenPayload(sub=user_id, jti=new_session.id))

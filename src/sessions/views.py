@@ -6,7 +6,7 @@ from pydantic import NonNegativeInt
 
 from src.auth.dependencies import UserAuthorizationWithSession
 
-from .dependencies import SessionRepositoryDep
+from .dependencies import SessionServiceDep
 from .schemas import SessionSchema, UserSessions
 
 router = APIRouter()
@@ -14,11 +14,11 @@ router = APIRouter()
 
 @router.get("/", response_model=UserSessions)
 async def get_my_sessions(
-    repository: SessionRepositoryDep,
+    service: SessionServiceDep,
     offset: NonNegativeInt = 0,
     count: NonNegativeInt = 20,
 ) -> UserSessions:
-    user_sessions = await repository.get_many(count=count, offset=offset)
+    user_sessions = await service.get_many(count=count, offset=offset)
     return UserSessions(
         user_sessions=user_sessions,
     )
@@ -35,22 +35,22 @@ async def get_current_session(
 @router.delete("/logout-others/", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_all_sessions_except_current(
     user_with_session: UserAuthorizationWithSession,
-    repository: SessionRepositoryDep,
+    service: SessionServiceDep,
 ) -> None:
     _, user_session = user_with_session
-    await repository.delete_except(except_id=user_session.id)
+    await service.delete_except(except_id=user_session.id)
 
 
 @router.delete("/{session_id}/", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_session(
-    repository: SessionRepositoryDep,
+    service: SessionServiceDep,
     session_id: UUID,
 ) -> None:
-    await repository.delete(id=session_id)
+    await service.delete(id=session_id)
 
 
 @router.delete("/logout-all/", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_all_sessions(
-    repository: SessionRepositoryDep,
+    service: SessionServiceDep,
 ) -> None:
-    await repository.delete_all()
+    await service.delete_all()
