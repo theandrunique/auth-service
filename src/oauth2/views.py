@@ -33,7 +33,7 @@ from .utils import (
 router = APIRouter(prefix="", tags=["oauth2"])
 
 
-@router.post("/authorize/", response_model_exclude_none=True)
+@router.post("/authorize", response_model_exclude_none=True)
 async def oauth2_authorize(
     user: UserAuthorization,
     app: ExistedAppByClientId,
@@ -64,7 +64,7 @@ async def oauth2_authorize(
     )
 
 
-@router.post("/token/")
+@router.post("/token")
 async def oauth2_exchange_code(
     app: AppAuth,
     data: OAuth2CodeExchangeRequest,
@@ -100,7 +100,7 @@ async def oauth2_exchange_code(
     )
 
 
-@router.post("/refresh/")
+@router.post("/refresh")
 async def refresh_token(
     app: AppAuth,
     data: RefreshTokenRequest,

@@ -27,7 +27,7 @@ router = APIRouter()
 
 
 @router.post(
-    "/register/",
+    "/register",
     status_code=status.HTTP_201_CREATED,
     response_model=UserSchema,
 )
@@ -46,7 +46,7 @@ async def register(
     return new_user
 
 
-@router.post("/login/")
+@router.post("/login")
 async def login(
     login: Login,
     req: Request,
@@ -68,7 +68,7 @@ async def login(
     return await create_session(user_id=user.id, req=req)
 
 
-@router.delete("/logout/", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_token(
     user_with_session: UserAuthorizationWithSession,
     service: SessionServiceDep,

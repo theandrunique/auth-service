@@ -17,7 +17,7 @@ router = APIRouter(prefix="", tags=["apps"])
 
 
 @router.put(
-    "/{app_id}/regenerate-client-secret/",
+    "/{app_id}/client-secret",
     response_model=AppInMongo,
     response_model_by_alias=False,
 )
@@ -30,7 +30,7 @@ async def regenerate_client_secret(
     return app
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model_by_alias=False)
+@router.post("", status_code=status.HTTP_201_CREATED, response_model_by_alias=False)
 async def create_app(
     app: AppCreate,
     user: UserAuthorization,
@@ -41,7 +41,7 @@ async def create_app(
     return new_app
 
 
-@router.get("/{app_id}/", response_model_by_alias=False)
+@router.get("/{app_id}", response_model_by_alias=False)
 async def get_app_by_id(
     app: ExistedApp,
     user: UserAuthorizationOptional,
@@ -51,7 +51,7 @@ async def get_app_by_id(
     return AppPublic(**app.model_dump())
 
 
-@router.patch("/{app_id}/", response_model_by_alias=False)
+@router.patch("/{app_id}", response_model_by_alias=False)
 async def update_app(
     app: AppAccessControlDep,
     data: AppUpdate,
@@ -64,7 +64,7 @@ async def update_app(
         return app
 
 
-@router.delete("/{app_id}/", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{app_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_app(
     app: AppAccessControlDep,
     service: AppsServiceDep,

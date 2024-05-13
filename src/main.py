@@ -25,7 +25,7 @@ app.add_middleware(
 
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(apps_router, prefix="/apps", tags=["apps"])
-app.include_router(oauth2_router, prefix="/oauth2", tags=["oauth2"])
+app.include_router(oauth2_router, prefix="/oauth", tags=["oauth2"])
 app.include_router(users_router, prefix="/users", tags=["users"])
 app.include_router(
     sessions_router, prefix="/users/{user_id}/sessions", tags=["sessions"]
