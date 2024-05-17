@@ -27,14 +27,15 @@ app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(apps_router, prefix="/apps", tags=["apps"])
 app.include_router(oauth2_router, prefix="/oauth", tags=["oauth2"])
 app.include_router(users_router, prefix="/users", tags=["users"])
-app.include_router(
-    sessions_router, prefix="/users/{user_id}/sessions", tags=["sessions"]
-)
+app.include_router(sessions_router, prefix="/sessions", tags=["sessions"])
 
 if settings.EMAILS_ENABLED:
     from src.emails.views import router as emails_router
 
     app.include_router(emails_router, prefix="/emails", tags=["emails"])
+
+
+SESSION_COOKIE_KEY = "session_id"
 
 
 @app.get("/ping", tags=["healthcheck"])

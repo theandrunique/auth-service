@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, status
 
-from src.dependencies import UserAuthorization, UserAuthorizationOptional
+from src.auth.dependencies import UserAuthorization
 
 from .dependencies import AppAccessControlDep, AppsServiceDep, ExistedApp
 from .schemas import (
@@ -44,7 +44,7 @@ async def create_app(
 @router.get("/{app_id}", response_model_by_alias=False)
 async def get_app_by_id(
     app: ExistedApp,
-    user: UserAuthorizationOptional,
+    user: UserAuthorization,
 ) -> AppInMongo | AppPublic:
     if user and app.creator_id == user.id:
         return app

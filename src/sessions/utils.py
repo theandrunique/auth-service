@@ -1,13 +1,15 @@
-from uuid import UUID
+from datetime import datetime
+from secrets import token_urlsafe
 
-from src.mongo import db
-from src.sessions.repository import SessionsRepository
-from src.sessions.service import SessionsService
+from fastapi import Response
+
+from .config import settings
 
 
-def get_user_sessions_service_by_id(user_id: UUID) -> SessionsService:
-    return SessionsService(
-        repository=SessionsRepository(
-            collection=db[f"sessions_{user_id.hex}"],
-        )
-    )
+def gen_session_token() -> str:
+    return token_urlsafe(settings.TOKEN_BYTES_LENGTH)
+
+
+def set_session(key: str, token: str, expire: datetime, res: Response):
+    res.set_cookie(settings.ID_KEY, key, httponly=True, expires=expire)
+    res.set_cookie(settings.VALUE_KEY, token, httponly=True, expires=expire)

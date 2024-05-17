@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import Depends
 
 from src.apps.service import AppsService
-from src.dependencies import UserAuthorization
+from src.auth.dependencies import UserAuthorization
 from src.mongo import db
 
 from .exceptions import AppNotFound, UnauthorizedAccess

@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Query
 
 from src.apps.dependencies import ExistedAppByClientId
-from src.dependencies import UserAuthorization
+from src.auth.dependencies import UserAuthorization
 from src.oauth2_sessions.dependencies import get_oauth2_sessions_service_by_id
 from src.oauth2_sessions.schemas import OAuth2SessionCreate
 from src.redis import RedisClient

@@ -3,29 +3,39 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from src.mongo import db
-from src.sessions.schemas import SessionCreate, SessionSchema
+from fastapi import Response
+
+from src import hash
 
 from .repository import SessionsRepository
+from .schemas import SessionCreate, SessionSchema
+from .utils import gen_session_token, set_session
 
 
 @dataclass(kw_only=True)
 class SessionsService:
     repository: SessionsRepository
 
-    async def add(self, item: SessionCreate) -> SessionSchema:
+    async def create_session(self, user_id: UUID, res: Response) -> None:
+        session_token = gen_session_token()
+        item = SessionCreate(user_id=user_id, hashed_token=hash.create(session_token))
         await self.repository.add(item.model_dump(by_alias=True))
-        return SessionSchema(**item.model_dump())
+        set_session(
+            key=str(item.id), token=session_token, expire=item.expires_at, res=res
+        )
+
+    async def get(self, key: UUID, token: str) -> SessionSchema | None:
+        session = await self.repository.get(key)
+        if not session:
+            return None
+        session = SessionSchema(**session)
+        if not hash.check(value=token, hashed_value=session.hashed_token):
+            return None
+        return session
 
     async def get_many(self, count: int, offset: int) -> list[SessionSchema]:
         result = await self.repository.get_many(count=count, offset=offset)
         return [SessionSchema(**item) for item in result]
-
-    async def get(self, id: UUID) -> SessionSchema | None:
-        found = await self.repository.get(id)
-        if found:
-            return SessionSchema(**found)
-        return None
 
     async def update(self, id: UUID, new_values: dict[str, Any]) -> SessionSchema:
         updated = await self.repository.update(id, new_values)
@@ -45,11 +55,3 @@ class SessionsService:
 
     async def delete_all(self) -> None:
         await self.repository.delete_all()
-
-
-def sessions_service_factory(user_id: UUID) -> SessionsService:
-    return SessionsService(
-        repository=SessionsRepository(
-            collection=db[f"sessions_{user_id.hex}"],
-        )
-    )

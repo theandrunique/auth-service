@@ -3,6 +3,7 @@ import re
 from uuid import UUID, uuid4
 
 from pydantic import (
+    AliasChoices,
     BaseModel,
     EmailStr,
     Field,
@@ -15,7 +16,7 @@ from .exceptions import PasswordValidationError
 
 
 class UserPublic(BaseModel):
-    id: UUID
+    id: UUID = Field(validation_alias=AliasChoices("_id", "id"))
     username: str
     email: EmailStr
     email_verified: bool
@@ -24,7 +25,7 @@ class UserPublic(BaseModel):
 
 
 class UserSchema(BaseModel):
-    id: UUID
+    id: UUID = Field(validation_alias=AliasChoices("_id", "id"))
     username: str
     email: EmailStr
     email_verified: bool

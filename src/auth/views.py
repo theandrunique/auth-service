@@ -2,7 +2,7 @@ from typing import Any
 
 from fastapi import (
     APIRouter,
-    Request,
+    Response,
     status,
 )
 
@@ -20,14 +20,13 @@ from .exceptions import (
     InvalidCredentials,
     UsernameAlreadyExists,
 )
-from .schemas import Login, Token
-from .utils import create_session
+from .schemas import Login
 
 router = APIRouter()
 
 
 @router.post(
-    "/register",
+    "/signup",
     status_code=status.HTTP_201_CREATED,
     response_model=UserSchema,
 )
@@ -49,9 +48,10 @@ async def register(
 @router.post("/login")
 async def login(
     login: Login,
-    req: Request,
+    res: Response,
     service: UsersServiceDep,
-) -> Token:
+    session_service: SessionServiceDep,
+) -> None:
     if "@" in login.login:
         user = await service.get_by_email(email=login.login)
     else:
@@ -65,7 +65,8 @@ async def login(
         hashed_value=user.hashed_password,
     ):
         raise InvalidCredentials()
-    return await create_session(user_id=user.id, req=req)
+
+    await session_service.create_session(user_id=user.id, res=res)
 
 
 @router.delete("/logout", status_code=status.HTTP_204_NO_CONTENT)

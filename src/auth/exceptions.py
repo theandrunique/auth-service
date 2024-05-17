@@ -25,11 +25,11 @@ class InvalidCredentials(HTTPException):
         )
 
 
-class InvalidToken(HTTPException):
+class InvalidSession(HTTPException):
     def __init__(self) -> None:
         super().__init__(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid token",
+            detail="Invalid session",
         )
 
 
@@ -38,5 +38,4 @@ class NotAuthenticated(HTTPException):
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"},
         )

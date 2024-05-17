@@ -1,14 +1,14 @@
 from uuid import UUID
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from pydantic import NonNegativeInt
 
-from src.auth.dependencies import UserAuthorizationWithSession
+from src.auth.dependencies import UserAuthorizationWithSession, get_user
 
 from .dependencies import SessionServiceDep
 from .schemas import UserSessions
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_user)])
 
 
 @router.get("", response_model=UserSessions)
