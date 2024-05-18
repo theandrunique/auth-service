@@ -2,6 +2,7 @@ from typing import Any
 
 from fastapi import (
     APIRouter,
+    Request,
     Response,
     status,
 )
@@ -49,6 +50,7 @@ async def register(
 async def login(
     login: Login,
     res: Response,
+    req: Request,
     service: UsersServiceDep,
     session_service: SessionServiceDep,
 ) -> None:
@@ -66,7 +68,7 @@ async def login(
     ):
         raise InvalidCredentials()
 
-    await session_service.create_session(user_id=user.id, res=res)
+    await session_service.create_session(user_id=user.id, res=res, req=req)
 
 
 @router.delete("/logout", status_code=status.HTTP_204_NO_CONTENT)

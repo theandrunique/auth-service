@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from fastapi import Response
+from fastapi import Request, Response
 
 from src import jwe_tokens
 
@@ -16,8 +16,10 @@ from .utils import delete_session_cookie, set_session_cookie
 class SessionsService:
     repository: SessionsRepository
 
-    async def create_session(self, user_id: UUID, res: Response) -> None:
-        item = SessionCreate(user_id=user_id)
+    async def create_session(self, user_id: UUID, res: Response, req: Request) -> None:
+        item = SessionCreate(
+            user_id=user_id, ip_address=req.client.host if req.client else None
+        )
         await self.repository.add(item.model_dump(by_alias=True))
         session_token = jwe_tokens.create_session_token(item.id)
         set_session_cookie(token=session_token, expire=item.expires_at, res=res)
