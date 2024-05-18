@@ -6,3 +6,4 @@ venv/
 .vscode
 .docker.env
 *.lock
+certs/
