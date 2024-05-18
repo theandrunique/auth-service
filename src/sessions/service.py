@@ -57,5 +57,5 @@ class SessionsService:
     async def delete_except(self, except_id: UUID) -> int:
         return await self.repository.delete_except(except_id)
 
-    async def delete_all(self) -> None:
-        await self.repository.delete_all()
+    async def delete_all(self, user_id: UUID) -> None:
+        await self.repository.delete_all(user_id=user_id)

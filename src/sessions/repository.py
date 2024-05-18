@@ -28,5 +28,5 @@ class SessionsRepository(BaseMongoRepository[UUID]):
         )
         return result.deleted_count
 
-    async def delete_all(self) -> None:
-        await self.collection.drop_collection()
+    async def delete_all(self, user_id: UUID) -> None:
+        await self.collection.delete_many({"user_id": user_id})

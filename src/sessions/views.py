@@ -49,5 +49,6 @@ async def delete_session(
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_all_sessions(
     service: SessionServiceDep,
+    user: UserAuthorization,
 ) -> None:
-    await service.delete_all()
+    await service.delete_all(user_id=user.id)
