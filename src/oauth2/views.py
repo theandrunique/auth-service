@@ -126,3 +126,8 @@ async def refresh_token(
         refresh_token=refresh_token,
         scopes=app.scopes,
     )
+
+
+@router.post("/userinfo")
+async def oauth2_userinfo() -> dict:
+    return {}

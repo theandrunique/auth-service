@@ -5,6 +5,7 @@ from jwt.exceptions import InvalidTokenError
 
 from src.config import settings
 from src.utils import UUIDEncoder
+from src.well_known.config import public_key_pem
 
 
 def create(
@@ -13,7 +14,7 @@ def create(
     payload["iss"] = settings.DOMAIN_URL
     encoded = jwt.encode(
         payload=payload,
-        key=settings.SECRET_KEY,
+        key=settings.PRIVATE_KEY,
         algorithm=settings.ALGORITHM,
         json_encoder=UUIDEncoder,
     )
@@ -24,11 +25,10 @@ def decode(token: str, audience: str | None = None) -> dict[str, Any] | None:
     try:
         return jwt.decode(  # type: ignore
             jwt=token,
-            key=settings.SECRET_KEY,
+            key=public_key_pem,
             algorithms=[settings.ALGORITHM],
             issuer=settings.DOMAIN_URL,
             audience=audience,
         )
-    except InvalidTokenError as e:
-        print(e)
+    except InvalidTokenError:
         return None

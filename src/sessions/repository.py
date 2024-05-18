@@ -1,10 +1,20 @@
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
 from src.mongo import BaseMongoRepository
 
 
 class SessionsRepository(BaseMongoRepository[UUID]):
+    async def get_many(
+        self, user_id: UUID, count: int, offset: int
+    ) -> list[dict[str, Any]]:
+        return (
+            await self.collection.find({"user_id": user_id})
+            .skip(offset)
+            .to_list(length=count)
+        )  # noqa: E501
+
     async def delete_expired_sessions(self) -> int:
         now = datetime.now(UTC)
         result = await self.collection.delete_many(

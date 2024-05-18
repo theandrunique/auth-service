@@ -9,7 +9,7 @@ from src import hash
 
 from .repository import SessionsRepository
 from .schemas import SessionCreate, SessionSchema
-from .utils import gen_session_token, set_session
+from .utils import delete_session_cookie, gen_session_token, set_session_cookie
 
 
 @dataclass(kw_only=True)
@@ -20,7 +20,7 @@ class SessionsService:
         session_token = gen_session_token()
         item = SessionCreate(user_id=user_id, hashed_token=hash.create(session_token))
         await self.repository.add(item.model_dump(by_alias=True))
-        set_session(
+        set_session_cookie(
             key=str(item.id), token=session_token, expire=item.expires_at, res=res
         )
 
@@ -33,8 +33,12 @@ class SessionsService:
             return None
         return session
 
-    async def get_many(self, count: int, offset: int) -> list[SessionSchema]:
-        result = await self.repository.get_many(count=count, offset=offset)
+    async def get_many(
+        self, user_id: UUID, count: int, offset: int
+    ) -> list[SessionSchema]:
+        result = await self.repository.get_many(
+            user_id=user_id, count=count, offset=offset
+        )
         return [SessionSchema(**item) for item in result]
 
     async def update(self, id: UUID, new_values: dict[str, Any]) -> SessionSchema:
@@ -44,7 +48,8 @@ class SessionsService:
     async def update_last_used(self, id: UUID) -> None:
         await self.repository.update(id=id, new_values={"last_used": datetime.now(UTC)})
 
-    async def delete(self, id: UUID) -> int:
+    async def delete(self, id: UUID, res: Response) -> int:
+        delete_session_cookie(res)
         return await self.repository.delete(id)
 
     async def delete_expired_sessions(self) -> int:

@@ -73,6 +73,7 @@ async def login(
 async def revoke_token(
     user_with_session: UserAuthorizationWithSession,
     service: SessionServiceDep,
+    res: Response,
 ) -> None:
     _, user_session = user_with_session
-    await service.delete(id=user_session.id)
+    await service.delete(id=user_session.id, res=res)

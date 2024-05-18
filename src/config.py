@@ -15,8 +15,8 @@ class Settings(BaseSettings):
 
     SQLALCHEMY_DATABASE_URI: AnyUrl
 
-    SECRET_KEY: str
-    ALGORITHM: str = "HS256"
+    PRIVATE_KEY: str
+    ALGORITHM: str = "RS256"
     USER_TOKEN_EXPIRE_HOURS: int = 30 * 24
     KEYS_LENGTH: int = 40
     OTP_EXPIRE_SECONDS: int = 5 * 60
