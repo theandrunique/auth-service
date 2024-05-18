@@ -18,7 +18,7 @@ async def get_user_with_session(
     sessions_service: SessionServiceDep,
     session_cookies: UserSession,
 ) -> tuple[UserSchema, SessionSchema]:
-    session = await sessions_service.get(session_cookies.key, session_cookies.token)
+    session = await sessions_service.get(session_cookies.token)
     if not session:
         raise InvalidSession()
 

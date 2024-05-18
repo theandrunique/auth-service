@@ -1,13 +1,8 @@
 from datetime import datetime
-from secrets import token_urlsafe
 
 from fastapi import Response
 
 from .config import settings
-
-
-def gen_session_token() -> str:
-    return token_urlsafe(settings.TOKEN_BYTES_LENGTH)
 
 
 def set_session_cookie(key: str, token: str, expire: datetime, res: Response):

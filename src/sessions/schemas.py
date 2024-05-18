@@ -31,7 +31,6 @@ class SessionCreate(BaseModel):
         default_factory=lambda: datetime.now(UTC)
         + timedelta(hours=settings.EXPIRE_HOURS)
     )
-    hashed_token: bytes
     ip_address: str | None = Field(default=None)
 
 
@@ -40,7 +39,6 @@ class SessionSchema(BaseModel):
     user_id: UUID
     last_used: datetime
     ip_address: str | None = None
-    hashed_token: bytes
     expires_at: datetime
 
 

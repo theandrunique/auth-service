@@ -5,11 +5,11 @@ from uuid import UUID
 
 from fastapi import Response
 
-from src import hash
+from src import jwe_tokens
 
 from .repository import SessionsRepository
 from .schemas import SessionCreate, SessionSchema
-from .utils import delete_session_cookie, gen_session_token, set_session_cookie
+from .utils import delete_session_cookie, set_session_cookie
 
 
 @dataclass(kw_only=True)
@@ -17,20 +17,21 @@ class SessionsService:
     repository: SessionsRepository
 
     async def create_session(self, user_id: UUID, res: Response) -> None:
-        session_token = gen_session_token()
-        item = SessionCreate(user_id=user_id, hashed_token=hash.create(session_token))
+        item = SessionCreate(user_id=user_id)
         await self.repository.add(item.model_dump(by_alias=True))
+        session_token = jwe_tokens.create_session_token(item.id)
         set_session_cookie(
             key=str(item.id), token=session_token, expire=item.expires_at, res=res
         )
 
-    async def get(self, key: UUID, token: str) -> SessionSchema | None:
-        session = await self.repository.get(key)
+    async def get(self, token: str) -> SessionSchema | None:
+        session_id = jwe_tokens.verify_session_token(token)
+        if not session_id:
+            return None
+        session = await self.repository.get(session_id)
         if not session:
             return None
         session = SessionSchema(**session)
-        if not hash.check(value=token, hashed_value=session.hashed_token):
-            return None
         return session
 
     async def get_many(

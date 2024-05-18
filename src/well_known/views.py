@@ -2,19 +2,19 @@ from fastapi import APIRouter
 
 from src.config import settings
 
-from .config import key
+from .config import private_key
 
 router = APIRouter(prefix="/.well-known", tags=["well-known"])
 
 jwks = {
     "keys": [
         {
-            "kty": key.get("kty"),
+            "kty": private_key.get("kty"),
             "alg": settings.ALGORITHM,
             "use": "sig",
-            "kid": key.thumbprint(),
-            "n": key.get("n"),
-            "e": key.get("e"),
+            "kid": private_key.thumbprint(),
+            "n": private_key.get("n"),
+            "e": private_key.get("e"),
         }
     ]
 }
@@ -30,7 +30,7 @@ def openid_configuration():
         "response_types_supported": ["code"],
         "grant_types_supported": ["authorization_code"],
         "id_token_signing_alg_values_supported": ["RS256"],
-        "scopes_supported": ["openid", "profile", "email"]
+        "scopes_supported": ["openid", "profile", "email"],
     }
 
 
