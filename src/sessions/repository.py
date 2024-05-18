@@ -6,7 +6,7 @@ from src.mongo import BaseMongoRepository
 
 
 class SessionsRepository(BaseMongoRepository[UUID]):
-    async def get_many(
+    async def get_many_by_user(
         self, user_id: UUID, count: int, offset: int
     ) -> list[dict[str, Any]]:
         return (

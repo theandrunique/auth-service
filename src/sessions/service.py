@@ -20,9 +20,7 @@ class SessionsService:
         item = SessionCreate(user_id=user_id)
         await self.repository.add(item.model_dump(by_alias=True))
         session_token = jwe_tokens.create_session_token(item.id)
-        set_session_cookie(
-            key=str(item.id), token=session_token, expire=item.expires_at, res=res
-        )
+        set_session_cookie(token=session_token, expire=item.expires_at, res=res)
 
     async def get(self, token: str) -> SessionSchema | None:
         session_id = jwe_tokens.verify_session_token(token)
@@ -37,7 +35,7 @@ class SessionsService:
     async def get_many(
         self, user_id: UUID, count: int, offset: int
     ) -> list[SessionSchema]:
-        result = await self.repository.get_many(
+        result = await self.repository.get_many_by_user(
             user_id=user_id, count=count, offset=offset
         )
         return [SessionSchema(**item) for item in result]

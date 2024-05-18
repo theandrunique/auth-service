@@ -9,7 +9,6 @@ from .config import settings
 
 @dataclass
 class SessionCookies:
-    key: UUID
     token: str
 
 
