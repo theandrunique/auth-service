@@ -78,3 +78,8 @@ class ResetPasswordSchema(BaseModel):
         if not re.match(settings.PASSWORD_PATTERN, v):
             raise PasswordValidationError()
         return v
+
+
+class SearchResult(BaseModel):
+    result: list[UserPublic]
+    total: int

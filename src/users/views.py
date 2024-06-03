@@ -4,10 +4,9 @@ from uuid import UUID
 from fastapi import APIRouter
 
 from src.auth.dependencies import UserAuthorization, UsersServiceDep
-from src.logger import logger
 
 from .exceptions import UserNotFound
-from .schemas import UserPublic
+from .schemas import SearchResult, UserPublic
 
 router = APIRouter(tags=["users"])
 
@@ -25,11 +24,13 @@ async def get_user_by_username(username: str, users_service: UsersServiceDep) ->
     return user
 
 
-@router.get("/search", response_model=list[UserPublic] | None)
+@router.get("/search", response_model=SearchResult)
 async def search_users(query: str, users_service: UsersServiceDep) -> Any:
     result = await users_service.search_by_username(query)
-    logger.info(result)
-    return result
+    return SearchResult(
+        result=result if result else [],
+        total=len(result) if result else 0,
+    )
 
 
 @router.get("/{user_id}", response_model=UserPublic)
