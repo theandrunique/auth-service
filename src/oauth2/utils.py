@@ -1,11 +1,13 @@
 import secrets
+from uuid import UUID
 
 from pydantic import ValidationError
 
 from src import jwt_token
+from src.oauth2.factories import AccessTokenPayloadFactory, RefreshTokenPayloadFactory
 
 from .config import settings
-from .schemas import OAuth2AccessTokenPayload, OAuth2RefreshTokenPayload
+from .schemas import AccessTokenPayload, RefreshTokenPayload
 
 
 def gen_authorization_code() -> str:
@@ -13,35 +15,39 @@ def gen_authorization_code() -> str:
 
 
 def gen_oauth_token(
-    payload: OAuth2AccessTokenPayload | OAuth2RefreshTokenPayload,
+    payload: RefreshTokenPayloadFactory | AccessTokenPayloadFactory,
 ) -> str:
-    return jwt_token.create(payload=payload.model_dump())
+    return jwt_token.create(payload=payload.dump())
 
 
-def validate_access_token(token: str) -> OAuth2AccessTokenPayload | None:
+def validate_access_token(token: str) -> AccessTokenPayload | None:
     payload = jwt_token.decode(token)
     if not payload:
         return None
     try:
-        return OAuth2AccessTokenPayload(**payload)
+        return AccessTokenPayload(**payload)
     except ValidationError:
         return None
 
 
-def validate_refresh_token(token: str) -> OAuth2RefreshTokenPayload | None:
+def validate_refresh_token(token: str) -> RefreshTokenPayload | None:
     payload = jwt_token.decode(token)
     if not payload:
         return None
     try:
-        return OAuth2RefreshTokenPayload(**payload)
+        return RefreshTokenPayload(**payload)
     except ValidationError:
         return None
 
 
 def create_token_pair(
-    payload: OAuth2AccessTokenPayload,
-    refresh_payload: OAuth2RefreshTokenPayload,
-) -> tuple[str, str]:
-    access_token = gen_oauth_token(payload)
+    sub: UUID,
+    scopes: list[str],
+    aud: str,
+) -> tuple[str, str, UUID]:
+    access_payload = AccessTokenPayloadFactory(sub=sub, scopes=scopes, aud=aud)
+    refresh_payload = RefreshTokenPayloadFactory(sub=sub)
+
+    access_token = gen_oauth_token(access_payload)
     refresh_token = gen_oauth_token(refresh_payload)
-    return access_token, refresh_token
+    return access_token, refresh_token, refresh_payload.jti

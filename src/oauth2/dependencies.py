@@ -7,7 +7,9 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from src.apps.dependencies import AppsServiceDep
 from src.apps.schemas import AppInMongo
 
+from .apps import AuthoritativeAppsService, apps_service
 from .exceptions import InvalidAppCredentials
+from .service import OAuth2Service, oauth2_service
 
 basic_auth = HTTPBasic()
 
@@ -29,3 +31,19 @@ async def get_app_auth(
 
 
 AppAuth = Annotated[AppInMongo, Depends(get_app_auth)]
+
+
+def get_authoritative_apps_service() -> AuthoritativeAppsService:
+    return apps_service
+
+
+AuthoritativeAppsServiceDep = Annotated[
+    AuthoritativeAppsService, Depends(get_authoritative_apps_service)
+]
+
+
+def get_oauth2_service() -> OAuth2Service:
+    return oauth2_service
+
+
+OAuth2ServiceDep = Annotated[OAuth2Service, Depends(get_oauth2_service)]

@@ -33,17 +33,17 @@ class InvalidAuthorizationCode(HTTPException):
         )
 
 
-class InvalidSession(HTTPException):
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid session",
-        )
-
-
 class InvalidAppCredentials(HTTPException):
     def __init__(self) -> None:
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid app credentials",
+        )
+
+
+class InvalidClientId(HTTPException):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invalid client id",
         )

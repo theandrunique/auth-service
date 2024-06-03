@@ -6,6 +6,7 @@ from pydantic import AliasChoices, BaseModel, Field
 
 class OAuth2SessionSchema(BaseModel):
     id: UUID = Field(validation_alias=AliasChoices("_id", "id"))
+    user_id: UUID
     refresh_token_id: UUID
     app_id: UUID
     scopes: list[str]
@@ -15,6 +16,7 @@ class OAuth2SessionSchema(BaseModel):
 
 class OAuth2SessionCreate(BaseModel):
     id: UUID = Field(default_factory=lambda: uuid4(), serialization_alias="_id")
+    user_id: UUID
     refresh_token_id: UUID
     app_id: UUID
     scopes: list[str]

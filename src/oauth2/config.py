@@ -10,10 +10,10 @@ class Settings(BaseSettings):
         env_prefix="OAUTH2_",
     )
 
-    REFRESH_TOKEN_EXPIRE_HOURS: int = 24 * 7
-    AUTHORIZATION_CODE_LENGTH: int = 120
+    AUTHORIZATION_CODE_LENGTH: int = 512
     AUTHORIZATION_CODE_EXPIRE_SECONDS: int = 60
     ACCESS_TOKEN_EXPIRE_SECONDS: int = 3600
+    REFRESH_TOKEN_EXPIRE_HOURS: int = 24 * 7
 
 
 settings = Settings()  # type: ignore
