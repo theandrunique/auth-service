@@ -1,3 +1,4 @@
+import re
 from typing import Any
 from uuid import UUID
 
@@ -17,3 +18,8 @@ class UsersRepository(BaseMongoRepository[UUID]):
         return await self.collection.find_one(
             {"$or": [{"email": email_or_username}, {"username": email_or_username}]},
         )
+
+    async def search_by_username(self, username: str) -> list[dict[str, Any]] | None:
+        regex = re.compile(f'{re.escape(username)}', re.IGNORECASE)
+        return await self.collection.find({"username": regex}).to_list(None)
+

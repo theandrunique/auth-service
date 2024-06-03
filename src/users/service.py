@@ -49,6 +49,12 @@ class UsersService:
             return UserSchema(**found_user)
         return None
 
+    async def search_by_username(self, username: str) -> list[UserSchema] | None:
+        found_users = await self.repository.search_by_username(username)
+        if not found_users:
+            return None
+        return [UserSchema(**found_user) for found_user in found_users]
+
     async def update(self, id: UUID, new_values: dict[str, Any]) -> UserSchema:
         updated = await self.repository.update(id, new_values)
         return UserSchema(**updated)
