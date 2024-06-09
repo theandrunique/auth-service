@@ -24,3 +24,8 @@ class InactiveUser(HTTPException):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user",
         )
+
+
+class InvalidImageUrl(HTTPException):
+    def __init__(self):
+        super().__init__(status_code=400, detail="Invalid image URL")

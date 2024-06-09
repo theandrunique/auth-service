@@ -20,6 +20,5 @@ class UsersRepository(BaseMongoRepository[UUID]):
         )
 
     async def search_by_username(self, username: str) -> list[dict[str, Any]] | None:
-        regex = re.compile(f'{re.escape(username)}', re.IGNORECASE)
+        regex = re.compile(f"{re.escape(username)}", re.IGNORECASE)
         return await self.collection.find({"username": regex}).to_list(None)
-

@@ -7,6 +7,7 @@ from pydantic import (
     BaseModel,
     EmailStr,
     Field,
+    HttpUrl,
     field_validator,
 )
 
@@ -20,6 +21,7 @@ class UserPublic(BaseModel):
     username: str
     email: EmailStr
     email_verified: bool
+    image_url: str | None = Field(default=None)
     active: bool
     created_at: datetime.datetime
 
@@ -30,6 +32,7 @@ class UserSchema(BaseModel):
     email: EmailStr
     email_verified: bool
     hashed_password: bytes
+    image_url: str | None = Field(default=None)
     active: bool
     created_at: datetime.datetime
 
@@ -39,6 +42,7 @@ class UserCreate(BaseModel):
     username: str
     email: EmailStr
     email_verified: bool = Field(default=False)
+    image_url: str | None = Field(default=None)
     hashed_password: bytes
     active: bool = Field(default=True)
     created_at: datetime.datetime = Field(
@@ -83,3 +87,7 @@ class ResetPasswordSchema(BaseModel):
 class SearchResult(BaseModel):
     result: list[UserPublic]
     total: int
+
+
+class UpdateImage(BaseModel):
+    image_url: HttpUrl

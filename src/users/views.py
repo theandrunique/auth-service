@@ -1,12 +1,13 @@
 from typing import Any
 from uuid import UUID
 
+import httpx
 from fastapi import APIRouter
 
 from src.auth.dependencies import UserAuthorization, UsersServiceDep
 
-from .exceptions import UserNotFound
-from .schemas import SearchResult, UserPublic
+from .exceptions import InvalidImageUrl, UserNotFound
+from .schemas import SearchResult, UpdateImage, UserPublic
 
 router = APIRouter(tags=["users"])
 
@@ -39,3 +40,20 @@ async def get_user(user_id: UUID, users_service: UsersServiceDep) -> Any:
     if not user:
         raise UserNotFound()
     return user
+
+
+@router.put("/me/image_url", response_model=UserPublic)
+async def update_user_image_url(
+    user: UserAuthorization,
+    users_service: UsersServiceDep,
+    image: UpdateImage,
+) -> Any:
+    async with httpx.AsyncClient() as client:
+        res = await client.get(str(image.image_url))
+        if res.status_code != 200 or "image" not in res.headers["Content-Type"]:
+            raise InvalidImageUrl()
+
+    updated_user = await users_service.update(
+        user.id, {"image_url": str(image.image_url)}
+    )
+    return updated_user
