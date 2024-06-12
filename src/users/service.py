@@ -20,8 +20,9 @@ class UsersService:
         await self.repository.add(new_user.model_dump(by_alias=True))
         return UserSchema(**new_user.model_dump())
 
-    async def get_many(self, count: int, offset: int) -> list[UserSchema]:
-        raise NotImplementedError()
+    async def get_many(self, user_ids: list[UUID]) -> list[UserPublic]:
+        users = await self.repository.get_users_by_ids(user_ids)
+        return [UserPublic(**user) for user in users]
 
     async def get(self, id: UUID) -> UserSchema | None:
         found_user = await self.repository.get(id=id)

@@ -6,6 +6,9 @@ from src.mongo import BaseMongoRepository
 
 
 class UsersRepository(BaseMongoRepository[UUID]):
+    async def get_users_by_ids(self, user_ids: list[UUID]) -> list[dict[str, Any]]:
+        return await self.collection.find({"_id": {"$in": user_ids}}).to_list(None)
+
     async def get_by_email(self, email: str) -> dict[str, Any] | None:
         return await self.collection.find_one({"email": email})
 

@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     )
 
     PROJECT_NAME: str = "Authorization Server"
-    DOMAIN_URL: str = "http://localhost:8000"
+    DOMAIN_URL: str
 
     SQLALCHEMY_DATABASE_URI: AnyUrl
 

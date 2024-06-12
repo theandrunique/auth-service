@@ -2,7 +2,7 @@ from typing import Any
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from src.auth.dependencies import UserAuthorization, UsersServiceDep
 
@@ -10,6 +10,18 @@ from .exceptions import InvalidImageUrl, UserNotFound
 from .schemas import SearchResult, UpdateImage, UserPublic
 
 router = APIRouter(tags=["users"])
+
+
+@router.get("", response_model=SearchResult)
+async def get_users(
+    users_service: UsersServiceDep,
+    user_ids: list[UUID] = Query(),
+) -> Any:
+    result = await users_service.get_many(user_ids)
+    return SearchResult(
+        result=result if result else [],
+        total=len(result) if result else 0,
+    )
 
 
 @router.get("/me", response_model=UserPublic)

@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     environment:
       PROJECT_NAME: ${PROJECT_NAME:-"Auth Server"}
-      SERVER_HOST: ${SERVER_HOST:-http://localhost}
+      DOMAIN_URL: ${DOMAIN_URL:-http://localhost}
 
       SQLALCHEMY_DATABASE_URI: ${SQLALCHEMY_DATABASE_URI:?}
       PRIVATE_KEY: ${PRIVATE_KEY:?}
