@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import ValidationError
 
-from src import jwt_token
+from src.dependencies import Container, resolve
 from src.oauth2.factories import AccessTokenPayloadFactory, RefreshTokenPayloadFactory
 
 from .config import settings
@@ -17,11 +17,13 @@ def gen_authorization_code() -> str:
 def gen_oauth_token(
     payload: RefreshTokenPayloadFactory | AccessTokenPayloadFactory,
 ) -> str:
-    return jwt_token.create(payload=payload.dump())
+    jwt_service = resolve(Container.JWT)
+    return jwt_service.encode(payload=payload.dump())
 
 
 def validate_access_token(token: str) -> AccessTokenPayload | None:
-    payload = jwt_token.decode(token)
+    jwt_service = resolve(Container.JWT)
+    payload = jwt_service.decode(token)
     if not payload:
         return None
     try:
@@ -31,7 +33,8 @@ def validate_access_token(token: str) -> AccessTokenPayload | None:
 
 
 def validate_refresh_token(token: str) -> RefreshTokenPayload | None:
-    payload = jwt_token.decode(token)
+    jwt_service = resolve(Container.JWT)
+    payload = jwt_service.decode(token)
     if not payload:
         return None
     try:

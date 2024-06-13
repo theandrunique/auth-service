@@ -37,9 +37,6 @@ if settings.EMAILS_ENABLED:
     app.include_router(emails_router, prefix="/emails", tags=["emails"])
 
 
-SESSION_COOKIE_KEY = "session_id"
-
-
 @app.get("/ping", tags=["healthcheck"])
 def ping_pong() -> dict[str, str]:
     return {"ping": "pong"}

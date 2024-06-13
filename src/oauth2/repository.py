@@ -1,8 +1,6 @@
 import json
 
-from redis.asyncio import Redis
-
-from src.redis.client import pool
+from src.dependencies import Container, resolve
 
 from .config import settings
 from .schemas import AuthorizationRequest
@@ -10,13 +8,13 @@ from .schemas import AuthorizationRequest
 
 class AuthorizationRequestsRepository:
     async def add(self, key: str, item: AuthorizationRequest) -> None:
-        redis = Redis(connection_pool=pool)
+        redis = resolve(Container.Redis)
         await redis.set(
             key, json.dumps(item.dump()), ex=settings.AUTHORIZATION_CODE_EXPIRE_SECONDS
         )
 
     async def get(self, key: str) -> AuthorizationRequest | None:
-        redis = Redis(connection_pool=pool)
+        redis = resolve(Container.Redis)
         data = await redis.get(key)
         if not data:
             return None

@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import Request, Response
 
-from src import jwe_tokens
+from src.dependencies import Container, resolve
 
 from .repository import SessionsRepository
 from .schemas import SessionCreate, SessionSchema
@@ -20,14 +20,19 @@ class SessionsService:
         item = SessionCreate(
             user_id=user_id, ip_address=req.client.host if req.client else None
         )
+        jwe_service = resolve(Container.JWE)
         await self.repository.add(item.model_dump(by_alias=True))
-        session_token = jwe_tokens.create_session_token(item.id)
+        session_token = jwe_service.encode(item.id.bytes)
         set_session_cookie(token=session_token, expire=item.expires_at, res=res)
 
     async def get(self, token: str) -> SessionSchema | None:
-        session_id = jwe_tokens.verify_session_token(token)
-        if not session_id:
+        jwe_service = resolve(Container.JWE)
+        session_id_bytes = jwe_service.decode(token)
+        if not session_id_bytes:
             return None
+
+        session_id = UUID(bytes=session_id_bytes)
+
         session = await self.repository.get(session_id)
         if not session:
             return None

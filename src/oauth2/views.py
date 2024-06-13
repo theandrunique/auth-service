@@ -6,7 +6,6 @@ from fastapi import APIRouter, Form, Query
 from src.auth.dependencies import UserAuthorization
 from src.oauth2.factories import AccessTokenPayloadFactory
 from src.oauth2_sessions.dependencies import OAuth2SessionsServiceDep
-from src.redis import RedisClient
 
 from .config import settings
 from .dependencies import AppAuth, AuthoritativeAppsServiceDep, OAuth2ServiceDep
@@ -72,7 +71,6 @@ async def oauth2_authorize(
 @router.post("/token")
 async def oauth2_exchange_code(
     app: AppAuth,
-    redis: RedisClient,
     code: Annotated[str, Form()],
     redirect_uri: Annotated[str, Form()],
     grant_type: Annotated[GrantType, Form()],

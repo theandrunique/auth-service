@@ -2,8 +2,8 @@ from dataclasses import asdict
 
 from pydantic import ValidationError
 
-from src import jwt_token
 from src.config import settings as global_settings
+from src.dependencies import Container, resolve
 from src.emails.schemas import (
     EmailTokenPayloadValidator,
     ResetPasswordTokenPayload,
@@ -19,13 +19,15 @@ from .templates import render_email_template
 def gen_email_token(
     payload: ResetPasswordTokenPayload | VerificationTokenPayload,
 ) -> str:
-    return jwt_token.create(payload=asdict(payload))
+    jwt_service = resolve(Container.JWT)
+    return jwt_service.encode(payload=asdict(payload))
 
 
 def validate_email_token(
     token: str, audience: str
 ) -> EmailTokenPayloadValidator | None:
-    payload = jwt_token.decode(token, audience=audience)
+    jwt_service = resolve(Container.JWT)
+    payload = jwt_service.decode(token)
     if not payload:
         return None
     try:

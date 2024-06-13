@@ -7,8 +7,8 @@ from fastapi import (
     status,
 )
 
-from src import hash
 from src.auth.dependencies import UserAuthorizationWithSession
+from src.dependencies import Container, Provide
 from src.sessions.dependencies import SessionServiceDep
 from src.users.dependencies import UsersServiceDep
 from src.users.schemas import (
@@ -21,7 +21,7 @@ from .exceptions import (
     InvalidCredentials,
     UsernameAlreadyExists,
 )
-from .schemas import Login
+from .schemas import LoginReq
 
 router = APIRouter()
 
@@ -48,11 +48,12 @@ async def register(
 
 @router.post("/login")
 async def login(
-    login: Login,
+    login: LoginReq,
     res: Response,
     req: Request,
     service: UsersServiceDep,
     session_service: SessionServiceDep,
+    hash_service=Provide(Container.Hash),
 ) -> None:
     if "@" in login.login:
         user = await service.get_by_email(email=login.login)
@@ -62,7 +63,7 @@ async def login(
         raise InvalidCredentials()
     elif not user.active:
         raise InvalidCredentials()
-    elif not hash.check(
+    elif not hash_service.check(
         value=login.password,
         hashed_value=user.hashed_password,
     ):

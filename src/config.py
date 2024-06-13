@@ -1,4 +1,4 @@
-from pydantic import AnyUrl
+from pydantic import AnyUrl, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,12 +14,11 @@ class Settings(BaseSettings):
     DOMAIN_URL: str
 
     SQLALCHEMY_DATABASE_URI: AnyUrl
+    RedisURL: RedisDsn
 
     PRIVATE_KEY: str
     ALGORITHM: str = "RS256"
     USER_TOKEN_EXPIRE_HOURS: int = 30 * 24
-    KEYS_LENGTH: int = 40
-    OTP_EXPIRE_SECONDS: int = 5 * 60
 
     FRONTEND_URL: str = "http://localhost:5173"
 
