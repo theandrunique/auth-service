@@ -23,6 +23,7 @@ from src.sessions.repository import SessionsRepository
 from src.sessions.service import SessionsService
 from src.users.repository import UsersRepository
 from src.users.service import UsersService
+from src.well_known.service import WellKnownService
 
 
 def create_jwk_keys(private_key_pem: str) -> tuple[jwcrypto.jwk.JWK, jwcrypto.jwk.JWK]:
@@ -103,6 +104,11 @@ def init_container() -> punq.Container:
     container.register(SessionsService, scope=punq.Scope.singleton)
     container.register(OAuth2SessionsService, scope=punq.Scope.singleton)
     container.register(UsersService, scope=punq.Scope.singleton)
+    container.register(
+        WellKnownService,
+        instance=WellKnownService(private_key=private_key),
+        scope=punq.Scope.singleton,
+    )
 
     return container
 

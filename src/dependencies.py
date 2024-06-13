@@ -7,6 +7,7 @@ from src.oauth2_sessions.service import OAuth2SessionsService
 from src.services.base import hash, jwe, jwt
 from src.sessions.service import SessionsService
 from src.users.service import UsersService
+from src.well_known.service import WellKnownService
 
 
 class Container:
@@ -19,6 +20,7 @@ class Container:
     AppsService = AppsService
     OAuth2SessionsService = OAuth2SessionsService
     UsersService = UsersService
+    WellKnownService = WellKnownService
 
 
 def Provide[T](
