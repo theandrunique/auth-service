@@ -16,12 +16,21 @@ from src.services.jwe import ImplJWE
 from src.services.jwt import ImplJWT
 
 
+def create_jwk_keys(private_key_pem: str) -> tuple[jwcrypto.jwk.JWK, jwcrypto.jwk.JWK]:
+    private_key = jwcrypto.jwk.JWK.from_pem(private_key_pem.encode())
+    public_key = jwcrypto.jwk.JWK()
+    public_key.import_key(**jwcrypto.common.json_decode(private_key.export_public()))
+    return private_key, public_key
+
+
+def create_redis_connection_pool() -> RedisConnectionPool:
+    return RedisConnectionPool.from_url(settings.RedisURL.unicode_string())
+
+
 def init_container() -> punq.Container:
     container = punq.Container()
 
-    private_key = jwcrypto.jwk.JWK.from_pem(settings.PRIVATE_KEY.encode())
-    public_key = jwcrypto.jwk.JWK()
-    public_key.import_key(**jwcrypto.common.json_decode(private_key.export_public()))
+    private_key, public_key = create_jwk_keys(settings.PRIVATE_KEY)
 
     container.register(Hash, ImplHash, scope=punq.Scope.singleton)
     container.register(
@@ -42,10 +51,7 @@ def init_container() -> punq.Container:
         scope=punq.Scope.singleton,
     )
 
-    redis_connection_pool = RedisConnectionPool.from_url(
-        settings.RedisURL.unicode_string()
-    )
-
+    redis_connection_pool = create_redis_connection_pool()
     def get_redis_client() -> Generator[Redis, None, None]:
         redis = Redis(connection_pool=redis_connection_pool, decode_responses=True)
         yield redis
