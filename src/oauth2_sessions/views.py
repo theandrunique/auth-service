@@ -5,7 +5,7 @@ from src.dependencies import Container, Provide
 
 from .schemas import OAuth2SessionCollection
 
-router = APIRouter(prefix="", tags=["apps_sessions"])
+router = APIRouter()
 
 
 @router.get("/")

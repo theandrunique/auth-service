@@ -1,11 +1,13 @@
 from datetime import UTC, datetime
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from pydantic import AliasChoices, BaseModel, Field
 
+from src.schemas import PyObjectId
+
 
 class OAuth2SessionSchema(BaseModel):
-    id: UUID = Field(validation_alias=AliasChoices("_id", "id"))
+    id: PyObjectId = Field(validation_alias=AliasChoices("_id", "id"))
     user_id: UUID
     refresh_token_id: UUID
     app_id: UUID
@@ -14,8 +16,15 @@ class OAuth2SessionSchema(BaseModel):
     created_at: datetime
 
 
+class OAuth2SessionPublicSchema(BaseModel):
+    id: PyObjectId = Field(validation_alias=AliasChoices("_id", "id"))
+    app_id: UUID
+    scopes: list[str]
+    last_refresh: datetime
+    created_at: datetime
+
+
 class OAuth2SessionCreate(BaseModel):
-    id: UUID = Field(default_factory=lambda: uuid4(), serialization_alias="_id")
     user_id: UUID
     refresh_token_id: UUID
     app_id: UUID
@@ -25,4 +34,4 @@ class OAuth2SessionCreate(BaseModel):
 
 
 class OAuth2SessionCollection(BaseModel):
-    auth_apps: list[OAuth2SessionSchema]
+    auth_apps: list[OAuth2SessionPublicSchema]
