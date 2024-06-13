@@ -1,4 +1,4 @@
-from pydantic import AnyUrl, MongoDsn, RedisDsn
+from pydantic import MongoDsn, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,12 +13,10 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Authorization Server"
     DOMAIN_URL: str
 
-    SQLALCHEMY_DATABASE_URI: AnyUrl
     RedisURL: RedisDsn
 
     PRIVATE_KEY: str
     ALGORITHM: str = "RS256"
-    USER_TOKEN_EXPIRE_HOURS: int = 30 * 24
 
     FRONTEND_URL: str = "http://localhost:5173"
 
@@ -26,6 +24,9 @@ class Settings(BaseSettings):
 
     MONGO_DATABASE_NAME: str = "auth_server"
     MONGO_URI: MongoDsn
+
+    SESSION_EXPIRE_HOURS: int = 24 * 30
+    SESSION_KEY: str = "session"
 
 
 settings = Settings()  # type: ignore

@@ -8,7 +8,7 @@ from fastapi import Request, Response
 from src.dependencies import Container, resolve
 
 from .repository import SessionsRepository
-from .schemas import SessionCreate, SessionSchema
+from .schemas import PublicSessionSchema, SessionCreate, SessionSchema
 from .utils import delete_session_cookie, set_session_cookie
 
 
@@ -41,11 +41,11 @@ class SessionsService:
 
     async def get_many(
         self, user_id: UUID, count: int, offset: int
-    ) -> list[SessionSchema]:
+    ) -> list[PublicSessionSchema]:
         result = await self.repository.get_many_by_user(
             user_id=user_id, count=count, offset=offset
         )
-        return [SessionSchema(**item) for item in result]
+        return [PublicSessionSchema(**item) for item in result]
 
     async def update(self, id: UUID, new_values: dict[str, Any]) -> SessionSchema:
         updated = await self.repository.update(id, new_values)

@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 from pydantic import AliasChoices, BaseModel, Field
 
-from .config import settings
+from src.config import settings
 
 
 @dataclass
@@ -28,7 +28,7 @@ class SessionCreate(BaseModel):
     last_used: datetime = Field(default_factory=lambda: datetime.now(UTC))
     expires_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC)
-        + timedelta(hours=settings.EXPIRE_HOURS)
+        + timedelta(hours=settings.SESSION_EXPIRE_HOURS)
     )
     ip_address: str | None = Field(default=None)
 
@@ -42,4 +42,4 @@ class SessionSchema(BaseModel):
 
 
 class UserSessions(BaseModel):
-    user_sessions: list[SessionSchema]
+    user_sessions: list[PublicSessionSchema]
