@@ -4,8 +4,9 @@ from uuid import uuid4
 from fastapi import APIRouter, status
 
 from src.auth.dependencies import UserAuthorization
+from src.dependencies import Container, Provide
 
-from .dependencies import AppAccessControlDep, AppsServiceDep, ExistedApp
+from .dependencies import AppAccessControlDep, ExistedApp
 from .schemas import (
     AppCreate,
     AppInMongo,
@@ -23,10 +24,10 @@ router = APIRouter(prefix="", tags=["apps"])
 )
 async def regenerate_client_secret(
     app: AppAccessControlDep,
-    service: AppsServiceDep,
+    apps_service=Provide(Container.AppsService),
 ) -> Any:
     app.client_secret = uuid4()
-    await service.update(app.id, {"client_secret": app.client_secret})
+    await apps_service.update(app.id, {"client_secret": app.client_secret})
     return app
 
 
@@ -34,10 +35,10 @@ async def regenerate_client_secret(
 async def create_app(
     app: AppCreate,
     user: UserAuthorization,
-    service: AppsServiceDep,
+    apps_service=Provide(Container.AppsService),
 ) -> Any:
     new_app = AppInMongo(**app.model_dump(), creator_id=user.id)
-    await service.add(new_app)
+    await apps_service.add(new_app)
     return new_app
 
 
@@ -55,11 +56,11 @@ async def get_app_by_id(
 async def update_app(
     app: AppAccessControlDep,
     data: AppUpdate,
-    service: AppsServiceDep,
+    apps_service=Provide(Container.AppsService),
 ) -> AppInMongo:
     new_values = data.model_dump(exclude_defaults=True)
     if new_values:
-        return await service.update(app.id, new_values)
+        return await apps_service.update(app.id, new_values)
     else:
         return app
 
@@ -67,6 +68,6 @@ async def update_app(
 @router.delete("/{app_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_app(
     app: AppAccessControlDep,
-    service: AppsServiceDep,
+    apps_service=Provide(Container.AppsService),
 ) -> None:
-    await service.delete(app.id)
+    await apps_service.delete(app.id)

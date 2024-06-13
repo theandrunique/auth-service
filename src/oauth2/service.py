@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from src.auth.exceptions import InvalidSession
-from src.oauth2_sessions.dependencies import service as oauth2_sessions
+from src.dependencies import Container, resolve
 from src.oauth2_sessions.schemas import OAuth2SessionCreate
 from src.oauth2_sessions.service import OAuth2SessionsService
 from src.users.schemas import UserSchema
@@ -40,12 +40,13 @@ class OAuth2Service:
         return await self.repository.get(key)
 
     async def handle_request(self, req: AuthorizationRequest) -> CodeExchangeResponse:
+        oauth2_sessions_service = resolve(Container.OAuth2SessionsService)
         access_token, refresh_token, jti = create_token_pair(
             sub=req.user.id,
             scopes=req.requested_scopes,
             aud=str(req.client_id),
         )
-        await oauth2_sessions.add(
+        await oauth2_sessions_service.add(
             OAuth2SessionCreate(
                 app_id=req.client_id,
                 refresh_token_id=jti,
@@ -62,7 +63,8 @@ class OAuth2Service:
     async def handle_refresh(
         self, refresh_token_payload: RefreshTokenPayload
     ) -> CodeExchangeResponse:
-        session = await oauth2_sessions.get_by_jti(refresh_token_payload.jti)
+        oauth2_sessions_service = resolve(Container.OAuth2SessionsService)
+        session = await oauth2_sessions_service.get_by_jti(refresh_token_payload.jti)
         if not session:
             raise InvalidSession()
         access_token, refresh_token, jti = create_token_pair(
@@ -70,7 +72,7 @@ class OAuth2Service:
             scopes=session.scopes,
             aud=str(session.app_id),
         )
-        await oauth2_sessions.update_jti(id=session.id, new_jti=jti)
+        await oauth2_sessions_service.update_jti(id=session.id, new_jti=jti)
 
         return CodeExchangeResponse(
             access_token=access_token,
@@ -79,6 +81,7 @@ class OAuth2Service:
         )
 
 
-oauth2_service = OAuth2Service(
-    repository=AuthorizationRequestsRepository(), oauth2_sessions=oauth2_sessions
+service = OAuth2Service(
+    repository=AuthorizationRequestsRepository(),
+    oauth2_sessions=resolve(Container.OAuth2SessionsService),
 )

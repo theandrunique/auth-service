@@ -1,8 +1,12 @@
 from fastapi import params
 from redis.asyncio import Redis
 
+from src.apps.service import AppsService
 from src.container import container
+from src.oauth2_sessions.service import OAuth2SessionsService
 from src.services.base import hash, jwe, jwt
+from src.sessions.service import SessionsService
+from src.users.service import UsersService
 
 
 class Container:
@@ -10,6 +14,11 @@ class Container:
     JWE = jwe.JWE
     Hash = hash.Hash
     Redis = Redis
+
+    SessionsService = SessionsService
+    AppsService = AppsService
+    OAuth2SessionsService = OAuth2SessionsService
+    UsersService = UsersService
 
 
 def Provide[T](

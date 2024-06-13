@@ -3,29 +3,16 @@ from uuid import UUID
 
 from fastapi import Depends
 
-from src.apps.service import AppsService
 from src.auth.dependencies import UserAuthorization
-from src.mongo import db
+from src.dependencies import Container, Provide
 
 from .exceptions import AppNotFound, UnauthorizedAccess
-from .repository import AppsRepository
 from .schemas import AppInMongo
 
-service = AppsService(
-    repository=AppsRepository(
-        collection=db["apps"],
-    )
-)
 
-
-async def get_apps_service() -> AppsService:
-    return service
-
-
-AppsServiceDep = Annotated[AppsService, Depends(get_apps_service)]
-
-
-async def get_existed_app(app_id: UUID, service: AppsServiceDep) -> AppInMongo:
+async def get_existed_app(
+    app_id: UUID, service=Provide(Container.AppsService)
+) -> AppInMongo:
     found_app = await service.get(app_id)
     if not found_app:
         raise AppNotFound()
@@ -45,8 +32,7 @@ AppAccessControlDep = Annotated[AppInMongo, Depends(valid_access_app)]
 
 
 async def existed_app_by_client_id(
-    client_id: UUID,
-    service: AppsServiceDep,
+    client_id: UUID, service=Provide(Container.AppsService)
 ) -> AppInMongo:
     found_app = await service.get_by_client_id(client_id)
     if not found_app:

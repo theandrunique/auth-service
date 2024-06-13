@@ -1,4 +1,4 @@
-from pydantic import AnyUrl, RedisDsn
+from pydantic import AnyUrl, MongoDsn, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:5173"
 
     EMAILS_ENABLED: bool
+
+    MONGO_DATABASE_NAME: str = "auth_server"
+    MONGO_URI: MongoDsn
 
 
 settings = Settings()  # type: ignore

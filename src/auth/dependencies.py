@@ -2,9 +2,9 @@ from typing import Annotated
 
 from fastapi import Security
 
-from src.sessions.dependencies import SessionServiceDep, UserSession
+from src.dependencies import Container, Provide
+from src.sessions.dependencies import UserSession
 from src.sessions.schemas import SessionSchema
-from src.users.dependencies import UsersServiceDep
 from src.users.exceptions import (
     InactiveUser,
 )
@@ -14,15 +14,15 @@ from .exceptions import InvalidSession
 
 
 async def get_user_with_session(
-    service: UsersServiceDep,
-    sessions_service: SessionServiceDep,
     session_cookies: UserSession,
+    users_service=Provide(Container.UsersService),
+    sessions_service=Provide(Container.SessionsService),
 ) -> tuple[UserSchema, SessionSchema]:
     session = await sessions_service.get(session_cookies.token)
     if not session:
         raise InvalidSession()
 
-    user = await service.get(id=session.user_id)
+    user = await users_service.get(id=session.user_id)
     if user is None:
         raise InvalidSession()
     elif not user.active:

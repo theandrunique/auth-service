@@ -5,10 +5,9 @@ from fastapi import APIRouter, Form, Query
 
 from src.auth.dependencies import UserAuthorization
 from src.oauth2.factories import AccessTokenPayloadFactory
-from src.oauth2_sessions.dependencies import OAuth2SessionsServiceDep
 
 from .config import settings
-from .dependencies import AppAuth, AuthoritativeAppsServiceDep, OAuth2ServiceDep
+from .dependencies import AppAuth, AuthoritativeAppsServiceDep
 from .exceptions import (
     InvalidClientId,
     RedirectUriNotAllowed,
@@ -19,9 +18,8 @@ from .schemas import (
     RefreshTokenRequest,
     ResponseType,
 )
-from .utils import (
-    gen_oauth_token,
-)
+from .service import service
+from .utils import gen_oauth_token
 
 router = APIRouter(prefix="", tags=["oauth2"])
 
@@ -30,7 +28,6 @@ router = APIRouter(prefix="", tags=["oauth2"])
 async def oauth2_authorize(
     user: UserAuthorization,
     apps_service: AuthoritativeAppsServiceDep,
-    oauth2_service: OAuth2ServiceDep,
     client_id: UUID,
     redirect_uri: str,
     response_type: ResponseType,
@@ -45,7 +42,7 @@ async def oauth2_authorize(
         raise RedirectUriNotAllowed()
 
     if response_type == ResponseType.code:
-        code = await oauth2_service.create_request(
+        code = await service.create_request(
             client_id=app.client_id,
             client_secret=app.client_secret,
             user=user,
@@ -74,13 +71,13 @@ async def oauth2_exchange_code(
     code: Annotated[str, Form()],
     redirect_uri: Annotated[str, Form()],
     grant_type: Annotated[GrantType, Form()],
-    service: OAuth2SessionsServiceDep,
 ) -> CodeExchangeResponse: ...
 
 
 @router.post("/refresh")
 async def refresh_token(
-    app: AppAuth, data: RefreshTokenRequest, service: OAuth2SessionsServiceDep
+    app: AppAuth,
+    data: RefreshTokenRequest,
 ) -> CodeExchangeResponse: ...
 
 

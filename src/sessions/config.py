@@ -7,7 +7,7 @@ class SessionsSettings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=True,
-        env_prefix="SESSIONS_",
+        env_prefix="SESSION_",
     )
     EXPIRE_HOURS: int = 24 * 30
 

@@ -9,8 +9,6 @@ from fastapi import (
 
 from src.auth.dependencies import UserAuthorizationWithSession
 from src.dependencies import Container, Provide
-from src.sessions.dependencies import SessionServiceDep
-from src.users.dependencies import UsersServiceDep
 from src.users.schemas import (
     RegistrationSchema,
     UserSchema,
@@ -33,16 +31,16 @@ router = APIRouter()
 )
 async def register(
     data: RegistrationSchema,
-    service: UsersServiceDep,
+    users_service=Provide(Container.UsersService),
 ) -> Any:
-    existed_email = await service.get_by_email(email=data.email)
+    existed_email = await users_service.get_by_email(email=data.email)
     if existed_email:
         raise EmailAlreadyExists()
-    existed_username = await service.get_by_username(username=data.username)
+    existed_username = await users_service.get_by_username(username=data.username)
     if existed_username:
         raise UsernameAlreadyExists()
 
-    new_user = await service.add(data)
+    new_user = await users_service.add(data)
     return new_user
 
 
@@ -51,14 +49,14 @@ async def login(
     login: LoginReq,
     res: Response,
     req: Request,
-    service: UsersServiceDep,
-    session_service: SessionServiceDep,
+    users_service=Provide(Container.UsersService),
+    session_service=Provide(Container.SessionsService),
     hash_service=Provide(Container.Hash),
 ) -> None:
     if "@" in login.login:
-        user = await service.get_by_email(email=login.login)
+        user = await users_service.get_by_email(email=login.login)
     else:
-        user = await service.get_by_username(username=login.login)
+        user = await users_service.get_by_username(username=login.login)
     if user is None:
         raise InvalidCredentials()
     elif not user.active:
@@ -75,8 +73,8 @@ async def login(
 @router.delete("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_token(
     user_with_session: UserAuthorizationWithSession,
-    service: SessionServiceDep,
     res: Response,
+    sessions_service=Provide(Container.SessionsService),
 ) -> None:
     _, user_session = user_with_session
-    await service.delete(id=user_session.id, res=res)
+    await sessions_service.delete(id=user_session.id, res=res)

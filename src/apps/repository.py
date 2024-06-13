@@ -1,7 +1,7 @@
 from typing import Any
 from uuid import UUID
 
-from src.mongo import BaseMongoRepository
+from src.base_mongo_repository import BaseMongoRepository
 
 
 class AppsRepository(BaseMongoRepository[UUID]):
