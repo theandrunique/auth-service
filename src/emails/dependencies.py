@@ -9,7 +9,7 @@ from .utils import validate_email_token
 
 
 def check_token(token: str, audience: EmailAudience) -> UUID:
-    payload = validate_email_token(token, audience=audience.value)
+    payload = validate_email_token(token)
     if payload is None:
         raise InvalidToken()
     if payload.aud != audience:

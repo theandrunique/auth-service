@@ -23,7 +23,7 @@ async def send_confirmation_email(
 ) -> None:
     user = await users_service.get_by_email(email=email.email)
     if user and not user.email_verified:
-        return worker.add_task(send_verify_email, user)
+        worker.add_task(send_verify_email, user)
 
 
 @router.post("/verification/confirm", status_code=status.HTTP_204_NO_CONTENT)

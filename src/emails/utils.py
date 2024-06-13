@@ -23,9 +23,7 @@ def gen_email_token(
     return jwt_service.encode(payload=asdict(payload))
 
 
-def validate_email_token(
-    token: str, audience: str
-) -> EmailTokenPayloadValidator | None:
+def validate_email_token(token: str) -> EmailTokenPayloadValidator | None:
     jwt_service = resolve(Container.JWT)
     payload = jwt_service.decode(token)
     if not payload:

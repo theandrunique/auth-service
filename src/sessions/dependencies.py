@@ -18,4 +18,4 @@ def get_user_session_cookies(
     return SessionCookies(token=session_token)
 
 
-UserSession = Annotated[SessionCookies, Depends(get_user_session_cookies)]
+SessionCookie = Annotated[SessionCookies, Depends(get_user_session_cookies)]
