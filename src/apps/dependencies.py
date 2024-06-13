@@ -5,13 +5,14 @@ from fastapi import Depends
 
 from src.auth.dependencies import UserAuthorization
 from src.dependencies import Container, Provide
+from src.schemas import PyObjectId
 
 from .exceptions import AppNotFound, UnauthorizedAccess
 from .schemas import AppInMongo
 
 
 async def get_existed_app(
-    app_id: UUID, service=Provide(Container.AppsService)
+    app_id: PyObjectId, service=Provide(Container.AppsService)
 ) -> AppInMongo:
     found_app = await service.get(app_id)
     if not found_app:

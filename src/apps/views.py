@@ -1,5 +1,3 @@
-from typing import Any
-from uuid import uuid4
 
 from fastapi import APIRouter, status
 
@@ -9,9 +7,10 @@ from src.dependencies import Container, Provide
 from .dependencies import AppAccessControlDep, ExistedApp
 from .schemas import (
     AppCreate,
+    AppCreateSchema,
     AppInMongo,
-    AppPublic,
-    AppUpdate,
+    AppPublicSchema,
+    AppUpdateSchema,
 )
 
 router = APIRouter(prefix="", tags=["apps"])
@@ -20,42 +19,39 @@ router = APIRouter(prefix="", tags=["apps"])
 @router.put(
     "/{app_id}/client-secret",
     response_model=AppInMongo,
-    response_model_by_alias=False,
 )
 async def regenerate_client_secret(
     app: AppAccessControlDep,
     apps_service=Provide(Container.AppsService),
-) -> Any:
-    app.client_secret = uuid4()
-    await apps_service.update(app.id, {"client_secret": app.client_secret})
-    return app
+) -> AppInMongo:
+    return await apps_service.regenerate_client_secret(app.id)
 
 
-@router.post("", status_code=status.HTTP_201_CREATED, response_model_by_alias=False)
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def create_app(
-    app: AppCreate,
+    app: AppCreateSchema,
     user: UserAuthorization,
     apps_service=Provide(Container.AppsService),
-) -> Any:
-    new_app = AppInMongo(**app.model_dump(), creator_id=user.id)
-    await apps_service.add(new_app)
+) -> AppInMongo:
+    new_app_data = AppCreate(**app.model_dump(), creator_id=user.id)
+    new_app = await apps_service.add(new_app_data)
     return new_app
 
 
-@router.get("/{app_id}", response_model_by_alias=False)
+@router.get("/{app_id}")
 async def get_app_by_id(
     app: ExistedApp,
     user: UserAuthorization,
-) -> AppInMongo | AppPublic:
+) -> AppInMongo | AppPublicSchema:
     if user and app.creator_id == user.id:
         return app
-    return AppPublic(**app.model_dump())
+    return AppPublicSchema(**app.model_dump())
 
 
-@router.patch("/{app_id}", response_model_by_alias=False)
+@router.patch("/{app_id}")
 async def update_app(
     app: AppAccessControlDep,
-    data: AppUpdate,
+    data: AppUpdateSchema,
     apps_service=Provide(Container.AppsService),
 ) -> AppInMongo:
     new_values = data.model_dump(exclude_defaults=True)
