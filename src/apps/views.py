@@ -1,7 +1,6 @@
 from fastapi import APIRouter, status
 
-from src.auth.dependencies import UserAuthorization
-from src.dependencies import Container, Provide
+from src.dependencies import Container, Provide, UserAuthorization
 
 from .dependencies import AppAccessControlDep, ExistedApp
 from .schemas import (

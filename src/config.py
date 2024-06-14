@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Authorization Server"
     DOMAIN_URL: str
 
-    RedisURL: RedisDsn
+    REDIS_URL: RedisDsn
 
     PRIVATE_KEY: str
     ALGORITHM: str = "RS256"

@@ -3,8 +3,7 @@ from uuid import UUID
 
 from fastapi import Depends
 
-from src.auth.dependencies import UserAuthorization
-from src.dependencies import Container, Provide
+from src.dependencies import Container, Provide, UserAuthorization
 from src.schemas import PyObjectId
 
 from .exceptions import AppNotFound, UnauthorizedAccess

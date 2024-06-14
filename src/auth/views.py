@@ -7,8 +7,7 @@ from fastapi import (
     status,
 )
 
-from src.auth.dependencies import UserAuthorizationWithSession
-from src.dependencies import Container, Provide
+from src.dependencies import Container, Provide, UserAuthorizationWithSession
 from src.users.schemas import (
     RegistrationSchema,
     UserSchema,

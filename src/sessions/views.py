@@ -1,18 +1,18 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Response, status
 from pydantic import NonNegativeInt
 
-from src.auth.dependencies import (
+from src.dependencies import (
+    Container,
+    Provide,
     UserAuthorization,
     UserAuthorizationWithSession,
-    get_user,
 )
-from src.dependencies import Container, Provide
 
 from .schemas import UserSessions
 
-router = APIRouter(dependencies=[Depends(get_user)])
+router = APIRouter()
 
 
 @router.get("", response_model=UserSessions)
@@ -41,6 +41,7 @@ async def delete_all_sessions_except_current(
 
 @router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_session(
+    user: UserAuthorization,
     session_id: UUID,
     res: Response,
     sessions_service=Provide(Container.SessionsService),

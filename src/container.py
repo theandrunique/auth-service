@@ -1,16 +1,20 @@
-from collections.abc import Generator
+import json
 
 import jwcrypto
 import jwcrypto.common
 import jwcrypto.jwk
 import punq
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from redis import Redis
 from redis.asyncio import ConnectionPool as RedisConnectionPool
+from redis.asyncio import Redis
 
 from src.apps.repository import AppsRepository
 from src.apps.service import AppsService
 from src.config import settings
+from src.logger import logger
+from src.oauth2.authoritative_apps import AuthoritativeApp, AuthoritativeAppsService
+from src.oauth2.repository import AuthorizationRequestsRepository
+from src.oauth2.service import OAuth2Service
 from src.oauth2_sessions.repository import OAuth2SessionsRepository
 from src.oauth2_sessions.service import OAuth2SessionsService
 from src.services.base.hash import Hash
@@ -34,7 +38,7 @@ def create_jwk_keys(private_key_pem: str) -> tuple[jwcrypto.jwk.JWK, jwcrypto.jw
 
 
 def create_redis_connection_pool() -> RedisConnectionPool:
-    return RedisConnectionPool.from_url(settings.RedisURL.unicode_string())
+    return RedisConnectionPool.from_url(settings.REDIS_URL.unicode_string())
 
 
 def init_mongodb() -> AsyncIOMotorDatabase:
@@ -43,6 +47,18 @@ def init_mongodb() -> AsyncIOMotorDatabase:
         uuidRepresentation="standard",
     )
     return client[settings.MONGO_DATABASE_NAME]
+
+
+def init_authoritative_apps() -> list[AuthoritativeApp]:
+    try:
+        with open("authoritative_apps.json") as f:
+            apps_dict = json.loads(f.read())
+            apps_list = apps_dict["apps"]
+            apps = [AuthoritativeApp(**app) for app in apps_list]
+            return apps
+    except Exception:
+        logger.error("Failed to load authoritative apps: ", exc_info=True)
+        return []
 
 
 def init_container() -> punq.Container:
@@ -71,9 +87,8 @@ def init_container() -> punq.Container:
 
     redis_connection_pool = create_redis_connection_pool()
 
-    def get_redis_client() -> Generator[Redis, None, None]:
-        redis = Redis(connection_pool=redis_connection_pool, decode_responses=True)
-        yield redis
+    def get_redis_client() -> Redis:
+        return Redis(connection_pool=redis_connection_pool, decode_responses=True)
 
     container.register(Redis, factory=get_redis_client)
 
@@ -99,6 +114,7 @@ def init_container() -> punq.Container:
         instance=UsersRepository(collection=mongodb["users"]),
         scope=punq.Scope.singleton,
     )
+    container.register(AuthorizationRequestsRepository, scope=punq.Scope.singleton)
 
     container.register(AppsService, scope=punq.Scope.singleton)
     container.register(SessionsService, scope=punq.Scope.singleton)
@@ -107,6 +123,14 @@ def init_container() -> punq.Container:
     container.register(
         WellKnownService,
         instance=WellKnownService(private_key=private_key),
+        scope=punq.Scope.singleton,
+    )
+    container.register(OAuth2Service, scope=punq.Scope.singleton)
+
+    authoritative_apps = init_authoritative_apps()
+    container.register(
+        AuthoritativeAppsService,
+        instance=AuthoritativeAppsService(apps=authoritative_apps),
         scope=punq.Scope.singleton,
     )
 

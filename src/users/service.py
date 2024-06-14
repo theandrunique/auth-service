@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
-from src.dependencies import Container, resolve
+from src.services.base.hash import Hash
 from src.users.repository import UsersRepository
 from src.users.schemas import RegistrationSchema, UserCreate, UserPublic, UserSchema
 
@@ -10,13 +10,13 @@ from src.users.schemas import RegistrationSchema, UserCreate, UserPublic, UserSc
 @dataclass(kw_only=True)
 class UsersService:
     repository: UsersRepository
+    hash_service: Hash
 
     async def add(self, item: RegistrationSchema) -> UserSchema:
-        hash_service = resolve(Container.Hash)
         new_user = UserCreate(
             username=item.username,
             email=item.email,
-            hashed_password=hash_service.create(item.password),
+            hashed_password=self.hash_service.create(item.password),
         )
         await self.repository.add(new_user.model_dump(by_alias=True))
         return UserSchema(**new_user.model_dump())
@@ -62,9 +62,8 @@ class UsersService:
         return UserSchema(**updated)
 
     async def update_password(self, id: UUID, new_password: str) -> None:
-        hash_service = resolve(Container.Hash)
         await self.repository.update(
-            id, {"password": hash_service.create(new_password)}
+            id, {"password": self.hash_service.create(new_password)}
         )
 
     async def verify_email(self, id: UUID) -> None:

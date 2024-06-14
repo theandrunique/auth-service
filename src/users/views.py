@@ -4,8 +4,7 @@ from uuid import UUID
 import httpx
 from fastapi import APIRouter, Query
 
-from src.auth.dependencies import UserAuthorization
-from src.dependencies import Container, Provide
+from src.dependencies import Container, Provide, UserAuthorization
 
 from .exceptions import InvalidImageUrl, UserNotFound
 from .schemas import SearchResult, UpdateImage, UserPublic
