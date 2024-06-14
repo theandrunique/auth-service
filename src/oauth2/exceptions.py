@@ -17,14 +17,6 @@ class NotAllowedScope(HTTPException):
         )
 
 
-class AuthorizationTypeIsNotSupported(HTTPException):
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Authorization type is not supported",
-        )
-
-
 class InvalidAuthorizationCode(HTTPException):
     def __init__(self) -> None:
         super().__init__(
@@ -44,14 +36,22 @@ class InvalidAppCredentials(HTTPException):
 class InvalidClientId(HTTPException):
     def __init__(self) -> None:
         super().__init__(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid client id",
         )
 
 
-class InvalidRequest(HTTPException):
+class InvalidCodeVerifier(HTTPException):
     def __init__(self) -> None:
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid request or code has expired",
+            detail="Invalid code verifier",
+        )
+
+
+class InvalidRequest(HTTPException):
+    def __init__(self, detail: str) -> None:
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid request: {detail}",
         )

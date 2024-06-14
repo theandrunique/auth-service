@@ -21,18 +21,12 @@ class GrantType(str, Enum):
     refresh_token: str = "refresh_token"
 
 
-class AccessTokenPayload(BaseModel):
-    sub: UUID
-    scopes: list[str]
-    exp: datetime = Field(
-        default_factory=lambda: datetime.now(UTC)
-        + timedelta(seconds=settings.ACCESS_TOKEN_EXPIRE_SECONDS)
-    )
-    aud: str
-
-
 class CodeChallengeMethod(str, Enum):
     s256 = "S256"
+
+
+class RedirectUriResponse(BaseModel):
+    redirect_uri: str
 
 
 class CodeExchangeResponse(BaseModel):
@@ -41,6 +35,21 @@ class CodeExchangeResponse(BaseModel):
     token_type: str = Field(default="Bearer")
     expires_in: int = Field(default=settings.ACCESS_TOKEN_EXPIRE_SECONDS)
     scopes: list[str]
+
+
+class WebMessageResponse(BaseModel):
+    code: str
+    state: str | None
+
+
+class AccessTokenPayload(BaseModel):
+    sub: UUID
+    scopes: list[str]
+    exp: datetime = Field(
+        default_factory=lambda: datetime.now(UTC)
+        + timedelta(seconds=settings.ACCESS_TOKEN_EXPIRE_SECONDS)
+    )
+    aud: str
 
 
 class RefreshTokenRequest(BaseModel):

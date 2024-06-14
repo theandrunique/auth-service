@@ -4,6 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from src.apps.schemas import Scope
+from src.logger import logger
 
 
 class AuthoritativeApp(BaseModel):
@@ -21,4 +22,5 @@ class AuthoritativeAppsService:
         for app in self.apps:
             if app.client_id == client_id:
                 return app
+        logger.info(f"Could not find app with client_id {client_id}")
         return None
