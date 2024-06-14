@@ -1,0 +1,15 @@
+{
+    "apps": [
+        {
+            "client_id": "5353554b-557e-4872-976e-baf669b2c708",
+            "client_secret": "1dc18d7b-6ff4-4319-953d-b27bc246d3ff",
+            "redirect_uris": ["http://example.com"],
+            "scopes": [
+                {
+                    "name": "messages:read",
+                    "description": "Read messages from chats"
+                }
+            ]
+        }
+    ]
+}
