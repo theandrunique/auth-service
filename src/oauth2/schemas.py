@@ -1,5 +1,4 @@
-from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
 from uuid import UUID
@@ -19,20 +18,21 @@ class ResponseType(str, Enum):
 
 class GrantType(str, Enum):
     authorization_code: str = "authorization_code"
+    refresh_token: str = "refresh_token"
 
 
 class AccessTokenPayload(BaseModel):
     sub: UUID
     scopes: list[str]
-    exp: datetime
+    exp: datetime = Field(
+        default_factory=lambda: datetime.now(UTC)
+        + timedelta(seconds=settings.ACCESS_TOKEN_EXPIRE_SECONDS)
+    )
     aud: str
 
 
-class RefreshTokenPayload(BaseModel):
-    sub: UUID
-    jti: UUID
-    exp: datetime
-    aud: str
+class CodeChallengeMethod(str, Enum):
+    s256 = "S256"
 
 
 class CodeExchangeResponse(BaseModel):
@@ -48,8 +48,7 @@ class RefreshTokenRequest(BaseModel):
     grant_type: str
 
 
-@dataclass
-class AuthorizationRequest:
+class AuthorizationRequest(BaseModel):
     client_id: UUID
     client_secret: UUID
     requested_scopes: list[str]
@@ -58,11 +57,8 @@ class AuthorizationRequest:
     state: str | None = None
     nonce: str | None = None
     code_challenge: str | None = None
-    code_challenge_method: str | None = None
+    code_challenge_method: CodeChallengeMethod | None = None
     prompt: str | None = None
-
-    def dump(self) -> dict[str, Any]:
-        return asdict(self)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "AuthorizationRequest":

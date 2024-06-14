@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     AUTHORIZATION_CODE_LENGTH: int = 512
     AUTHORIZATION_CODE_EXPIRE_SECONDS: int = 60
     ACCESS_TOKEN_EXPIRE_SECONDS: int = 3600
-    REFRESH_TOKEN_EXPIRE_HOURS: int = 24 * 7
+    REFRESH_TOKEN_EXPIRE_HOURS: int = 24
 
 
 settings = Settings()  # type: ignore

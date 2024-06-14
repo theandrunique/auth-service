@@ -3,23 +3,20 @@ from uuid import UUID
 
 from fastapi import APIRouter, Form, Query
 
-from src.auth.dependencies import UserAuthorization
-from src.oauth2.factories import AccessTokenPayloadFactory
+from src.dependencies import Container, Provide, UserAuthorization
 
-from .config import settings
-from .dependencies import AppAuth, AuthoritativeAppsServiceDep
+from .dependencies import AppAuth
 from .exceptions import (
     InvalidClientId,
+    InvalidRequest,
     RedirectUriNotAllowed,
 )
 from .schemas import (
+    CodeChallengeMethod,
     CodeExchangeResponse,
     GrantType,
-    RefreshTokenRequest,
     ResponseType,
 )
-from .service import service
-from .utils import gen_oauth_token
 
 router = APIRouter(prefix="", tags=["oauth2"])
 
@@ -27,14 +24,17 @@ router = APIRouter(prefix="", tags=["oauth2"])
 @router.post("/authorize", response_model_exclude_none=True)
 async def oauth2_authorize(
     user: UserAuthorization,
-    apps_service: AuthoritativeAppsServiceDep,
     client_id: UUID,
     redirect_uri: str,
     response_type: ResponseType,
     scope: list[str] = Query(default=[]),
     state: str | None = None,
+    apps_service=Provide(Container.AppsService),
+    oauth2_service=Provide(Container.OAuth2Service),
+    code_challenge_method: CodeChallengeMethod | None = Query(default=None),
+    code_challenge: str | None = None,
 ) -> Any:
-    app = apps_service.get_by_client_id(client_id)
+    app = await apps_service.get_by_client_id(client_id)
     if not app:
         raise InvalidClientId()
 
@@ -42,45 +42,64 @@ async def oauth2_authorize(
         raise RedirectUriNotAllowed()
 
     if response_type == ResponseType.code:
-        code = await service.create_request(
+        code = await oauth2_service.create_request(
             client_id=app.client_id,
             client_secret=app.client_secret,
             user=user,
             requested_scopes=scope,
             redirect_uri=redirect_uri,
+            code_challenge_method=code_challenge_method,
+            code_challenge=code_challenge,
         )
         return {
+            "redirect_uri": f"{redirect_uri}?code={code}&state={state}",
             "code": code,
+            "state": state,
         }
     elif response_type == ResponseType.token:
-        access_payload = AccessTokenPayloadFactory(
-            sub=user.id, scopes=scope, aud=str(client_id)
+        access_token = oauth2_service.create_access_token(
+            user_id=user.id, scopes=scope, client_id=str(app.client_id)
         )
-        access_token = gen_oauth_token(access_payload)
         return {
-            "access_token": access_token,
-            "token_type": "Bearer",
-            "expires_in": settings.ACCESS_TOKEN_EXPIRE_SECONDS,
-            "scope": " ".join(scope),
+            "redirect_uri": f"{redirect_uri}?access_token={access_token}&token_type=bearer&expires_in=3600&state={state}",
         }
+
+    elif response_type == ResponseType.web_message:
+        ...
 
 
 @router.post("/token")
 async def oauth2_exchange_code(
-    app: AppAuth,
-    code: Annotated[str, Form()],
-    redirect_uri: Annotated[str, Form()],
+    app_auth: AppAuth,
     grant_type: Annotated[GrantType, Form()],
-) -> CodeExchangeResponse: ...
+    redirect_uri: Annotated[str | None, Form()] = None,
+    code: Annotated[str | None, Form()] = None,
+    refresh_token: Annotated[str | None, Form()] = None,
+    code_verifier: Annotated[str | None, Form()] = None,
+    oauth2_service=Provide(Container.OAuth2Service),
+) -> CodeExchangeResponse:
+    if grant_type == GrantType.authorization_code:
+        if code is None:
+            raise InvalidRequest()
+        auth_request = await oauth2_service.validate_code_exchange_request(key=code)
+        if not auth_request:
+            raise InvalidRequest()
 
+        if auth_request.redirect_uri != redirect_uri:
+            raise InvalidRequest()
 
-@router.post("/refresh")
-async def refresh_token(
-    app: AppAuth,
-    data: RefreshTokenRequest,
-) -> CodeExchangeResponse: ...
+        if app_auth is None:
+            if code_verifier is None:
+                raise InvalidRequest()
+            return await oauth2_service.handle_authorization_code_with_pkce(
+                code_verifier=code_verifier,
+                req=auth_request,
+            )
 
+        return await oauth2_service.handle_authorization_code(req=auth_request)
+    elif grant_type == GrantType.refresh_token:
+        if refresh_token is None:
+            raise InvalidRequest()
+        return await oauth2_service.handle_refresh(token=refresh_token)
 
-@router.post("/userinfo")
-async def oauth2_userinfo() -> dict:
-    return {}
+    raise Exception("Unsupported grant type")

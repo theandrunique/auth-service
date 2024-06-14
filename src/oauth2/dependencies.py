@@ -7,35 +7,27 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from src.apps.schemas import AppInMongo
 from src.dependencies import Container, Provide
 
-from .apps import AuthoritativeAppsService, apps_service
-from .exceptions import InvalidAppCredentials
-
 basic_auth = HTTPBasic()
 
 
 async def get_app_auth(
     apps_service=Provide(Container.AppsService),
     credentials: HTTPBasicCredentials = Security(basic_auth),
-) -> AppInMongo:
-    client_id = credentials.username
-    client_secret = credentials.password
-    found = await apps_service.get_by_client_id(UUID(client_id))
-    if not found:
-        raise InvalidAppCredentials()
+) -> AppInMongo | None:
+    try:
+        client_id = UUID(credentials.username)
+        client_secret = UUID(credentials.password)
+    except ValueError:
+        return None
 
-    if UUID(hex=client_secret) != found.client_secret:
-        raise InvalidAppCredentials()
+    found = await apps_service.get_by_client_id(client_id)
+    if not found:
+        return None
+
+    if client_secret != found.client_secret:
+        return None
 
     return found
 
 
 AppAuth = Annotated[AppInMongo, Depends(get_app_auth)]
-
-
-def get_authoritative_apps_service() -> AuthoritativeAppsService:
-    return apps_service
-
-
-AuthoritativeAppsServiceDep = Annotated[
-    AuthoritativeAppsService, Depends(get_authoritative_apps_service)
-]
