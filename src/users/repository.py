@@ -25,3 +25,7 @@ class UsersRepository(BaseMongoRepository[UUID]):
     async def search_by_username(self, username: str) -> list[dict[str, Any]] | None:
         regex = re.compile(f"{re.escape(username)}", re.IGNORECASE)
         return await self.collection.find({"username": regex}).to_list(None)
+
+    async def init(self) -> None:
+        await self.collection.create_index("username", unique=True)
+        await self.collection.create_index("email", unique=True)

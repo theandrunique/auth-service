@@ -3,8 +3,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from src.utils import init_mongo_repositories
 
-async def on_startup(app: FastAPI) -> None: ...
+
+async def on_startup(app: FastAPI) -> None:
+    await init_mongo_repositories()
 
 
 async def on_shutdown(app: FastAPI) -> None: ...

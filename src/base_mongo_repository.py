@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
 
@@ -36,3 +36,6 @@ class BaseMongoRepository[T](ABC):
     async def delete(self, id: T) -> int:
         result = await self.collection.delete_one({"_id": id})
         return result.deleted_count
+
+    @abstractmethod
+    async def init(self) -> None: ...

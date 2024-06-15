@@ -3,6 +3,7 @@ from typing import Any
 from uuid import UUID
 
 from src.base_mongo_repository import BaseMongoRepository
+from src.config import settings
 
 
 class SessionsRepository(BaseMongoRepository[UUID]):
@@ -30,3 +31,10 @@ class SessionsRepository(BaseMongoRepository[UUID]):
 
     async def delete_all(self, user_id: UUID) -> None:
         await self.collection.delete_many({"user_id": user_id})
+
+    async def init(self) -> None:
+        await self.collection.create_index("user_id")
+        await self.collection.create_index(
+            "expires_at",
+            expireAfterSeconds=settings.SESSION_EXPIRE_HOURS * 60 * 60,
+        )
