@@ -1,4 +1,5 @@
 APP=docker/docker-compose.app.yml
+APP_DEPLOY=docker/docker-compose.deploy.yml
 MONGO=docker/docker-compose.mongo.yml
 MONGO_EXPRESS=docker/docker-compose.mongo-express.yml
 REDIS=docker/docker-compose.redis.yml
@@ -9,7 +10,7 @@ ENV_FILE = --env-file ./.env
 
 
 up:
-	docker compose -f ${APP} -f ${MONGO} -f ${REDIS} up -d --build
+	docker compose -f ${APP} -f ${APP_DEPLOY} -f ${MONGO} -f ${REDIS} ${ENV_FILE} up -d --build
 
 up-dev:
 	docker compose -f ${APP} -f ${DEV} -f ${MONGO} -f ${MONGO_EXPRESS} -f ${REDIS} ${ENV_FILE} up --build --abort-on-container-exit --attach app --no-log-prefix
