@@ -24,13 +24,13 @@ router = APIRouter(prefix="", tags=["oauth2"])
 @router.post("/authorize", response_model_exclude_none=True)
 async def oauth2_authorize(
     user: UserAuthorization,
-    client_id: UUID,
-    redirect_uri: str,
-    response_type: ResponseType,
-    scope: list[str] = Query(default=[]),
-    state: str | None = None,
-    code_challenge_method: CodeChallengeMethod | None = Query(default=None),
-    code_challenge: str | None = None,
+    response_type: Annotated[ResponseType, Query()],
+    client_id: Annotated[UUID, Query()],
+    redirect_uri: Annotated[str, Query()],
+    scope: Annotated[list[str], Query(default_factory=list)],
+    state: Annotated[str | None, Query()] = None,
+    code_challenge_method: Annotated[CodeChallengeMethod | None, Query()] = None,
+    code_challenge: Annotated[str | None, Query()] = None,
     oauth2_service=Provide(Container.OAuth2Service),
 ) -> RedirectUriResponse | WebMessageResponse:
     if response_type == ResponseType.code:
