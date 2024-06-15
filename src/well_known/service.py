@@ -4,6 +4,7 @@ from typing import Any
 from jwcrypto import jwk
 
 from src.config import settings
+from src.oauth2.schemas import GrantType, ResponseType
 
 
 @dataclass(kw_only=True)
@@ -30,8 +31,7 @@ class WellKnownService:
             "token_endpoint": f"{settings.DOMAIN_URL}/oauth/token",
             "issuer": settings.DOMAIN_URL,
             "jwks_uri": f"{settings.DOMAIN_URL}/.well-known/jwks.json",
-            "response_types_supported": ["code"],
-            "grant_types_supported": ["authorization_code"],
+            "response_types_supported": list(ResponseType),
+            "grant_types_supported": list(GrantType),
             "id_token_signing_alg_values_supported": ["RS256"],
-            "scopes_supported": ["openid", "profile", "email"],
         }
