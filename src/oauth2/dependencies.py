@@ -6,8 +6,8 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 from src.apps.schemas import AppInMongo
 from src.dependencies import Container, Provide
+from src.schemas import AuthoritativeApp
 
-from .authoritative_apps import AuthoritativeApp
 from .exceptions import InvalidAppCredentials
 
 basic_auth = HTTPBasic(

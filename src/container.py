@@ -1,4 +1,5 @@
 import json
+from uuid import UUID
 
 import jwcrypto
 import jwcrypto.common
@@ -12,11 +13,12 @@ from src.apps.repository import AppsRepository
 from src.apps.service import AppsService
 from src.config import settings
 from src.logger import logger
-from src.oauth2.authoritative_apps import AuthoritativeApp, AuthoritativeAppsService
 from src.oauth2.repository import AuthorizationRequestsRepository
 from src.oauth2.service import OAuth2Service
 from src.oauth2_sessions.repository import OAuth2SessionsRepository
 from src.oauth2_sessions.service import OAuth2SessionsService
+from src.schemas import AuthoritativeApp
+from src.services.authoritative_apps import AuthoritativeAppsService
 from src.services.base.hash import Hash
 from src.services.base.jwe import JWE
 from src.services.base.jwt import JWT
@@ -49,16 +51,19 @@ def init_mongodb() -> AsyncIOMotorDatabase:
     return client[settings.MONGO_DATABASE_NAME]
 
 
-def init_authoritative_apps() -> list[AuthoritativeApp]:
+def init_authoritative_apps() -> dict[UUID, AuthoritativeApp]:
     try:
         with open("authoritative_apps.json") as f:
             apps_dict = json.loads(f.read())
             apps_list = apps_dict["apps"]
-            apps = [AuthoritativeApp(**app) for app in apps_list]
-            return apps
+            apps_dict = {}
+            for app in apps_list:
+                app = AuthoritativeApp(**app)
+                apps_dict[app.client_id] = app
+            return apps_dict
     except Exception:
         logger.error("Failed to load authoritative apps: ", exc_info=True)
-        return []
+        return {}
 
 
 def init_container() -> punq.Container:
@@ -127,10 +132,9 @@ def init_container() -> punq.Container:
     )
     container.register(OAuth2Service, scope=punq.Scope.singleton)
 
-    authoritative_apps = init_authoritative_apps()
     container.register(
         AuthoritativeAppsService,
-        instance=AuthoritativeAppsService(apps=authoritative_apps),
+        instance=AuthoritativeAppsService(apps=init_authoritative_apps()),
         scope=punq.Scope.singleton,
     )
 

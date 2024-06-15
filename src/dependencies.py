@@ -6,9 +6,9 @@ from redis.asyncio import Redis
 from src.apps.service import AppsService
 from src.auth.exceptions import InvalidSession
 from src.container import container
-from src.oauth2.authoritative_apps import AuthoritativeAppsService
 from src.oauth2.service import OAuth2Service
 from src.oauth2_sessions.service import OAuth2SessionsService
+from src.services.authoritative_apps import AuthoritativeAppsService
 from src.services.base import hash, jwe, jwt
 from src.sessions.dependencies import SessionCookie
 from src.sessions.schemas import SessionSchema

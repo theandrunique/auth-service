@@ -13,11 +13,12 @@ from src.oauth2.exceptions import (
 )
 from src.oauth2_sessions.schemas import OAuth2SessionCreate
 from src.oauth2_sessions.service import OAuth2SessionsService
+from src.schemas import AuthoritativeApp
+from src.services.authoritative_apps import AuthoritativeAppsService
 from src.services.base.jwe import JWE
 from src.services.base.jwt import JWT
 from src.users.schemas import UserSchema
 
-from .authoritative_apps import AuthoritativeApp, AuthoritativeAppsService
 from .repository import AuthorizationRequestsRepository
 from .schemas import (
     AccessTokenPayload,

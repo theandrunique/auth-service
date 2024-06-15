@@ -3,12 +3,7 @@ from uuid import UUID, uuid4
 
 from pydantic import AliasChoices, BaseModel, Field
 
-from src.schemas import PyObjectId
-
-
-class Scope(BaseModel):
-    name: str
-    description: str | None = Field(default=None)
+from src.schemas import PyObjectId, Scope
 
 
 class AppInMongo(BaseModel):

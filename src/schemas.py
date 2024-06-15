@@ -1,7 +1,8 @@
 from typing import Any
+from uuid import UUID
 
 import bson
-from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler
+from pydantic import BaseModel, Field, GetCoreSchemaHandler, GetJsonSchemaHandler
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, core_schema
 
@@ -28,3 +29,15 @@ class PyObjectId(bson.ObjectId):
         cls, _core_schema: CoreSchema, handler: GetJsonSchemaHandler
     ) -> JsonSchemaValue:
         return handler(core_schema.str_schema())
+
+
+class Scope(BaseModel):
+    name: str
+    description: str | None = Field(default=None)
+
+
+class AuthoritativeApp(BaseModel):
+    client_id: UUID
+    client_secret: UUID
+    redirect_uris: list[str]
+    scopes: list[Scope]
