@@ -32,6 +32,7 @@ pytest = "^8.1.1"
 pytest-asyncio = "^0.23.6"
 ruff = "^0.4.1"
 pyright = "^1.1.362"
+faker = "^26.0.0"
 
 [build-system]
 requires = ["poetry-core"]
