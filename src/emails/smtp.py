@@ -23,7 +23,5 @@ async def send_email(
     subject: str,
     html_body: str,
 ) -> None:
-    message = MessageSchema(
-        subject=subject, recipients=[email_to], body=html_body, subtype=MessageType.html
-    )
+    message = MessageSchema(subject=subject, recipients=[email_to], body=html_body, subtype=MessageType.html)
     await fm.send_message(message)

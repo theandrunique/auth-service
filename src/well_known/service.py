@@ -4,7 +4,7 @@ from typing import Any
 from jwcrypto import jwk
 
 from src.config import settings
-from src.oauth2.schemas import GrantType, ResponseType
+from src.oauth2.entities import GrantType, ResponseType
 
 
 @dataclass(kw_only=True)

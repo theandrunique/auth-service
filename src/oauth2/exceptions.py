@@ -1,57 +1,36 @@
-from fastapi import HTTPException, status
+from src.exceptions import ServiceError, ServiceErrorCode
 
 
-class RedirectUriNotAllowed(HTTPException):
+class InvalidClientId(ServiceError):
     def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Redirect URI not allowed",
-        )
+        super().__init__(code=ServiceErrorCode.INVALID_CLIENT_ID)
 
 
-class NotAllowedScope(HTTPException):
-    def __init__(self, scopes: list[str]) -> None:
-        super().__init__(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Scopes: '{', '.join(scopes)}' not allowed by the app",
-        )
-
-
-class InvalidAuthorizationCode(HTTPException):
+class InvalidRefreshToken(ServiceError):
     def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid authorization code",
-        )
+        super().__init__(code=ServiceErrorCode.INVALID_REFRESH_TOKEN)
 
 
-class InvalidAppCredentials(HTTPException):
+class NotMatchingConfiguration(ServiceError):
     def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid app credentials",
-        )
+        super().__init__(code=ServiceErrorCode.NOT_MATCHING_CONFIGURATION)
 
 
-class InvalidClientId(HTTPException):
+class InvalidAuthorizationCode(ServiceError):
     def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid client id",
-        )
+        super().__init__(code=ServiceErrorCode.INVALID_AUTHORIZATION_CODE)
 
 
-class InvalidCodeVerifier(HTTPException):
+class InvalidClientCredentials(ServiceError):
     def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid code verifier",
-        )
+        super().__init__(code=ServiceErrorCode.INVALID_CLIENT_CREDENTIALS)
 
 
-class InvalidRequest(HTTPException):
-    def __init__(self, detail: str) -> None:
-        super().__init__(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid request: {detail}",
-        )
+class InvalidCodeVerifier(ServiceError):
+    def __init__(self) -> None:
+        super().__init__(code=ServiceErrorCode.INVALID_CODE_VERIFIER)
+
+
+class InvalidRedirectUri(ServiceError):
+    def __init__(self) -> None:
+        super().__init__(code=ServiceErrorCode.INVALID_REDIRECT_URI)

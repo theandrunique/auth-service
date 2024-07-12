@@ -1,23 +1,36 @@
 import json
+import sys
 from uuid import UUID
 
 import jwcrypto
 import jwcrypto.common
 import jwcrypto.jwk
 import punq
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from beanie import init_beanie
+from motor.motor_asyncio import AsyncIOMotorClient
 from redis.asyncio import ConnectionPool as RedisConnectionPool
 from redis.asyncio import Redis
 
-from src.apps.repository import AppsRepository
-from src.apps.service import AppsService
+from src.apps.models import AppODM
+from src.apps.repository import IAppsRepository, MongoAppsRepository
+from src.apps.service import AppsService, IAppsService
+from src.apps.use_cases import (
+    CreateAppUseCase,
+    GetUserAppsUseCase,
+    RegenerateClientSecretUseCase,
+    UpdateAppInfoUseCase,
+)
+from src.auth.service import AuthService, IAuthService
+from src.auth.use_cases import LoginUseCase, LogoutUseCase, SignUpUseCase
 from src.config import settings
 from src.logger import logger
-from src.oauth2.repository import AuthorizationRequestsRepository
-from src.oauth2.service import OAuth2Service
-from src.oauth2_sessions.repository import OAuth2SessionsRepository
-from src.oauth2_sessions.service import OAuth2SessionsService
-from src.schemas import AuthoritativeApp
+from src.oauth2.req_service import AuthorizationRequestsRepository, AuthReqService, IAuthReqRepository
+from src.oauth2.service import OAuthService
+from src.oauth2.use_cases import GetAppScopesUseCase, OAuthAuthorizeUseCase, OAuthTokenUseCase
+from src.oauth2_sessions.models import OAuth2SessionODM
+from src.oauth2_sessions.repository import IOAuth2SessionsRepository, MongoOAuth2SessionsRepository
+from src.oauth2_sessions.service import IOAuthSessionsService, OAuthSessionsService
+from src.schemas import AppScopes, AuthoritativeApp
 from src.services.authoritative_apps import AuthoritativeAppsService
 from src.services.base.hash import Hash
 from src.services.base.jwe import JWE
@@ -25,10 +38,13 @@ from src.services.base.jwt import JWT
 from src.services.hash import ImplHash
 from src.services.jwe import ImplJWE
 from src.services.jwt import ImplJWT
-from src.sessions.repository import SessionsRepository
-from src.sessions.service import SessionsService
-from src.users.repository import UsersRepository
-from src.users.service import UsersService
+from src.sessions.models import SessionODM
+from src.sessions.repository import ISessionsRepository, MongoSessionsRepository
+from src.sessions.service import ISessionsService, SessionsService
+from src.users.models import UserODM
+from src.users.repository import IUsersRepository, MongoUsersRepository
+from src.users.service import IUsersService, UsersService
+from src.users.use_cases import GetMeUseCase
 from src.well_known.service import WellKnownService
 
 
@@ -43,39 +59,62 @@ def create_redis_connection_pool() -> RedisConnectionPool:
     return RedisConnectionPool.from_url(settings.REDIS_URL.unicode_string())
 
 
-def init_mongodb() -> AsyncIOMotorDatabase:
+async def init_mongodb() -> None:
     client = AsyncIOMotorClient(
         settings.MONGO_URI.unicode_string(),
-        uuidRepresentation="standard",
     )
-    return client[settings.MONGO_DATABASE_NAME]
+    await init_beanie(
+        database=client[settings.MONGO_DATABASE_NAME],
+        document_models=[
+            UserODM,
+            SessionODM,
+            OAuth2SessionODM,
+            AppODM,
+        ],
+    )
 
 
-def init_authoritative_apps() -> dict[UUID, AuthoritativeApp]:
+def load_certs() -> str:
     try:
-        with open("authoritative_apps.json") as f:
+        with open(settings.CERT_PATH) as f:
+            return f.read()
+    except Exception:
+        logger.critical("Failed to load certs: ", exc_info=True)
+        sys.exit(1)
+
+
+def load_authoritative_apps() -> tuple[dict[UUID, AuthoritativeApp], AppScopes]:
+    try:
+        with open(settings.AUTHORITATIVE_APPS_PATH) as f:
             apps_dict = json.loads(f.read())
             apps_list = apps_dict["apps"]
+            loaded_scopes = apps_dict["scopes"]
             apps_dict = {}
             for app in apps_list:
-                app = AuthoritativeApp(**app)
-                apps_dict[app.client_id] = app
-            return apps_dict
-    except Exception:
-        logger.error("Failed to load authoritative apps: ", exc_info=True)
-        return {}
+                loaded_app = AuthoritativeApp(**app)
+                apps_dict[loaded_app.client_id] = loaded_app
+
+            app_scopes = AppScopes.model_validate(loaded_scopes)
+            return apps_dict, app_scopes
+    except Exception as e:
+        logger.error("Failed to load authoritative apps: ", exc_info=False)
+        raise e
 
 
-def init_container() -> punq.Container:
+async def init_container() -> punq.Container:
     container = punq.Container()
 
-    private_key, public_key = create_jwk_keys(settings.PRIVATE_KEY)
+    cert = load_certs()
+
+    private_key, public_key = create_jwk_keys(cert)
+
+    apps, scopes = load_authoritative_apps()
 
     container.register(Hash, ImplHash, scope=punq.Scope.singleton)
     container.register(
         JWT,
         instance=ImplJWT(
-            private_key_pem=settings.PRIVATE_KEY,
+            private_key_pem=cert,
             public_key_pem=public_key.export_to_pem(),  # type: ignore
             public_key_id=public_key.key_id,  # type: ignore
             algorithm=settings.ALGORITHM,
@@ -89,6 +128,7 @@ def init_container() -> punq.Container:
         instance=ImplJWE(private_key=private_key, public_key=public_key),
         scope=punq.Scope.singleton,
     )
+    container.register(AppScopes, instance=scopes, scope=punq.Scope.singleton)
 
     redis_connection_pool = create_redis_connection_pool()
 
@@ -97,48 +137,45 @@ def init_container() -> punq.Container:
 
     container.register(Redis, factory=get_redis_client)
 
-    mongodb = init_mongodb()
+    await init_mongodb()
 
-    container.register(
-        AppsRepository,
-        instance=AppsRepository(collection=mongodb["apps"]),
-        scope=punq.Scope.singleton,
-    )
-    container.register(
-        OAuth2SessionsRepository,
-        instance=OAuth2SessionsRepository(collection=mongodb["oauth2_sessions"]),
-        scope=punq.Scope.singleton,
-    )
-    container.register(
-        SessionsRepository,
-        instance=SessionsRepository(collection=mongodb["sessions"]),
-        scope=punq.Scope.singleton,
-    )
-    container.register(
-        UsersRepository,
-        instance=UsersRepository(collection=mongodb["users"]),
-        scope=punq.Scope.singleton,
-    )
-    container.register(AuthorizationRequestsRepository, scope=punq.Scope.singleton)
+    container.register(IAppsRepository, MongoAppsRepository, scope=punq.Scope.singleton)
+    container.register(IOAuth2SessionsRepository, MongoOAuth2SessionsRepository, scope=punq.Scope.singleton)
+    container.register(ISessionsRepository, MongoSessionsRepository, scope=punq.Scope.singleton)
+    container.register(IUsersRepository, MongoUsersRepository, scope=punq.Scope.singleton)
+    container.register(IAuthReqRepository, AuthorizationRequestsRepository, scope=punq.Scope.singleton)
 
-    container.register(AppsService, scope=punq.Scope.singleton)
-    container.register(SessionsService, scope=punq.Scope.singleton)
-    container.register(OAuth2SessionsService, scope=punq.Scope.singleton)
-    container.register(UsersService, scope=punq.Scope.singleton)
+    container.register(IAppsService, AppsService, scope=punq.Scope.singleton)
+    container.register(IAuthService, AuthService, scope=punq.Scope.singleton)
+    container.register(OAuthService, scope=punq.Scope.singleton)
+    container.register(AuthReqService, scope=punq.Scope.singleton)
+    container.register(IOAuthSessionsService, OAuthSessionsService, scope=punq.Scope.singleton)
+    container.register(ISessionsService, SessionsService, scope=punq.Scope.singleton)
+    container.register(IUsersService, UsersService, scope=punq.Scope.singleton)
     container.register(
         WellKnownService,
         instance=WellKnownService(private_key=private_key),
         scope=punq.Scope.singleton,
     )
-    container.register(OAuth2Service, scope=punq.Scope.singleton)
-
     container.register(
         AuthoritativeAppsService,
-        instance=AuthoritativeAppsService(apps=init_authoritative_apps()),
+        instance=AuthoritativeAppsService(apps=apps),
         scope=punq.Scope.singleton,
     )
 
+    container.register(CreateAppUseCase, scope=punq.Scope.transient)
+    container.register(GetUserAppsUseCase, scope=punq.Scope.transient)
+    container.register(RegenerateClientSecretUseCase, scope=punq.Scope.transient)
+    container.register(UpdateAppInfoUseCase, scope=punq.Scope.transient)
+
+    container.register(SignUpUseCase, scope=punq.Scope.transient)
+    container.register(LoginUseCase, scope=punq.Scope.transient)
+    container.register(LogoutUseCase, scope=punq.Scope.transient)
+
+    container.register(OAuthAuthorizeUseCase, scope=punq.Scope.transient)
+    container.register(OAuthTokenUseCase, scope=punq.Scope.transient)
+    container.register(GetAppScopesUseCase, scope=punq.Scope.transient)
+
+    container.register(GetMeUseCase, scope=punq.Scope.transient)
+
     return container
-
-
-container = init_container()

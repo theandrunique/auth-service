@@ -12,9 +12,7 @@ def gen_authorization_code() -> str:
 def verify_code_verifier(challenge: str, method: str, verifier: str) -> bool:
     if method == "S256":
         verifier_digest = hashlib.sha256(verifier.encode()).digest()
-        verifier_base64 = (
-            base64.urlsafe_b64encode(verifier_digest).rstrip(b"=").decode("ascii")
-        )
+        verifier_base64 = base64.urlsafe_b64encode(verifier_digest).rstrip(b"=").decode("ascii")
         return challenge == verifier_base64
     else:
         return False

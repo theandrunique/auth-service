@@ -1,20 +1,12 @@
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from src.utils import init_mongo_repositories
-
-
-async def on_startup(app: FastAPI) -> None:
-    await init_mongo_repositories()
-
-
-async def on_shutdown(app: FastAPI) -> None: ...
+from src.container import init_container
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    await on_startup(app)
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    app.state.container = await init_container()
     yield
-    await on_shutdown(app)

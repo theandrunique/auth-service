@@ -7,20 +7,15 @@ from fastapi import (
     status,
 )
 
-from src.dependencies import Container, Provide, UserAuthorizationWithSession
-from src.users.schemas import (
-    RegistrationSchema,
-    UserSchema,
-)
+from src.auth.use_cases import LoginCommand, LoginUseCase, LogoutCommand, LogoutUseCase, SignUpCommand, SignUpUseCase
+from src.dependencies import Provide
+from src.sessions.utils import delete_session_cookie, set_session_cookie
+from src.users.schemas import UserSchema
 
-from .exceptions import (
-    EmailAlreadyExists,
-    InvalidCredentials,
-    UsernameAlreadyExists,
-)
-from .schemas import LoginReq
+from .dependencies import UserAuthorizationWithSession
+from .schemas import LoginReq, RegistrationSchema
 
-router = APIRouter()
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post(
@@ -30,50 +25,41 @@ router = APIRouter()
 )
 async def register(
     data: RegistrationSchema,
-    users_service=Provide(Container.UsersService),
+    use_case=Provide(SignUpUseCase),
 ) -> Any:
-    existed_email = await users_service.get_by_email(email=data.email)
-    if existed_email:
-        raise EmailAlreadyExists()
-    existed_username = await users_service.get_by_username(username=data.username)
-    if existed_username:
-        raise UsernameAlreadyExists()
-
-    new_user = await users_service.add(data)
-    return new_user
+    return await use_case.execute(
+        SignUpCommand(
+            username=data.username,
+            email=data.email,
+            password=data.password,
+        )
+    )
 
 
-@router.post("/sign-in")
+@router.post("/login")
 async def login(
-    login: LoginReq,
+    data: LoginReq,
     res: Response,
     req: Request,
-    users_service=Provide(Container.UsersService),
-    session_service=Provide(Container.SessionsService),
-    hash_service=Provide(Container.Hash),
+    use_case=Provide(LoginUseCase),
 ) -> None:
-    if "@" in login.login:
-        user = await users_service.get_by_email(email=login.login)
-    else:
-        user = await users_service.get_by_username(username=login.login)
-    if user is None:
-        raise InvalidCredentials()
-    elif not user.active:
-        raise InvalidCredentials()
-    elif not hash_service.check(
-        value=login.password,
-        hashed_value=user.hashed_password,
-    ):
-        raise InvalidCredentials()
-
-    await session_service.create_session(user_id=user.id, res=res, req=req)
+    assert req.client
+    session_token = await use_case.execute(
+        LoginCommand(
+            login=data.login,
+            password=data.password,
+            ip_address=req.client.host,
+        )
+    )
+    set_session_cookie(session_token, res=res)
 
 
 @router.delete("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_token(
     user_with_session: UserAuthorizationWithSession,
     res: Response,
-    sessions_service=Provide(Container.SessionsService),
+    use_case=Provide(LogoutUseCase),
 ) -> None:
-    _, user_session = user_with_session
-    await sessions_service.delete(id=user_session.id, res=res)
+    user, user_session = user_with_session
+    await use_case.execute(LogoutCommand(user, session=user_session))
+    delete_session_cookie(res=res)

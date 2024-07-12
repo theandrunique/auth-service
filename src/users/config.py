@@ -19,9 +19,7 @@ class Settings(BaseModel):
     PASSWORD_MIN_LENGTH: int = 8
     PASSWORD_MAX_LENGTH: int = 32
 
-    PASSWORD_PATTERN: str = (
-        r"^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$"
-    )
+    PASSWORD_PATTERN: str = r"^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$"
 
 
 settings = Settings()

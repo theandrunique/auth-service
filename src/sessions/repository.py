@@ -1,40 +1,55 @@
-from datetime import UTC, datetime
-from typing import Any
+from abc import ABC, abstractmethod
+from datetime import datetime
 from uuid import UUID
 
-from src.base_mongo_repository import BaseMongoRepository
-from src.config import settings
+from src.sessions.models import SessionODM
+
+from .entities import Session
 
 
-class SessionsRepository(BaseMongoRepository[UUID]):
-    async def get_many_by_user(
-        self, user_id: UUID, count: int, offset: int
-    ) -> list[dict[str, Any]]:
-        return (
-            await self.collection.find({"user_id": user_id})
-            .skip(offset)
-            .to_list(length=count)
-        )  # noqa: E501
+class ISessionsRepository(ABC):
+    @abstractmethod
+    async def add(self, session: Session) -> Session: ...
 
-    async def delete_expired_sessions(self) -> int:
-        now = datetime.now(UTC)
-        result = await self.collection.delete_many(
-            {"expires_at": {"$lt": now}},
-        )
-        return result.deleted_count
+    @abstractmethod
+    async def get_by_id(self, session_id: UUID) -> Session | None: ...
 
-    async def delete_except(self, except_id: UUID) -> int:
-        result = await self.collection.delete_many(
-            {"_id": {"$ne": except_id}},
-        )
-        return result.deleted_count
+    @abstractmethod
+    async def update_last_used(self, session_id: UUID, last_used: datetime) -> None: ...
 
-    async def delete_all(self, user_id: UUID) -> None:
-        await self.collection.delete_many({"user_id": user_id})
+    @abstractmethod
+    async def delete_session(self, session_id: UUID) -> Session | None: ...
 
-    async def init(self) -> None:
-        await self.collection.create_index("user_id")
-        await self.collection.create_index(
-            "expires_at",
-            expireAfterSeconds=settings.SESSION_EXPIRE_HOURS * 60 * 60,
-        )
+    @abstractmethod
+    async def delete_all_session_by_user_id(self, user_id: UUID) -> None: ...
+
+
+class MongoSessionsRepository(ISessionsRepository):
+    async def add(self, session: Session) -> Session:
+        session_model = SessionODM.from_entity(session)
+        await session_model.insert()
+        return session_model.to_entity()
+
+    async def get_by_id(self, session_id: UUID) -> Session | None:
+        session_model = await SessionODM.find_one(SessionODM.id == session_id)
+        if session_model is None:
+            return None
+        return session_model.to_entity()
+
+    async def update_last_used(self, session_id: UUID, last_used: datetime) -> None:
+        session = await SessionODM.find_one(SessionODM.id == session_id)
+        if session is None:
+            raise Exception("Session not found")
+
+        session.last_used = last_used
+        await session.save()
+
+    async def delete_session(self, session_id: UUID) -> None:
+        session = await SessionODM.find_one(SessionODM.id == session_id)
+        if session is None:
+            raise Exception("Session not found")
+
+        await session.delete()
+
+    async def delete_all_session_by_user_id(self, user_id: UUID) -> None:
+        await SessionODM.find_many(SessionODM.user_id == user_id).delete()

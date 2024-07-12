@@ -1,31 +1,82 @@
-import re
-from typing import Any
+from abc import ABC, abstractmethod
 from uuid import UUID
 
-from src.base_mongo_repository import BaseMongoRepository
+from src.users.models import UserODM
+
+from .entities import User
 
 
-class UsersRepository(BaseMongoRepository[UUID]):
-    async def get_users_by_ids(self, user_ids: list[UUID]) -> list[dict[str, Any]]:
-        return await self.collection.find({"_id": {"$in": user_ids}}).to_list(None)
+class IUsersRepository(ABC):
+    @abstractmethod
+    async def add(self, user: User) -> User: ...
 
-    async def get_by_email(self, email: str) -> dict[str, Any] | None:
-        return await self.collection.find_one({"email": email})
+    @abstractmethod
+    async def get_all(self, count: int, offset: int) -> list[User]: ...
 
-    async def get_by_username(self, username: str) -> dict[str, Any] | None:
-        return await self.collection.find_one({"username": username})
+    @abstractmethod
+    async def get_by_id(self, id: UUID) -> User | None: ...
 
-    async def get_by_email_or_username(
-        self, email_or_username: str
-    ) -> dict[str, Any] | None:
-        return await self.collection.find_one(
-            {"$or": [{"email": email_or_username}, {"username": email_or_username}]},
-        )
+    @abstractmethod
+    async def get_by_email(self, email: str) -> User | None: ...
 
-    async def search_by_username(self, username: str) -> list[dict[str, Any]] | None:
-        regex = re.compile(f"{re.escape(username)}", re.IGNORECASE)
-        return await self.collection.find({"username": regex}).to_list(None)
+    @abstractmethod
+    async def get_by_username(self, username: str) -> User | None: ...
 
-    async def init(self) -> None:
-        await self.collection.create_index("username", unique=True)
-        await self.collection.create_index("email", unique=True)
+    @abstractmethod
+    async def update_username(self, id: UUID, new_username: str) -> User: ...
+
+    @abstractmethod
+    async def update_password(self, id: UUID, new_password_hash: bytes) -> User: ...
+
+    @abstractmethod
+    async def change_active_status(self, id: UUID, new_status: bool) -> User: ...
+
+
+class MongoUsersRepository(IUsersRepository):
+    async def add(self, user: User) -> User:
+        user_model = UserODM.from_entity(user)
+        await user_model.insert()
+        return user_model.to_entity()
+
+    async def get_all(self, count: int, offset: int) -> list[User]:
+        users = await UserODM.find_all().skip(offset).limit(count).to_list()
+        return [user.to_entity() for user in users]
+
+    async def get_by_id(self, id: UUID) -> User | None:
+        user = await UserODM.find_one(UserODM.id == id)
+        return user.to_entity() if user else None
+
+    async def get_by_email(self, email: str) -> User | None:
+        user = await UserODM.find_one(UserODM.email == email)
+        return user.to_entity() if user else None
+
+    async def get_by_username(self, username: str) -> User | None:
+        user = await UserODM.find_one(UserODM.username == username)
+        return user.to_entity() if user else None
+
+    async def update_username(self, id: UUID, new_username: str) -> User:
+        user = await UserODM.find_one(UserODM.id == id)
+        if user is None:
+            raise Exception("User not found")
+
+        user.username = new_username
+        await user.save()
+        return user.to_entity()
+
+    async def update_password(self, id: UUID, new_password_hash: bytes) -> User:
+        user = await UserODM.find_one(UserODM.id == id)
+        if user is None:
+            raise Exception("User not found")
+
+        user.hashed_password = new_password_hash
+        await user.save()
+        return user.to_entity()
+
+    async def change_active_status(self, id: UUID, new_status: bool) -> User:
+        user = await UserODM.find_one(UserODM.id == id)
+        if user is None:
+            raise Exception("User not found")
+
+        user.active = new_status
+        await user.save()
+        return user.to_entity()

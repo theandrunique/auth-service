@@ -1,18 +1,65 @@
-from typing import Any
+from abc import ABC, abstractmethod
+from datetime import datetime
 from uuid import UUID
 
-from src.base_mongo_repository import BaseMongoRepository
-from src.oauth2.config import settings
-from src.schemas import PyObjectId
+from src.oauth2_sessions.entities import OAuth2Session
+from src.oauth2_sessions.models import OAuth2SessionODM
 
 
-class OAuth2SessionsRepository(BaseMongoRepository[PyObjectId]):
-    async def get_by_jti(self, jti: UUID) -> dict[str, Any] | None:
-        return await self.collection.find_one({"refresh_token_id": jti})
+class IOAuth2SessionsRepository(ABC):
+    @abstractmethod
+    async def add(self, session: OAuth2Session) -> OAuth2Session: ...
 
-    async def init(self) -> None:
-        await self.collection.create_index("refresh_token_id", unique=True)
-        await self.collection.create_index(
-            "last_refreshed",
-            expireAfterSeconds=settings.REFRESH_TOKEN_EXPIRE_HOURS * 60 * 60,
-        )
+    @abstractmethod
+    async def get_by_id(self, session_id: UUID) -> OAuth2Session | None: ...
+
+    @abstractmethod
+    async def get_by_token_id(self, token_id: UUID) -> OAuth2Session | None: ...
+
+    @abstractmethod
+    async def update_token_id_and_last_refresh(
+        self, session_id: UUID, token_id: UUID, last_refresh: datetime
+    ) -> None: ...
+
+    @abstractmethod
+    async def delete_session(self, session_id: UUID) -> OAuth2Session | None: ...
+
+    @abstractmethod
+    async def delete_sessions(self, user_id: UUID) -> None: ...
+
+
+class MongoOAuth2SessionsRepository(IOAuth2SessionsRepository):
+    async def add(self, session: OAuth2Session) -> OAuth2Session:
+        session_model = OAuth2SessionODM.from_entity(session)
+        await session_model.insert()
+        return session_model.to_entity()
+
+    async def get_by_id(self, session_id: UUID) -> OAuth2Session | None:
+        session_model = await OAuth2SessionODM.find_one(OAuth2SessionODM.id == session_id)
+        if session_model is None:
+            return None
+        return session_model.to_entity()
+
+    async def get_by_token_id(self, token_id: UUID) -> OAuth2Session | None:
+        session = await OAuth2SessionODM.find_one(OAuth2SessionODM.token_id == token_id)
+        if session is None:
+            return None
+        return session.to_entity()
+
+    async def update_token_id_and_last_refresh(self, session_id: UUID, token_id: UUID, last_refresh: datetime) -> None:
+        session = await OAuth2SessionODM.find_one(OAuth2SessionODM.id == session_id)
+        if session is None:
+            raise Exception("Session not found")
+
+        session.token_id = token_id
+        session.last_refresh = last_refresh
+        await session.save()
+
+    async def delete_session(self, session_id: UUID) -> None:
+        session = await OAuth2SessionODM.find_one(OAuth2SessionODM.id == session_id)
+        if session is None:
+            return None
+        await session.delete()
+
+    async def delete_sessions(self, user_id: UUID) -> None:
+        await OAuth2SessionODM.find_many(OAuth2SessionODM.user_id == user_id).delete()

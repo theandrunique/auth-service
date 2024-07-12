@@ -1,36 +1,6 @@
 from fastapi import HTTPException, status
 
-
-class EmailAlreadyExists(HTTPException):
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="User with this email already exists",
-        )
-
-
-class UsernameAlreadyExists(HTTPException):
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="User with this username already exists",
-        )
-
-
-class InvalidCredentials(HTTPException):
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid username or password",
-        )
-
-
-class InvalidSession(HTTPException):
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid session",
-        )
+from src.exceptions import FieldError, FieldErrorCode, ServiceError, ServiceErrorCode
 
 
 class NotAuthenticated(HTTPException):
@@ -38,4 +8,22 @@ class NotAuthenticated(HTTPException):
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
+        )
+
+
+class InvalidCredentials(ServiceError):
+    def __init__(self) -> None:
+        super().__init__(
+            code=ServiceErrorCode.INVALID_FORM_BODY,
+            errors={
+                "login": FieldError(code=FieldErrorCode.INVALID_LOGIN),
+                "password": FieldError(code=FieldErrorCode.INVALID_LOGIN),
+            },
+        )
+
+
+class InvalidSession(ServiceError):
+    def __init__(self) -> None:
+        super().__init__(
+            code=ServiceErrorCode.INVALID_SESSION,
         )

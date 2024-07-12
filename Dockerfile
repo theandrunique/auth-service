@@ -24,6 +24,5 @@ RUN pip install --no-cache /wheels/*
 COPY src src/
 
 COPY logger_config.yml .
-COPY authoritative_apps.json .
 
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--log-config", "logger_config.yml"]

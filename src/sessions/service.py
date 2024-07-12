@@ -1,67 +1,57 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import UTC, datetime
-from typing import Any
+from datetime import datetime, timedelta
 from uuid import UUID
 
-from fastapi import Request, Response
+from src.config import settings
+from src.sessions.dto import CreateSessionDTO
+from src.sessions.entities import Session
 
-from src.services.base.jwe import JWE
+from .repository import ISessionsRepository
 
-from .repository import SessionsRepository
-from .schemas import PublicSessionSchema, SessionCreate, SessionSchema
-from .utils import delete_session_cookie, set_session_cookie
+
+def convert_create_session_dto_to_session(dto: CreateSessionDTO) -> Session:
+    return Session(
+        last_used=datetime.now(),
+        ip_address=dto.ip_address,
+        user_id=dto.user_id,
+        expires_at=datetime.now() + timedelta(hours=settings.SESSION_EXPIRE_HOURS),
+    )
+
+
+class ISessionsService(ABC):
+    @abstractmethod
+    async def get_by_id(self, session_id: UUID) -> Session | None: ...
+
+    @abstractmethod
+    async def create_new_session(self, dto: CreateSessionDTO) -> Session: ...
+
+    @abstractmethod
+    async def update_last_used(self, session_id: UUID) -> None: ...
+
+    @abstractmethod
+    async def delete(self, session_id: UUID) -> None: ...
+
+    @abstractmethod
+    async def delete_all_by_user_id(self, user_id: UUID) -> None: ...
 
 
 @dataclass(kw_only=True)
-class SessionsService:
-    repository: SessionsRepository
-    jwe: JWE
+class SessionsService(ISessionsService):
+    repository: ISessionsRepository
 
-    async def create_session(self, user_id: UUID, res: Response, req: Request) -> None:
-        item = SessionCreate(
-            user_id=user_id, ip_address=req.client.host if req.client else None
-        )
-        await self.repository.add(item.model_dump(by_alias=True))
-        session_token = self.jwe.encode(item.id.bytes)
-        set_session_cookie(token=session_token, expire=item.expires_at, res=res)
+    async def get_by_id(self, session_id: UUID) -> Session | None:
+        return await self.repository.get_by_id(session_id)
 
-    async def get(self, token: str) -> SessionSchema | None:
-        session_id_bytes = self.jwe.decode(token)
-        if not session_id_bytes:
-            return None
+    async def create_new_session(self, dto: CreateSessionDTO) -> Session:
+        session = convert_create_session_dto_to_session(dto)
+        return await self.repository.add(session)
 
-        session_id = UUID(bytes=session_id_bytes)
+    async def update_last_used(self, session_id: UUID) -> None:
+        return await self.repository.update_last_used(session_id, datetime.now())
 
-        session = await self.repository.get(session_id)
-        if not session:
-            return None
-        session = SessionSchema(**session)
-        return session
+    async def delete(self, session_id: UUID) -> None:
+        await self.repository.delete_session(session_id)
 
-    async def get_many(
-        self, user_id: UUID, count: int, offset: int
-    ) -> list[PublicSessionSchema]:
-        result = await self.repository.get_many_by_user(
-            user_id=user_id, count=count, offset=offset
-        )
-        return [PublicSessionSchema(**item) for item in result]
-
-    async def update(self, id: UUID, new_values: dict[str, Any]) -> SessionSchema:
-        updated = await self.repository.update(id, new_values)
-        return SessionSchema(**updated)
-
-    async def update_last_used(self, id: UUID) -> None:
-        await self.repository.update(id=id, new_values={"last_used": datetime.now(UTC)})
-
-    async def delete(self, id: UUID, res: Response) -> int:
-        delete_session_cookie(res)
-        return await self.repository.delete(id)
-
-    async def delete_expired_sessions(self) -> int:
-        return await self.repository.delete_expired_sessions()
-
-    async def delete_except(self, except_id: UUID) -> int:
-        return await self.repository.delete_except(except_id)
-
-    async def delete_all(self, user_id: UUID) -> None:
-        await self.repository.delete_all(user_id=user_id)
+    async def delete_all_by_user_id(self, user_id: UUID) -> None:
+        await self.repository.delete_all_session_by_user_id(user_id)

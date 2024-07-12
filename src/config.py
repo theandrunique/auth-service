@@ -15,7 +15,6 @@ class Settings(BaseSettings):
 
     REDIS_URL: RedisDsn
 
-    PRIVATE_KEY: str
     ALGORITHM: str = "RS256"
 
     FRONTEND_URL: str = "http://localhost:5173"
@@ -27,6 +26,9 @@ class Settings(BaseSettings):
 
     SESSION_EXPIRE_HOURS: int = 24 * 30
     SESSION_KEY: str = "session"
+
+    AUTHORITATIVE_APPS_PATH: str = "/app/config/apps.json"
+    CERT_PATH: str = "/app/config/cert.pem"
 
 
 settings = Settings()  # type: ignore
