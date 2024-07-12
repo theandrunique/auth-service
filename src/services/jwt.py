@@ -5,6 +5,8 @@ from uuid import UUID
 
 import jwt
 
+from src.services.key_manager import KeyManager
+
 from .base.jwt import JWT
 
 
@@ -14,38 +16,34 @@ class UUIDEncoder(json.JSONEncoder):
             return o.hex
         return super().default(o)
 
-
-@dataclass(kw_only=True)
+@dataclass
 class ImplJWT(JWT):
-    private_key_pem: str
-    public_key_pem: str
-    public_key_id: str
+    key_manager: KeyManager
     issuer: str
     audience: str
     algorithm: str
 
     def encode(self, payload: dict[str, Any]) -> str:
+        key_pair = self.key_manager.get_random_key_pair()
+        kid = key_pair.private_key.thumbprint()
         payload["iss"] = self.issuer
-
-        encoded = jwt.encode(
+        token = jwt.encode(
             payload=payload,
-            key=self.private_key_pem,
-            algorithm=self.algorithm,
+            key=key_pair.private_key.export_to_pem(private_key=True, password=None), # type: ignore
             json_encoder=UUIDEncoder,
-            headers={
-                "kid": self.public_key_id,
-            },
+            algorithm=self.algorithm,
+            headers={"kid": kid}
         )
-        return encoded
+        return token
 
     def decode(self, token: str) -> dict[str, Any] | None:
-        try:
-            return jwt.decode(
-                jwt=token,
-                key=self.public_key_pem,
-                algorithms=[self.algorithm],
-                issuer=self.issuer,
-                audience=self.audience,
-            )
-        except jwt.InvalidTokenError:
+        unverified_headers = jwt.get_unverified_header(token)
+        kid = unverified_headers.get("kid")
+        if not kid:
             return None
+
+        public_key = self.key_manager.public_keys_by_kid.get(kid)
+        if not public_key:
+            return None
+
+        return jwt.decode(token, key=public_key.export_to_pem(), algorithms=[self.algorithm], issuer=self.issuer)

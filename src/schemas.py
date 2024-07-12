@@ -1,7 +1,9 @@
+from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
 import bson
+from jwcrypto import jwk
 from pydantic import BaseModel, Field, GetCoreSchemaHandler, GetJsonSchemaHandler, RootModel
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, core_schema
@@ -43,3 +45,9 @@ class AuthoritativeApp(BaseModel):
     client_secret: UUID
     redirect_uris: list[str]
     scopes: list[str]
+
+
+@dataclass
+class KeyPair:
+    private_key: jwk.JWK
+    public_key: jwk.JWK

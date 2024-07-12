@@ -1,29 +1,27 @@
 from dataclasses import dataclass
 from typing import Any
 
-from jwcrypto import jwk
-
 from src.config import settings
 from src.oauth2.entities import GrantType, ResponseType
+from src.services.key_manager import KeyManager
 
 
 @dataclass(kw_only=True)
 class WellKnownService:
-    private_key: jwk.JWK
+    key_manager: KeyManager
 
     def get_jwks(self) -> dict[str, Any]:
-        return {
-            "keys": [
-                {
-                    "kty": self.private_key.get("kty"),
-                    "alg": settings.ALGORITHM,
-                    "use": "sig",
-                    "kid": self.private_key.thumbprint(),
-                    "n": self.private_key.get("n"),
-                    "e": self.private_key.get("e"),
-                }
-            ]
-        }
+        keys = []
+        for kid, key in self.key_manager.public_keys_by_kid.items():
+            keys.append({
+                "kty": key.get("kty"),
+                "alg": settings.ALGORITHM,
+                "use": "sig",
+                "kid": kid,
+                "n": key.get("n"),
+                "e": key.get("e"),
+            })
+        return {"keys": keys}
 
     def get_openid_configuration(self) -> dict[str, Any]:
         return {

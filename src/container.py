@@ -1,5 +1,6 @@
+import glob
 import json
-import sys
+import os
 from uuid import UUID
 
 import jwcrypto
@@ -7,6 +8,7 @@ import jwcrypto.common
 import jwcrypto.jwk
 import punq
 from beanie import init_beanie
+from jwcrypto import jwk
 from motor.motor_asyncio import AsyncIOMotorClient
 from redis.asyncio import ConnectionPool as RedisConnectionPool
 from redis.asyncio import Redis
@@ -30,7 +32,7 @@ from src.oauth2.use_cases import GetAppScopesUseCase, OAuthAuthorizeUseCase, OAu
 from src.oauth2_sessions.models import OAuth2SessionODM
 from src.oauth2_sessions.repository import IOAuth2SessionsRepository, MongoOAuth2SessionsRepository
 from src.oauth2_sessions.service import IOAuthSessionsService, OAuthSessionsService
-from src.schemas import AppScopes, AuthoritativeApp
+from src.schemas import AppScopes, AuthoritativeApp, KeyPair
 from src.services.authoritative_apps import AuthoritativeAppsService
 from src.services.base.hash import Hash
 from src.services.base.jwe import JWE
@@ -38,6 +40,7 @@ from src.services.base.jwt import JWT
 from src.services.hash import ImplHash
 from src.services.jwe import ImplJWE
 from src.services.jwt import ImplJWT
+from src.services.key_manager import KeyManager
 from src.sessions.models import SessionODM
 from src.sessions.repository import ISessionsRepository, MongoSessionsRepository
 from src.sessions.service import ISessionsService, SessionsService
@@ -48,11 +51,29 @@ from src.users.use_cases import GetMeUseCase
 from src.well_known.service import WellKnownService
 
 
-def create_jwk_keys(private_key_pem: str) -> tuple[jwcrypto.jwk.JWK, jwcrypto.jwk.JWK]:
-    private_key = jwcrypto.jwk.JWK.from_pem(private_key_pem.encode())
-    public_key = jwcrypto.jwk.JWK()
-    public_key.import_key(**jwcrypto.common.json_decode(private_key.export_public()))
-    return private_key, public_key
+def load_certs() -> list[str]:
+    certs = []
+    try:
+        for cert_path in glob.glob(os.path.join(settings.CERT_DIR, "*.pem")):
+            with open(cert_path) as f:
+                certs.append(f.read())
+
+        if len(certs) == 0:
+            raise Exception("No certs were found")
+        return certs
+    except Exception:
+        logger.critical("Failed to load certs: ", exc_info=True)
+        raise
+
+
+def create_jwk_keys_from_certs(certs: list[str]) -> list[tuple[jwk.JWK, jwk.JWK]]:
+    jwk_keys = []
+    for cert in certs:
+        private_key = jwk.JWK.from_pem(cert.encode())
+        public_key = jwk.JWK()
+        public_key.import_key(**jwcrypto.common.json_decode(private_key.export_public()))
+        jwk_keys.append((private_key, public_key))
+    return jwk_keys
 
 
 def create_redis_connection_pool() -> RedisConnectionPool:
@@ -72,15 +93,6 @@ async def init_mongodb() -> None:
             AppODM,
         ],
     )
-
-
-def load_certs() -> str:
-    try:
-        with open(settings.CERT_PATH) as f:
-            return f.read()
-    except Exception:
-        logger.critical("Failed to load certs: ", exc_info=True)
-        sys.exit(1)
 
 
 def load_authoritative_apps() -> tuple[dict[UUID, AuthoritativeApp], AppScopes]:
@@ -104,9 +116,12 @@ def load_authoritative_apps() -> tuple[dict[UUID, AuthoritativeApp], AppScopes]:
 async def init_container() -> punq.Container:
     container = punq.Container()
 
-    cert = load_certs()
+    certs = load_certs()
+    jwk_keys = create_jwk_keys_from_certs(certs)
 
-    private_key, public_key = create_jwk_keys(cert)
+    key_pairs = [KeyPair(private_key=priv, public_key=pub) for priv, pub in jwk_keys]
+    key_manager = KeyManager(key_pairs=key_pairs)
+    container.register(KeyManager, instance=key_manager, scope=punq.Scope.singleton)
 
     apps, scopes = load_authoritative_apps()
 
@@ -114,9 +129,7 @@ async def init_container() -> punq.Container:
     container.register(
         JWT,
         instance=ImplJWT(
-            private_key_pem=cert,
-            public_key_pem=public_key.export_to_pem(),  # type: ignore
-            public_key_id=public_key.key_id,  # type: ignore
+            key_manager=key_manager,
             algorithm=settings.ALGORITHM,
             issuer=settings.DOMAIN_URL,
             audience=settings.DOMAIN_URL,
@@ -125,7 +138,7 @@ async def init_container() -> punq.Container:
     )
     container.register(
         JWE,
-        instance=ImplJWE(private_key=private_key, public_key=public_key),
+        instance=ImplJWE(key_manager=key_manager),
         scope=punq.Scope.singleton,
     )
     container.register(AppScopes, instance=scopes, scope=punq.Scope.singleton)
@@ -152,11 +165,7 @@ async def init_container() -> punq.Container:
     container.register(IOAuthSessionsService, OAuthSessionsService, scope=punq.Scope.singleton)
     container.register(ISessionsService, SessionsService, scope=punq.Scope.singleton)
     container.register(IUsersService, UsersService, scope=punq.Scope.singleton)
-    container.register(
-        WellKnownService,
-        instance=WellKnownService(private_key=private_key),
-        scope=punq.Scope.singleton,
-    )
+    container.register(WellKnownService, scope=punq.Scope.singleton)
     container.register(
         AuthoritativeAppsService,
         instance=AuthoritativeAppsService(apps=apps),

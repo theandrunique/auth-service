@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     SESSION_KEY: str = "session"
 
     AUTHORITATIVE_APPS_PATH: str = "/app/config/apps.json"
-    CERT_PATH: str = "/app/config/cert.pem"
+    CERT_DIR: str = "/app/config"
 
 
 settings = Settings()  # type: ignore
