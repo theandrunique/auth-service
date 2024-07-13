@@ -3,20 +3,22 @@ from typing import Any
 from fastapi import APIRouter
 
 from src.dependencies import Provide
-from src.well_known.service import WellKnownService
+
+from .schemas import JWKSetSchema, OpenIdConfigurationSchema
+from .use_cases import GetJWKsUseCase, GetOpenIdConfigurationUseCase
 
 router = APIRouter(prefix="/.well-known", tags=["well-known"])
 
 
-@router.get("/openid-configuration")
+@router.get("/openid-configuration", response_model=OpenIdConfigurationSchema)
 def openid_configuration(
-    well_known_service=Provide(WellKnownService),
-) -> dict[str, Any]:
-    return well_known_service.get_openid_configuration()
+    use_case=Provide(GetOpenIdConfigurationUseCase),
+) -> Any:
+    return use_case.execute()
 
 
-@router.get("/jwks.json")
+@router.get("/jwks.json", response_model=JWKSetSchema)
 def jwks_endpoint(
-    well_known_service=Provide(WellKnownService),
-) -> dict[str, Any]:
-    return well_known_service.get_jwks()
+    use_case=Provide(GetJWKsUseCase),
+) -> Any:
+    return use_case.execute()

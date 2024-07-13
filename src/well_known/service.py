@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import Any
 
 from src.config import settings
@@ -6,11 +5,12 @@ from src.oauth2.entities import GrantType, ResponseType
 from src.services.key_manager import KeyManager
 
 
-@dataclass(kw_only=True)
 class WellKnownService:
-    key_manager: KeyManager
+    def __init__(self, key_manager: KeyManager) -> None:
+        self.key_manager = key_manager
+        self.jwks = self.load_jwks()
 
-    def get_jwks(self) -> dict[str, Any]:
+    def load_jwks(self) -> dict[str, Any]:
         keys = []
         for kid, key in self.key_manager.public_keys_by_kid.items():
             keys.append(
@@ -24,6 +24,9 @@ class WellKnownService:
                 }
             )
         return {"keys": keys}
+
+    def get_jwks(self) -> dict[str, Any]:
+        return self.jwks
 
     def get_openid_configuration(self) -> dict[str, Any]:
         return {

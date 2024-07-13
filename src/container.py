@@ -40,6 +40,7 @@ from src.users.service import IUsersService, UsersService
 from src.users.use_cases import GetMeUseCase
 from src.utils import load_authoritative_apps, load_certs_and_create_key_pairs
 from src.well_known.service import WellKnownService
+from src.well_known.use_cases import GetJWKsUseCase, GetOpenIdConfigurationUseCase
 
 
 def create_redis_connection_pool() -> RedisConnectionPool:
@@ -131,5 +132,8 @@ async def init_container() -> punq.Container:
     container.register(GetAppScopesUseCase, scope=punq.Scope.transient)
 
     container.register(GetMeUseCase, scope=punq.Scope.transient)
+
+    container.register(GetOpenIdConfigurationUseCase, scope=punq.Scope.transient)
+    container.register(GetJWKsUseCase, scope=punq.Scope.transient)
 
     return container
