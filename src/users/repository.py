@@ -3,12 +3,12 @@ from uuid import UUID
 
 from src.users.models import UserODM
 
-from .entities import User
+from .entities import User, UserFields
 
 
 class IUsersRepository(ABC):
     @abstractmethod
-    async def add(self, user: User) -> User: ...
+    async def add(self, dto: UserFields) -> User: ...
 
     @abstractmethod
     async def get_all(self, count: int, offset: int) -> list[User]: ...
@@ -33,8 +33,8 @@ class IUsersRepository(ABC):
 
 
 class MongoUsersRepository(IUsersRepository):
-    async def add(self, user: User) -> User:
-        user_model = UserODM.from_entity(user)
+    async def add(self, dto: UserFields) -> User:
+        user_model = UserODM.from_fields(dto)
         await user_model.insert()
         return user_model.to_entity()
 

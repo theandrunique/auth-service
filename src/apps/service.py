@@ -4,27 +4,12 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from src.apps.dto import AppUpdateInfoDTO, CreateAppDTO, OAuth2AppInfoDTO
-from src.apps.entities import Application
+from src.apps.entities import Application, ApplicationFields
 from src.exceptions import ServiceError, ServiceErrorCode
 from src.schemas import AuthoritativeApp
 from src.services.authoritative_apps import AuthoritativeAppsService
 
 from .repository import IAppsRepository
-
-
-def convert_create_app_dto_to_app(dto: CreateAppDTO) -> Application:
-    return Application(
-        name=dto.name,
-        client_id=uuid4(),
-        client_secret=uuid4(),
-        redirect_uris=dto.redirect_uris,
-        scopes=dto.scopes,
-        creator_id=dto.creator_id,
-        description=dto.description,
-        website=dto.website,
-        created_at=datetime.now(),
-        is_web_message_allowed=False,
-    )
 
 
 @dataclass
@@ -60,8 +45,18 @@ class AppsService(IAppsService):
     authoritative_apps: AuthoritativeAppsService
 
     async def create_new_app(self, dto: CreateAppDTO) -> Application:
-        application = convert_create_app_dto_to_app(dto)
-        return await self.repository.add(application)
+        return await self.repository.add(ApplicationFields(
+            name=dto.name,
+            client_id=uuid4(),
+            client_secret=uuid4(),
+            redirect_uris=dto.redirect_uris,
+            scopes=dto.scopes,
+            creator_id=dto.creator_id,
+            description=dto.description,
+            website=dto.website,
+            created_at=datetime.now(),
+            is_web_message_allowed=False,
+        ))
 
     async def get_all_by_user_id(self, user_id: UUID) -> list[Application]:
         apps = await self.repository.get_apps_by_user_id(user_id)

@@ -4,22 +4,9 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from src.oauth2_sessions.dto import CreateOAuth2SessionDTO
-from src.oauth2_sessions.entities import OAuth2Session
+from src.oauth2_sessions.entities import OAuth2Session, OAuth2SessionFields
 
 from .repository import IOAuth2SessionsRepository
-
-
-def convert_create_oauth2_session_dto_to_oauth2_session(
-    dto: CreateOAuth2SessionDTO,
-) -> OAuth2Session:
-    return OAuth2Session(
-        user_id=dto.user_id,
-        client_id=dto.client_id,
-        scopes=dto.scopes,
-        token_id=uuid4(),
-        last_refresh=datetime.now(),
-        created_at=datetime.now(),
-    )
 
 
 class IOAuthSessionsService(ABC):
@@ -46,15 +33,21 @@ class IOAuthSessionsService(ABC):
 class OAuthSessionsService(IOAuthSessionsService):
     repository: IOAuth2SessionsRepository
 
+    async def create_new_session(self, dto: CreateOAuth2SessionDTO) -> OAuth2Session:
+        return await self.repository.add(OAuth2SessionFields(
+            user_id=dto.user_id,
+            client_id=dto.client_id,
+            scopes=dto.scopes,
+            token_id=uuid4(),
+            last_refresh=datetime.now(),
+            created_at=datetime.now(),
+        ))
+
     async def get(self, session_id: UUID) -> OAuth2Session | None:
         return await self.repository.get_by_id(session_id)
 
     async def get_by_token_id(self, token_id: UUID) -> OAuth2Session | None:
         return await self.repository.get_by_token_id(token_id)
-
-    async def create_new_session(self, dto: CreateOAuth2SessionDTO) -> OAuth2Session:
-        session = convert_create_oauth2_session_dto_to_oauth2_session(dto)
-        return await self.repository.add(session)
 
     async def update_token_id(self, session_id: UUID) -> UUID:
         new_token_id = uuid4()

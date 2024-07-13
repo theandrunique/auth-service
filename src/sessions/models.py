@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 from beanie import Document
 from pydantic import Field
 
-from src.sessions.entities import Session
+from src.sessions.entities import Session, SessionFields
 
 
 class SessionODM(Document):
@@ -15,7 +15,7 @@ class SessionODM(Document):
     expires_at: datetime
 
     @classmethod
-    def from_entity(cls, entity: "Session") -> "SessionODM":
+    def from_fields(cls, entity: "SessionFields") -> "SessionODM":
         return cls(
             user_id=entity.user_id,
             last_used=entity.last_used,

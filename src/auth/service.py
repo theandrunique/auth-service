@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 from uuid import UUID
 
-from src.auth.exceptions import InvalidSession
-from src.exceptions import ServiceError, ServiceErrorCode
+from src.auth.exceptions import InactiveUser, InvalidSession
 from src.services.base.hash import Hash
 from src.services.base.jwe import JWE
 from src.sessions.entities import Session
@@ -41,7 +40,7 @@ class AuthService(IAuthService):
             raise InvalidSession
 
         if not user.active:
-            raise ServiceError(code=ServiceErrorCode.INACTIVE_USER)
+            raise InactiveUser
 
         await self.sessions_service.update_last_used(session_id)
 

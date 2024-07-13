@@ -4,12 +4,12 @@ from uuid import UUID
 
 from src.sessions.models import SessionODM
 
-from .entities import Session
+from .entities import Session, SessionFields
 
 
 class ISessionsRepository(ABC):
     @abstractmethod
-    async def add(self, session: Session) -> Session: ...
+    async def add(self, session: SessionFields) -> Session: ...
 
     @abstractmethod
     async def get_by_id(self, session_id: UUID) -> Session | None: ...
@@ -25,8 +25,8 @@ class ISessionsRepository(ABC):
 
 
 class MongoSessionsRepository(ISessionsRepository):
-    async def add(self, session: Session) -> Session:
-        session_model = SessionODM.from_entity(session)
+    async def add(self, session: SessionFields) -> Session:
+        session_model = SessionODM.from_fields(session)
         await session_model.insert()
         return session_model.to_entity()
 

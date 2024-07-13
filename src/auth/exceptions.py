@@ -27,3 +27,9 @@ class InvalidSession(ServiceError):
         super().__init__(
             code=ServiceErrorCode.INVALID_SESSION,
         )
+
+class InactiveUser(ServiceError):
+    def __init__(self) -> None:
+        super().__init__(
+            code=ServiceErrorCode.INACTIVE_USER,
+        )

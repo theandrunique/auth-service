@@ -3,7 +3,7 @@ from uuid import UUID
 
 
 @dataclass(slots=True, frozen=True)
-class CreateUserDTO:
+class RegisterUserDTO:
     username: str
     email: str
     password: str

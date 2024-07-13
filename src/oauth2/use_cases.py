@@ -74,7 +74,6 @@ class OAuthAuthorizeUseCase:
             return await self._handle_error("invalid_scope")
 
         if command.response_type == ResponseType.token:
-            assert user.id
             access_token = self.oauth_service.create_access_token(
                 user_id=user.id,
                 scopes=self.command.scope,
@@ -168,7 +167,6 @@ class OAuthTokenUseCase:
 
     async def _execute_refresh_token(self, command: OAuthTokenCommand) -> TokenResponseDTO:
         session = await self.oauth_service.validate_refresh_token(command.refresh_token)
-        assert session.id
         token_id = await self.sessions_service.update_token_id(session_id=session.id)
         return self.create_tokens(
             user_id=session.user_id,
@@ -199,7 +197,6 @@ class OAuthTokenUseCase:
         else:
             self.oauth_service.validate_client_credentials(req.application, command.username, command.password)
 
-        assert req.user.id
         session = await self.sessions_service.create_new_session(
             CreateOAuth2SessionDTO(
                 user_id=req.user.id,

@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 from beanie import Document
 from pydantic import Field
 
-from src.oauth2_sessions.entities import OAuth2Session
+from src.oauth2_sessions.entities import OAuth2Session, OAuth2SessionFields
 
 
 class OAuth2SessionODM(Document):
@@ -17,7 +17,7 @@ class OAuth2SessionODM(Document):
     created_at: datetime
 
     @classmethod
-    def from_entity(cls, entity: "OAuth2Session"):
+    def from_fields(cls, entity: "OAuth2SessionFields"):
         return cls(
             user_id=entity.user_id,
             client_id=entity.client_id,

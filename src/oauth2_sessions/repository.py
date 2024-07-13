@@ -2,13 +2,13 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from uuid import UUID
 
-from src.oauth2_sessions.entities import OAuth2Session
-from src.oauth2_sessions.models import OAuth2SessionODM
+from .entities import OAuth2Session, OAuth2SessionFields
+from .models import OAuth2SessionODM
 
 
 class IOAuth2SessionsRepository(ABC):
     @abstractmethod
-    async def add(self, session: OAuth2Session) -> OAuth2Session: ...
+    async def add(self, session: OAuth2SessionFields) -> OAuth2Session: ...
 
     @abstractmethod
     async def get_by_id(self, session_id: UUID) -> OAuth2Session | None: ...
@@ -29,8 +29,8 @@ class IOAuth2SessionsRepository(ABC):
 
 
 class MongoOAuth2SessionsRepository(IOAuth2SessionsRepository):
-    async def add(self, session: OAuth2Session) -> OAuth2Session:
-        session_model = OAuth2SessionODM.from_entity(session)
+    async def add(self, session: OAuth2SessionFields) -> OAuth2Session:
+        session_model = OAuth2SessionODM.from_fields(session)
         await session_model.insert()
         return session_model.to_entity()
 

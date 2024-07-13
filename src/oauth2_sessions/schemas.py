@@ -3,11 +3,9 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from src.schemas import PyObjectId
-
 
 class OAuth2SessionSchema(BaseModel):
-    id: PyObjectId
+    id: UUID
     client_id: UUID
     scopes: list[str]
     last_refresh: datetime

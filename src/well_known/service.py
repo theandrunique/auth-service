@@ -13,14 +13,16 @@ class WellKnownService:
     def get_jwks(self) -> dict[str, Any]:
         keys = []
         for kid, key in self.key_manager.public_keys_by_kid.items():
-            keys.append({
-                "kty": key.get("kty"),
-                "alg": settings.ALGORITHM,
-                "use": "sig",
-                "kid": kid,
-                "n": key.get("n"),
-                "e": key.get("e"),
-            })
+            keys.append(
+                {
+                    "kty": key.get("kty"),
+                    "alg": settings.ALGORITHM,
+                    "use": "sig",
+                    "kid": kid,
+                    "n": key.get("n"),
+                    "e": key.get("e"),
+                }
+            )
         return {"keys": keys}
 
     def get_openid_configuration(self) -> dict[str, Any]:

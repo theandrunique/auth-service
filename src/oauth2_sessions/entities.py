@@ -4,11 +4,15 @@ from uuid import UUID
 
 
 @dataclass(kw_only=True)
-class OAuth2Session:
-    id: UUID | None = None
+class OAuth2SessionFields:
     user_id: UUID
     client_id: UUID
     token_id: UUID
     scopes: list[str]
     last_refresh: datetime
     created_at: datetime
+
+
+@dataclass(kw_only=True)
+class OAuth2Session(OAuth2SessionFields):
+    id: UUID

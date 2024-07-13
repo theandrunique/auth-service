@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 from beanie import Document
 from pydantic import Field
 
-from src.apps.entities import Application
+from src.apps.entities import Application, ApplicationFields
 
 
 class AppODM(Document):
@@ -21,7 +21,7 @@ class AppODM(Document):
     is_web_message_allowed: bool
 
     @classmethod
-    def from_entity(cls, entity: "Application") -> "AppODM":
+    def from_fields(cls, entity: "ApplicationFields") -> "AppODM":
         return cls(
             name=entity.name,
             client_id=entity.client_id,

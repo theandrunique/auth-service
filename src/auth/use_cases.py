@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 
-from src.auth.exceptions import InvalidCredentials
+from src.auth.exceptions import InactiveUser, InvalidCredentials
 from src.exceptions import FieldError, FieldErrorCode, ServiceError, ServiceErrorCode
 from src.services.base.hash import Hash
 from src.services.base.jwe import JWE
 from src.sessions.dto import CreateSessionDTO
 from src.sessions.entities import Session
 from src.sessions.service import ISessionsService
-from src.users.dto import CreateUserDTO
+from src.users.dto import RegisterUserDTO
 from src.users.entities import User
 from src.users.service import IUsersService
 
@@ -36,7 +36,7 @@ class SignUpUseCase:
             raise ServiceError(code=ServiceErrorCode.INVALID_FORM_BODY, errors=errors)
 
         return await self.users_service.register_new_user(
-            CreateUserDTO(
+            RegisterUserDTO(
                 username=command.username,
                 email=command.email,
                 password=command.password,
@@ -59,16 +59,13 @@ class LoginUseCase:
     jwe: JWE
 
     async def execute(self, command: LoginCommand) -> str:
-        if "@" in command.login:
-            user = await self.users_service.get_by_email(email=command.login)
-        else:
-            user = await self.users_service.get_by_username(username=command.login)
+        user = await self.users_service.get_user_by_email_or_username(command.login)
 
         if user is None:
             raise InvalidCredentials
 
         elif not user.active:
-            raise ServiceError(code=ServiceErrorCode.INACTIVE_USER)
+            raise InactiveUser
 
         elif not self.hash_service.check(
             value=command.password,
@@ -76,14 +73,12 @@ class LoginUseCase:
         ):
             raise InvalidCredentials
 
-        assert user.id
         session = await self.sessions_service.create_new_session(
             CreateSessionDTO(
                 user_id=user.id,
                 ip_address=command.ip_address,
             )
         )
-        assert session.id
         session_token = self.jwe.encode(session.id.bytes)
         return session_token
 
@@ -99,5 +94,4 @@ class LogoutUseCase:
     sessions_service: ISessionsService
 
     async def execute(self, command: LogoutCommand) -> None:
-        assert command.session.id
         await self.sessions_service.delete(command.session.id)

@@ -16,6 +16,7 @@ class UUIDEncoder(json.JSONEncoder):
             return o.hex
         return super().default(o)
 
+
 @dataclass
 class ImplJWT(JWT):
     key_manager: KeyManager
@@ -29,10 +30,10 @@ class ImplJWT(JWT):
         payload["iss"] = self.issuer
         token = jwt.encode(
             payload=payload,
-            key=key_pair.private_key.export_to_pem(private_key=True, password=None), # type: ignore
+            key=key_pair.private_key.export_to_pem(private_key=True, password=None),  # type: ignore
             json_encoder=UUIDEncoder,
             algorithm=self.algorithm,
-            headers={"kid": kid}
+            headers={"kid": kid},
         )
         return token
 

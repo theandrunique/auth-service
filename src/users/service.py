@@ -4,14 +4,14 @@ from datetime import datetime
 from uuid import UUID
 
 from src.services.base.hash import Hash
-from src.users.dto import CreateUserDTO, UpdateUserPasswordDTO
-from src.users.entities import User
+from src.users.dto import RegisterUserDTO, UpdateUserPasswordDTO
+from src.users.entities import User, UserFields
 from src.users.repository import IUsersRepository
 
 
 class IUsersService(ABC):
     @abstractmethod
-    async def register_new_user(self, dto: CreateUserDTO) -> User: ...
+    async def register_new_user(self, dto: RegisterUserDTO) -> User: ...
 
     @abstractmethod
     async def get_by_id(self, id: UUID) -> User | None: ...
@@ -21,6 +21,10 @@ class IUsersService(ABC):
 
     @abstractmethod
     async def get_by_email(self, email: str) -> User | None: ...
+
+    @abstractmethod
+    async def get_user_by_email_or_username(self, email_or_username: str) -> User | None:
+        ...
 
     @abstractmethod
     async def update_password(self, dto: UpdateUserPasswordDTO) -> None: ...
@@ -34,21 +38,18 @@ class UsersService(IUsersService):
     repository: IUsersRepository
     hash_service: Hash
 
-    def _create_new_user_entity(self, dto: CreateUserDTO) -> User:
-        new_user = User(
-            username=dto.username,
-            email=dto.email,
-            email_verified=False,
-            hashed_password=self.hash_service.create(dto.password),
-            active=True,
-            created_at=datetime.now(),
+    async def register_new_user(self, dto: RegisterUserDTO) -> User:
+        new_user = await self.repository.add(
+            UserFields(
+                username=dto.username,
+                email=dto.email,
+                email_verified=False,
+                hashed_password=self.hash_service.create(dto.password),
+                image_url=None,
+                active=True,
+                created_at=datetime.now(),
+            )
         )
-        return new_user
-
-    async def register_new_user(self, dto: CreateUserDTO) -> User:
-        new_user = self._create_new_user_entity(dto)
-
-        new_user = await self.repository.add(new_user)
 
         return new_user
 
@@ -60,6 +61,13 @@ class UsersService(IUsersService):
 
     async def get_by_email(self, email: str) -> User | None:
         return await self.repository.get_by_email(email)
+
+    async def get_user_by_email_or_username(self, email_or_username: str) -> User | None:
+        if "@" in email_or_username:
+            user = await self.get_by_email(email=email_or_username)
+        else:
+            user = await self.get_by_username(username=email_or_username)
+        return user
 
     async def update_password(self, dto: UpdateUserPasswordDTO) -> None:
         await self.repository.update_password(

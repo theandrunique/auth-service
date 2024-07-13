@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from uuid import UUID
 
 from src.apps.dto import AppUpdateInfoDTO
-from src.apps.entities import Application
+from src.apps.entities import Application, ApplicationFields
 from src.apps.models import AppODM
 
 
@@ -17,7 +17,7 @@ class IAppsRepository(ABC):
     async def get_apps_by_user_id(self, user_id: UUID) -> list[Application]: ...
 
     @abstractmethod
-    async def add(self, app: Application) -> Application: ...
+    async def add(self, app: ApplicationFields) -> Application: ...
 
     @abstractmethod
     async def update_client_secret(self, app_id: UUID, client_secret: UUID) -> Application: ...
@@ -46,10 +46,10 @@ class MongoAppsRepository(IAppsRepository):
             return None
         return app_model.to_entity()
 
-    async def add(self, app: Application) -> Application:
-        app_model = AppODM.from_entity(app)
+    async def add(self, app: ApplicationFields) -> Application:
+        app_model = AppODM.from_fields(app)
         await app_model.insert()
-        return app
+        return app_model.to_entity()
 
     async def update_client_secret(self, app_id: UUID, client_secret: UUID) -> Application:
         app_model = await AppODM.find_one(AppODM.id == app_id)

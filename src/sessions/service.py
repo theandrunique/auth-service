@@ -5,18 +5,9 @@ from uuid import UUID
 
 from src.config import settings
 from src.sessions.dto import CreateSessionDTO
-from src.sessions.entities import Session
+from src.sessions.entities import Session, SessionFields
 
 from .repository import ISessionsRepository
-
-
-def convert_create_session_dto_to_session(dto: CreateSessionDTO) -> Session:
-    return Session(
-        last_used=datetime.now(),
-        ip_address=dto.ip_address,
-        user_id=dto.user_id,
-        expires_at=datetime.now() + timedelta(hours=settings.SESSION_EXPIRE_HOURS),
-    )
 
 
 class ISessionsService(ABC):
@@ -40,12 +31,16 @@ class ISessionsService(ABC):
 class SessionsService(ISessionsService):
     repository: ISessionsRepository
 
+    async def create_new_session(self, dto: CreateSessionDTO) -> Session:
+        return await self.repository.add(SessionFields(
+            last_used=datetime.now(),
+            ip_address=dto.ip_address,
+            user_id=dto.user_id,
+            expires_at=datetime.now() + timedelta(hours=settings.SESSION_EXPIRE_HOURS),
+        ))
+
     async def get_by_id(self, session_id: UUID) -> Session | None:
         return await self.repository.get_by_id(session_id)
-
-    async def create_new_session(self, dto: CreateSessionDTO) -> Session:
-        session = convert_create_session_dto_to_session(dto)
-        return await self.repository.add(session)
 
     async def update_last_used(self, session_id: UUID) -> None:
         return await self.repository.update_last_used(session_id, datetime.now())

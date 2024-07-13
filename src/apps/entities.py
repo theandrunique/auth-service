@@ -4,8 +4,7 @@ from uuid import UUID
 
 
 @dataclass(kw_only=True)
-class Application:
-    id: UUID | None = None
+class ApplicationFields:
     name: str
     client_id: UUID
     client_secret: UUID
@@ -16,3 +15,8 @@ class Application:
     website: str | None = None
     created_at: datetime
     is_web_message_allowed: bool
+
+
+@dataclass(kw_only=True)
+class Application(ApplicationFields):
+    id: UUID

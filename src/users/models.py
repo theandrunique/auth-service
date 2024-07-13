@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 from beanie import Document, Indexed
 from pydantic import Field
 
-from src.users.entities import User
+from src.users.entities import User, UserFields
 
 
 class UserODM(Document):
@@ -19,7 +19,7 @@ class UserODM(Document):
     created_at: datetime
 
     @classmethod
-    def from_entity(cls, entity: "User") -> "UserODM":
+    def from_fields(cls, entity: "UserFields") -> "UserODM":
         return cls(
             username=entity.username,
             email=entity.email,

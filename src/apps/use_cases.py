@@ -23,8 +23,6 @@ class CreateAppUseCase:
     apps_service: IAppsService
 
     async def execute(self, command: CreateAppCommand) -> Application:
-        assert command.user.id
-
         return await self.apps_service.create_new_app(
             CreateAppDTO(
                 name=command.name,
@@ -47,7 +45,6 @@ class GetUserAppsUseCase:
     apps_service: IAppsService
 
     async def execute(self, command: GetUserAppsCommand) -> list[Application]:
-        assert command.user.id
         return await self.apps_service.get_all_by_user_id(command.user.id)
 
 
@@ -62,15 +59,12 @@ class RegenerateClientSecretUseCase:
     apps_service: IAppsService
 
     async def execute(self, command: RegenerateClientSecretCommand) -> Application:
-        assert command.user.id
-
         app = await self.apps_service.get(command.app_id)
         if not app:
             raise AppNotFound
 
         self.apps_service.validate_access(command.user.id, app)
 
-        assert app.id
         return await self.apps_service.regenerate_client_secret(app.id)
 
 
@@ -89,12 +83,9 @@ class UpdateAppInfoUseCase:
     apps_service: IAppsService
 
     async def execute(self, command: UpdateAppInfoCommand) -> Application:
-        assert command.user.id
-
         app = await self.apps_service.get(command.app_id)
         if not app:
             raise AppNotFound
-        assert app.id
 
         self.apps_service.validate_access(command.user.id, app)
         return await self.apps_service.update_app_info(
