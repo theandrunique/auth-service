@@ -45,18 +45,20 @@ class AppsService(IAppsService):
     authoritative_apps: AuthoritativeAppsService
 
     async def create_new_app(self, dto: CreateAppDTO) -> Application:
-        return await self.repository.add(ApplicationFields(
-            name=dto.name,
-            client_id=uuid4(),
-            client_secret=uuid4(),
-            redirect_uris=dto.redirect_uris,
-            scopes=dto.scopes,
-            creator_id=dto.creator_id,
-            description=dto.description,
-            website=dto.website,
-            created_at=datetime.now(),
-            is_web_message_allowed=False,
-        ))
+        return await self.repository.add(
+            ApplicationFields(
+                name=dto.name,
+                client_id=uuid4(),
+                client_secret=uuid4(),
+                redirect_uris=dto.redirect_uris,
+                scopes=dto.scopes,
+                creator_id=dto.creator_id,
+                description=dto.description,
+                website=dto.website,
+                created_at=datetime.now(),
+                is_web_message_allowed=False,
+            )
+        )
 
     async def get_all_by_user_id(self, user_id: UUID) -> list[Application]:
         apps = await self.repository.get_apps_by_user_id(user_id)

@@ -10,6 +10,5 @@ class PasswordValidationError(ValueError):
 class UsernameValidationError(ValueError):
     def __init__(self) -> None:
         super().__init__(
-            "Username should have at least 3 characters, "
-            "can only contain letters, numbers and underscores",
+            "Username should have at least 3 characters, " "can only contain letters, numbers and underscores",
         )

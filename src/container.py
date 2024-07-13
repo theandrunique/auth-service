@@ -1,14 +1,5 @@
-import glob
-import json
-import os
-from uuid import UUID
-
-import jwcrypto
-import jwcrypto.common
-import jwcrypto.jwk
 import punq
 from beanie import init_beanie
-from jwcrypto import jwk
 from motor.motor_asyncio import AsyncIOMotorClient
 from redis.asyncio import ConnectionPool as RedisConnectionPool
 from redis.asyncio import Redis
@@ -25,14 +16,13 @@ from src.apps.use_cases import (
 from src.auth.service import AuthService, IAuthService
 from src.auth.use_cases import LoginUseCase, LogoutUseCase, SignUpUseCase
 from src.config import settings
-from src.logger import logger
 from src.oauth2.req_service import AuthorizationRequestsRepository, AuthReqService, IAuthReqRepository
 from src.oauth2.service import OAuthService
 from src.oauth2.use_cases import GetAppScopesUseCase, OAuthAuthorizeUseCase, OAuthTokenUseCase
 from src.oauth2_sessions.models import OAuth2SessionODM
 from src.oauth2_sessions.repository import IOAuth2SessionsRepository, MongoOAuth2SessionsRepository
 from src.oauth2_sessions.service import IOAuthSessionsService, OAuthSessionsService
-from src.schemas import AppScopes, AuthoritativeApp, KeyPair
+from src.schemas import AppScopes
 from src.services.authoritative_apps import AuthoritativeAppsService
 from src.services.base.hash import Hash
 from src.services.base.jwe import JWE
@@ -48,32 +38,8 @@ from src.users.models import UserODM
 from src.users.repository import IUsersRepository, MongoUsersRepository
 from src.users.service import IUsersService, UsersService
 from src.users.use_cases import GetMeUseCase
+from src.utils import load_authoritative_apps, load_certs_and_create_key_pairs
 from src.well_known.service import WellKnownService
-
-
-def load_certs() -> list[str]:
-    certs = []
-    try:
-        for cert_path in glob.glob(os.path.join(settings.CERT_DIR, "*.pem")):
-            with open(cert_path) as f:
-                certs.append(f.read())
-
-        if len(certs) == 0:
-            raise Exception("No certs were found")
-        return certs
-    except Exception:
-        logger.critical("Failed to load certs: ", exc_info=True)
-        raise
-
-
-def create_jwk_keys_from_certs(certs: list[str]) -> list[tuple[jwk.JWK, jwk.JWK]]:
-    jwk_keys = []
-    for cert in certs:
-        private_key = jwk.JWK.from_pem(cert.encode())
-        public_key = jwk.JWK()
-        public_key.import_key(**jwcrypto.common.json_decode(private_key.export_public()))
-        jwk_keys.append((private_key, public_key))
-    return jwk_keys
 
 
 def create_redis_connection_pool() -> RedisConnectionPool:
@@ -95,31 +61,10 @@ async def init_mongodb() -> None:
     )
 
 
-def load_authoritative_apps() -> tuple[dict[UUID, AuthoritativeApp], AppScopes]:
-    try:
-        with open(settings.AUTHORITATIVE_APPS_PATH) as f:
-            apps_dict = json.loads(f.read())
-            apps_list = apps_dict["apps"]
-            loaded_scopes = apps_dict["scopes"]
-            apps_dict = {}
-            for app in apps_list:
-                loaded_app = AuthoritativeApp(**app)
-                apps_dict[loaded_app.client_id] = loaded_app
-
-            app_scopes = AppScopes.model_validate(loaded_scopes)
-            return apps_dict, app_scopes
-    except Exception as e:
-        logger.error("Failed to load authoritative apps: ", exc_info=False)
-        raise e
-
-
 async def init_container() -> punq.Container:
     container = punq.Container()
 
-    certs = load_certs()
-    jwk_keys = create_jwk_keys_from_certs(certs)
-
-    key_pairs = [KeyPair(private_key=priv, public_key=pub) for priv, pub in jwk_keys]
+    key_pairs = load_certs_and_create_key_pairs()
     key_manager = KeyManager(key_pairs=key_pairs)
     container.register(KeyManager, instance=key_manager, scope=punq.Scope.singleton)
 

@@ -32,12 +32,14 @@ class SessionsService(ISessionsService):
     repository: ISessionsRepository
 
     async def create_new_session(self, dto: CreateSessionDTO) -> Session:
-        return await self.repository.add(SessionFields(
-            last_used=datetime.now(),
-            ip_address=dto.ip_address,
-            user_id=dto.user_id,
-            expires_at=datetime.now() + timedelta(hours=settings.SESSION_EXPIRE_HOURS),
-        ))
+        return await self.repository.add(
+            SessionFields(
+                last_used=datetime.now(),
+                ip_address=dto.ip_address,
+                user_id=dto.user_id,
+                expires_at=datetime.now() + timedelta(hours=settings.SESSION_EXPIRE_HOURS),
+            )
+        )
 
     async def get_by_id(self, session_id: UUID) -> Session | None:
         return await self.repository.get_by_id(session_id)

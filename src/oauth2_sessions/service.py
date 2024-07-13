@@ -34,14 +34,16 @@ class OAuthSessionsService(IOAuthSessionsService):
     repository: IOAuth2SessionsRepository
 
     async def create_new_session(self, dto: CreateOAuth2SessionDTO) -> OAuth2Session:
-        return await self.repository.add(OAuth2SessionFields(
-            user_id=dto.user_id,
-            client_id=dto.client_id,
-            scopes=dto.scopes,
-            token_id=uuid4(),
-            last_refresh=datetime.now(),
-            created_at=datetime.now(),
-        ))
+        return await self.repository.add(
+            OAuth2SessionFields(
+                user_id=dto.user_id,
+                client_id=dto.client_id,
+                scopes=dto.scopes,
+                token_id=uuid4(),
+                last_refresh=datetime.now(),
+                created_at=datetime.now(),
+            )
+        )
 
     async def get(self, session_id: UUID) -> OAuth2Session | None:
         return await self.repository.get_by_id(session_id)
