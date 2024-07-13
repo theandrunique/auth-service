@@ -34,11 +34,6 @@ app.include_router(oauth_router)
 app.include_router(sessions_router)
 app.include_router(well_known)
 
-if settings.EMAILS_ENABLED:
-    from src.emails.views import router as emails_router
-
-    app.include_router(emails_router)
-
 
 @app.get("/ping", tags=["healthcheck"])
 def ping_pong() -> dict[str, str]:

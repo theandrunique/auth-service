@@ -1,8 +1,20 @@
-from pydantic import MongoDsn, RedisDsn
+from pydantic import BaseModel, MongoDsn, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings(BaseSettings):
+class SmtpSettings(BaseModel):
+    SMTP_PORT: int
+    SMTP_SERVER: str
+    SMTP_USER: str
+    SMTP_PASSWORD: str
+
+    FROM_EMAIL: str
+    FROM_NAME: str
+
+    TEMPLATES_DIR: str = "templates"
+
+
+class Settings(SmtpSettings, BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -10,7 +22,7 @@ class Settings(BaseSettings):
         case_sensitive=True,
     )
 
-    PROJECT_NAME: str = "Authorization Server"
+    PROJECT_NAME: str = "Auth Service"
     DOMAIN_URL: str
 
     REDIS_URL: RedisDsn
@@ -21,7 +33,7 @@ class Settings(BaseSettings):
 
     EMAILS_ENABLED: bool
 
-    MONGO_DATABASE_NAME: str = "auth_server"
+    MONGO_DATABASE_NAME: str = "auth_service"
     MONGO_URI: MongoDsn
 
     SESSION_EXPIRE_HOURS: int = 24 * 30

@@ -23,6 +23,7 @@ from src.oauth2_sessions.repository import IOAuth2SessionsRepository, MongoOAuth
 from src.oauth2_sessions.service import IOAuthSessionsService, OAuthSessionsService
 from src.schemas import AppScopes
 from src.services.authoritative_apps import AuthoritativeAppsService
+from src.services.emails import EmailService, IEmailService
 from src.services.hash import Hash, ImplHash
 from src.services.jwe import JWE, ImplJWE
 from src.services.jwt import JWT, ImplJWT
@@ -109,6 +110,7 @@ async def init_container() -> punq.Container:
     container.register(IAppsService, AppsService, scope=punq.Scope.singleton)
     container.register(IAuthService, AuthService, scope=punq.Scope.singleton)
     container.register(OAuthService, scope=punq.Scope.singleton)
+    container.register(IEmailService, EmailService, scope=punq.Scope.singleton)
     container.register(IAuthReqService, AuthReqService, scope=punq.Scope.singleton)
     container.register(IOAuthSessionsService, OAuthSessionsService, scope=punq.Scope.singleton)
     container.register(ISessionsService, SessionsService, scope=punq.Scope.singleton)
