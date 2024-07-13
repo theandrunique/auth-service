@@ -3,6 +3,7 @@ name: auth-service
 services:
   app:
     build:
+      target: prod
       context: .
       dockerfile: Dockerfile
     environment:
