@@ -3,7 +3,7 @@ function App() {
 
   return (
     <>
-      <h1>lox</h1>
+      <h1 className="text-center">lox</h1>
     </>
   )
 }
