@@ -1,6 +1,14 @@
+from abc import ABC, abstractmethod
+
 import bcrypt
 
-from .base.hash import Hash
+
+class Hash(ABC):
+    @abstractmethod
+    def create(self, value: str | bytes) -> bytes: ...
+
+    @abstractmethod
+    def check(self, value: str | bytes, hashed_value: bytes) -> bool: ...
 
 
 class ImplHash(Hash):

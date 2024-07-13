@@ -3,11 +3,10 @@ from dataclasses import dataclass
 
 from redis.asyncio import Redis
 
+from src.oauth2.config import settings
 from src.oauth2.entities import AuthorizationRequest
 from src.oauth2.exceptions import InvalidAuthorizationCode
-
-from .config import settings
-from .utils import gen_authorization_code
+from src.oauth2.utils import gen_authorization_code
 
 
 class IAuthReqRepository(ABC):
@@ -33,8 +32,16 @@ class AuthorizationRequestsRepository(IAuthReqRepository):
         return AuthorizationRequest.model_validate_json(data)
 
 
+class IAuthReqService(ABC):
+    @abstractmethod
+    async def get(self, code: str) -> AuthorizationRequest: ...
+
+    @abstractmethod
+    async def create_new_request(self, req: AuthorizationRequest) -> str: ...
+
+
 @dataclass
-class AuthReqService:
+class AuthReqService(IAuthReqService):
     repository: IAuthReqRepository
 
     async def get(self, code: str) -> AuthorizationRequest:

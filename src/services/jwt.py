@@ -1,4 +1,5 @@
 import json
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
@@ -7,7 +8,13 @@ import jwt
 
 from src.services.key_manager import KeyManager
 
-from .base.jwt import JWT
+
+class JWT(ABC):
+    @abstractmethod
+    def encode(self, payload: dict[str, Any]) -> str: ...
+
+    @abstractmethod
+    def decode(self, token: str) -> dict[str, Any] | None: ...
 
 
 class UUIDEncoder(json.JSONEncoder):

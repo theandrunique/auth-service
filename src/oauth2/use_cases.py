@@ -11,11 +11,11 @@ from src.oauth2.exceptions import (
     InvalidRedirectUri,
     NotMatchingConfiguration,
 )
-from src.oauth2.req_service import AuthReqService
 from src.oauth2.utils import verify_code_verifier
 from src.oauth2_sessions.dto import CreateOAuth2SessionDTO
 from src.oauth2_sessions.service import IOAuthSessionsService
 from src.schemas import Scope
+from src.services.oauth_auth_requests import IAuthReqService
 
 from .config import settings
 from .dto import TokenResponseDTO
@@ -50,7 +50,7 @@ class OAuthAuthorizeUseCase:
     oauth_service: OAuthService
     auth_service: IAuthService
     apps_service: IAppsService
-    requests_service: AuthReqService
+    requests_service: IAuthReqService
     command: OAuthAuthorizeCommand = field(init=False)
 
     async def execute(self, command: OAuthAuthorizeCommand) -> RedirectUri | WebMessage:
@@ -155,7 +155,7 @@ class OAuthTokenCommand:
 class OAuthTokenUseCase:
     oauth_service: OAuthService
     sessions_service: IOAuthSessionsService
-    requests_service: AuthReqService
+    requests_service: IAuthReqService
 
     async def execute(self, command: OAuthTokenCommand) -> TokenResponseDTO:
         if command.grant_type == GrantType.refresh_token:

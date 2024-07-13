@@ -1,10 +1,17 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from jwcrypto import jwe
 
 from src.services.key_manager import KeyManager
 
-from .base.jwe import JWE
+
+class JWE(ABC):
+    @abstractmethod
+    def encode(self, data: bytes) -> str: ...
+
+    @abstractmethod
+    def decode(self, token: str) -> bytes | None: ...
 
 
 @dataclass

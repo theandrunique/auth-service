@@ -2,8 +2,8 @@ from dataclasses import dataclass
 
 from src.auth.exceptions import InactiveUser, InvalidCredentials
 from src.exceptions import FieldError, FieldErrorCode, ServiceError, ServiceErrorCode
-from src.services.base.hash import Hash
-from src.services.base.jwe import JWE
+from src.services.hash import Hash
+from src.services.jwe import JWE
 from src.sessions.dto import CreateSessionDTO
 from src.sessions.entities import Session
 from src.sessions.service import ISessionsService

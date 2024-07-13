@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
-from src.services.base.hash import Hash
+from src.services.hash import Hash
 from src.users.dto import RegisterUserDTO, UpdateUserPasswordDTO
 from src.users.entities import User, UserFields
 from src.users.repository import IUsersRepository

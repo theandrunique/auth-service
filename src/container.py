@@ -16,7 +16,6 @@ from src.apps.use_cases import (
 from src.auth.service import AuthService, IAuthService
 from src.auth.use_cases import LoginUseCase, LogoutUseCase, SignUpUseCase
 from src.config import settings
-from src.oauth2.req_service import AuthorizationRequestsRepository, AuthReqService, IAuthReqRepository
 from src.oauth2.service import OAuthService
 from src.oauth2.use_cases import GetAppScopesUseCase, OAuthAuthorizeUseCase, OAuthTokenUseCase
 from src.oauth2_sessions.models import OAuth2SessionODM
@@ -24,13 +23,16 @@ from src.oauth2_sessions.repository import IOAuth2SessionsRepository, MongoOAuth
 from src.oauth2_sessions.service import IOAuthSessionsService, OAuthSessionsService
 from src.schemas import AppScopes
 from src.services.authoritative_apps import AuthoritativeAppsService
-from src.services.base.hash import Hash
-from src.services.base.jwe import JWE
-from src.services.base.jwt import JWT
-from src.services.hash import ImplHash
-from src.services.jwe import ImplJWE
-from src.services.jwt import ImplJWT
+from src.services.hash import Hash, ImplHash
+from src.services.jwe import JWE, ImplJWE
+from src.services.jwt import JWT, ImplJWT
 from src.services.key_manager import KeyManager
+from src.services.oauth_auth_requests import (
+    AuthorizationRequestsRepository,
+    AuthReqService,
+    IAuthReqRepository,
+    IAuthReqService,
+)
 from src.sessions.models import SessionODM
 from src.sessions.repository import ISessionsRepository, MongoSessionsRepository
 from src.sessions.service import ISessionsService, SessionsService
@@ -107,7 +109,7 @@ async def init_container() -> punq.Container:
     container.register(IAppsService, AppsService, scope=punq.Scope.singleton)
     container.register(IAuthService, AuthService, scope=punq.Scope.singleton)
     container.register(OAuthService, scope=punq.Scope.singleton)
-    container.register(AuthReqService, scope=punq.Scope.singleton)
+    container.register(IAuthReqService, AuthReqService, scope=punq.Scope.singleton)
     container.register(IOAuthSessionsService, OAuthSessionsService, scope=punq.Scope.singleton)
     container.register(ISessionsService, SessionsService, scope=punq.Scope.singleton)
     container.register(IUsersService, UsersService, scope=punq.Scope.singleton)

@@ -6,8 +6,8 @@ from uuid import UUID
 from src.apps.dto import OAuth2AppInfoDTO
 from src.oauth2_sessions.service import IOAuthSessionsService
 from src.schemas import AppScopes, Scope
-from src.services.base.jwe import JWE
-from src.services.base.jwt import JWT
+from src.services.jwe import JWE
+from src.services.jwt import JWT
 
 from .config import settings
 from .exceptions import (

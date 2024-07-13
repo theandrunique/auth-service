@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from src.auth.exceptions import InactiveUser, InvalidSession
-from src.services.base.hash import Hash
-from src.services.base.jwe import JWE
+from src.services.hash import Hash
+from src.services.jwe import JWE
 from src.sessions.entities import Session
 from src.sessions.service import ISessionsService
 from src.users.entities import User
