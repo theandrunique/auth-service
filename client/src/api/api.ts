@@ -1,0 +1,63 @@
+import axios, { AxiosError } from "axios"
+import { ServiceError, User, ValidationError } from '../entities';
+
+const axiosInstance = axios.create({
+    baseURL: "http://localhost:8000",
+    withCredentials: true
+})
+
+
+function isValidationError(data: any): data is ValidationError {
+  return (
+    data &&
+    typeof data === "object" &&
+    typeof data.code === "number" &&
+    typeof data.message === "string" &&
+    typeof data.errors === "object" &&
+    Object.values(data.errors).every(
+      (error) =>
+        typeof error === "object" &&
+        typeof error.code === "string" &&
+        typeof error.message === "string"
+    )
+  );
+}
+
+export async function signIn(login: string, password: string):Promise<null> {
+    try {
+        const response = await axiosInstance.post<null>("/auth/login", {
+            login: login,
+            password: password
+        });
+
+        return null;
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response && error.response.status === 400 && isValidationError(error.response.data)) {
+            throw new ServiceError(error.response.data);
+        }
+        throw error;
+    }
+
+}
+
+export async function singUp(username: string, email: string, password: string):Promise<User> {
+    try {
+        const response = await axiosInstance.post<User>("/auth/sign-up", {
+            username: username,
+            email: email,
+            password: password
+        });
+        return response.data;
+
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response && error.response.status === 400 && isValidationError(error.response.data)) {
+            throw new ServiceError(error.response.data);
+        }
+        throw error;
+    }
+}
+
+export async function getMe():Promise<User> {
+    const response = await axiosInstance.get<User>("/auth/me");
+    return response.data;
+}
