@@ -10,4 +10,7 @@ RUN npm install \
 FROM nginx:stable-alpine3.19-slim
 
 COPY --from=BUILD_STAGE /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+
+CMD ["nginx", "-g", "daemon off;"]

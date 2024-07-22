@@ -40,7 +40,7 @@ export default function SignUpPage() {
         navigate("/sign-in");
       }
     } catch (error) {
-      if (error instanceof ServiceError) {
+      if (error instanceof ServiceError && error.error.errors) {
         for (const [field, details] of Object.entries(error.error.errors)) {
           setError(field as keyof SignUpSchema, { type: "manual", message: details.message });
         }

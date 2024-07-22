@@ -15,19 +15,13 @@ function isValidationError(data: any): data is ValidationError {
     typeof data === "object" &&
     typeof data.code === "number" &&
     typeof data.message === "string" &&
-    typeof data.errors === "object" &&
-    Object.values(data.errors).every(
-      (error) =>
-        typeof error === "object" &&
-        typeof error.code === "string" &&
-        typeof error.message === "string"
-    )
+    typeof data.errors === "object"
   );
 }
 
 export async function signIn(login: string, password: string):Promise<null> {
     try {
-        const response = await axiosInstance.post<null>("/auth/login", {
+        await axiosInstance.post<null>("/auth/login", {
             login: login,
             password: password
         });

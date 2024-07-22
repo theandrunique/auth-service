@@ -10,15 +10,16 @@ export type User = {
 }
 
 
+export type FieldError = {
+    code: string
+    message: string
+}
+
+
 export type ValidationError = {
     code: number;
     message: string;
-    errors: {
-        [key: string]: {
-            code: string;
-            message: string;
-        }
-    }
+    errors: Record<string, FieldError> | null; 
 };
 
 export class ServiceError extends Error {
