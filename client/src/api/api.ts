@@ -1,8 +1,10 @@
-import axios, { AxiosError } from "axios"
-import { ServiceError, User, ValidationError } from '../entities';
+import axios from "axios"
+import { OAuthRequest, OAuthRequestInfo, ServiceError, User, ValidationError } from '../entities';
+
+const apiUrl = "http://localhost:8000";
 
 const axiosInstance = axios.create({
-    baseURL: "http://localhost:8000",
+    baseURL: apiUrl,
     withCredentials: true
 })
 
@@ -63,6 +65,31 @@ export async function getMe():Promise<User> {
 }
 
 export async function logout():Promise<null> {
-    const response = await axiosInstance.post<null>("/auth/logout");
+    const response = await axiosInstance.delete<null>("/auth/logout");
     return response.data;
+}
+
+export async function validateOAuthRequest(request: OAuthRequest) {
+    const response = await axiosInstance.post<OAuthRequestInfo>("/oauth/request", {
+        ...request
+    });
+    return response.data;
+}
+
+
+export async function oauthRequestAccept(request: OAuthRequest) {
+    const response = await axiosInstance.postForm('/oauth/authorize/accept', request);
+
+    if (response.status === 200) {
+        const redirectUri = response.headers.location;
+
+        if (redirectUri) {
+            window.location.href = redirectUri;
+        } else {
+            throw new Error('Redirect URL not found');
+        }
+
+    } else {
+        throw new Error(`Unexpected response status: ${response.status}`);
+    }
 }

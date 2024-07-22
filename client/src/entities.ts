@@ -28,3 +28,22 @@ export class ServiceError extends Error {
         this.error = error;
     }
 }
+
+export type OAuthRequest = {
+    response_type: string
+    client_id: string
+    redirect_uri: string
+    scope: string | null
+    state: string | null
+    code_challenge_method: string | null
+    code_challenge: string | null
+}
+
+export type ScopeInfo = {
+  name: string;
+  description: string;
+}
+
+export type OAuthRequestInfo = {
+    scopes: ScopeInfo[]
+}

@@ -1,5 +1,5 @@
 import { useQuery } from "react-query"
-import { getMe } from "../api/api"
+import { getMe, logout } from "../api/api"
 import { User } from "../entities"
 import { useNavigate } from "react-router-dom"
 
@@ -11,7 +11,7 @@ export default function Dashboard() {
     })
     const navigate = useNavigate();
 
-    const logout = async () => {
+    const executeLogout = async () => {
         await logout();
 
         navigate("/sign-in");
@@ -26,7 +26,7 @@ export default function Dashboard() {
                 <div>Email verified: {user.data?.email_verified}</div>
                 <div>Created at: {user.data?.created_at.toString()}</div>
             </div>
-            <button onClick={() => logout()}>Logout</button>
+            <button onClick={() => executeLogout()}>Logout</button>
         </>
     )
 }
