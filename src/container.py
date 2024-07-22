@@ -17,7 +17,7 @@ from src.auth.service import AuthService, IAuthService
 from src.auth.use_cases import LoginUseCase, LogoutUseCase, SignUpUseCase
 from src.config import settings
 from src.oauth2.service import OAuthService
-from src.oauth2.use_cases import GetAppScopesUseCase, OAuthAuthorizeUseCase, OAuthTokenUseCase
+from src.oauth2.use_cases import GetAppScopesUseCase, OAuthAuthorizeUseCase, OAuthRequestUseCase, OAuthTokenUseCase
 from src.oauth2_sessions.models import OAuth2SessionODM
 from src.oauth2_sessions.repository import IOAuth2SessionsRepository, MongoOAuth2SessionsRepository
 from src.oauth2_sessions.service import IOAuthSessionsService, OAuthSessionsService
@@ -131,6 +131,7 @@ async def init_container() -> punq.Container:
     container.register(LoginUseCase, scope=punq.Scope.transient)
     container.register(LogoutUseCase, scope=punq.Scope.transient)
 
+    container.register(OAuthRequestUseCase, scope=punq.Scope.transient)
     container.register(OAuthAuthorizeUseCase, scope=punq.Scope.transient)
     container.register(OAuthTokenUseCase, scope=punq.Scope.transient)
     container.register(GetAppScopesUseCase, scope=punq.Scope.transient)

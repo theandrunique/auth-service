@@ -20,8 +20,12 @@ class AuthorizationRequest(BaseModel):
 
 class ResponseType(str, Enum):
     code = "code"
-    web_message = "web_message"
     token = "token"
+
+
+class ResponseMode(str, Enum):
+    web_message = "web_message"
+    query = "query"
 
 
 class GrantType(str, Enum):

@@ -18,7 +18,7 @@ from src.schemas import Scope
 from src.services.oauth_auth_requests import IAuthReqService
 
 from .config import settings
-from .dto import TokenResponseDTO
+from .dto import RequestValidateResponseDTO, TokenResponseDTO
 from .entities import AuthorizationRequest, CodeChallengeMethod, GrantType, ResponseType
 from .responses import (
     RedirectUri,
@@ -26,10 +26,49 @@ from .responses import (
     RedirectUriSuccess,
     RedirectUriSuccessToken,
     WebMessage,
-    WebMessageError,
     WebMessageSuccess,
 )
 from .service import OAuthService
+
+
+@dataclass
+class OAuthRequestCommand:
+    session_token: str
+
+    response_type: ResponseType
+    client_id: UUID
+    redirect_uri: str
+    scope: list[str]
+    state: str | None
+    code_challenge: str | None
+    code_challenge_method: CodeChallengeMethod | None
+
+
+@dataclass
+class OAuthRequestUseCase:
+    oauth_service: OAuthService
+    auth_service: IAuthService
+    apps_service: IAppsService
+    requests_service: IAuthReqService
+
+    async def execute(self, command: OAuthRequestCommand) -> RequestValidateResponseDTO:
+        self.command = command
+        application = await self.apps_service.get_by_client_id(command.client_id)
+        if not application:
+            raise InvalidClientId
+
+        if command.redirect_uri not in application.redirect_uris:
+            raise NotMatchingConfiguration
+
+
+        return RequestValidateResponseDTO(
+            requested_scopes=self.get_requested_scopes(command.scope)
+        )
+
+    def get_requested_scopes(self, scopes: list[str]) -> list[Scope]:
+        app_scopes = self.oauth_service.get_app_scopes()
+        return [scope for scope in app_scopes if scope.name in scopes]
+
 
 
 @dataclass
@@ -60,9 +99,6 @@ class OAuthAuthorizeUseCase:
             raise InvalidClientId
 
         if command.redirect_uri not in application.redirect_uris:
-            raise NotMatchingConfiguration
-
-        if command.response_type == ResponseType.web_message and not application.is_authoritative:
             raise NotMatchingConfiguration
 
         try:
@@ -96,19 +132,11 @@ class OAuthAuthorizeUseCase:
 
         if command.response_type == ResponseType.code:
             return self.code(code)
-        elif command.response_type == ResponseType.web_message:
-            return self.web_message(code)
 
         raise NotImplementedError
 
     async def _handle_error(self, error: str) -> WebMessage | RedirectUri:
-        if self.command.response_type == ResponseType.web_message:
-            return WebMessageError(
-                target_origin=self.command.redirect_uri,
-                state=self.command.state,
-                error=error,
-            )
-        elif self.command.response_type == ResponseType.code or self.command.response_type == ResponseType.token:
+        if self.command.response_type == ResponseType.code or self.command.response_type == ResponseType.token:
             return RedirectUriError(
                 target_origin=self.command.redirect_uri,
                 state=self.command.state,
