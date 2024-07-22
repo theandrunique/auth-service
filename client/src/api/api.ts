@@ -58,6 +58,11 @@ export async function singUp(username: string, email: string, password: string):
 }
 
 export async function getMe():Promise<User> {
-    const response = await axiosInstance.get<User>("/auth/me");
+    const response = await axiosInstance.get<User>("/users/me");
+    return response.data;
+}
+
+export async function logout():Promise<null> {
+    const response = await axiosInstance.post<null>("/auth/logout");
     return response.data;
 }

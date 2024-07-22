@@ -1,9 +1,11 @@
 import { SubmitHandler, useForm } from "react-hook-form";
-import { signIn } from "../api/api";
-import { useNavigate } from "react-router-dom";
+import { getMe, signIn } from "../api/api";
+import { useNavigate } from 'react-router-dom';
 import { ServiceError } from "../entities";
 import zod from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect } from "react";
+import useNextParameter from "../hooks/useNextParameter";
 
 const schema = zod.object({
   login: zod.string().min(1, "Login is required"),
@@ -14,6 +16,8 @@ type SignInSchema = zod.infer<typeof schema>;
 
 function SignInPage() {
   const navigate = useNavigate();
+  const nextLocation = useNextParameter();
+
   const {
     setError,
     register,
@@ -25,7 +29,7 @@ function SignInPage() {
     try {
       const response = await signIn(data.login, data.password);
       if (response === null) {
-        navigate("/");
+        navigate(nextLocation || "/");
       }
     } catch (error) {
       if (error instanceof ServiceError) {
@@ -37,6 +41,16 @@ function SignInPage() {
       }
     }
   };
+
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        await getMe();
+        navigate(nextLocation || "/");
+      } catch (error) {}
+    }
+    checkSession();
+  }, []);
 
   return (
     <>
