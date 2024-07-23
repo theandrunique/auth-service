@@ -1,15 +1,17 @@
+from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+
+
+@dataclass
+class SessionCookies:
+    token: str
 
 
 class SessionSchema(BaseModel):
-    session_id: UUID = Field(..., serialization_alias="session_id")
+    id: UUID
     last_used: datetime
-    ip_address: str | None = None
+    ip_address: str
     expires_at: datetime
-
-
-class UserSessions(BaseModel):
-    user_sessions: list[SessionSchema]

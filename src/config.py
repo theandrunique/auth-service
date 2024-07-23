@@ -1,8 +1,20 @@
-from pydantic import AnyUrl, RedisDsn
+from pydantic import BaseModel, MongoDsn, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings(BaseSettings):
+class SmtpSettings(BaseModel):
+    SMTP_PORT: int
+    SMTP_SERVER: str
+    SMTP_USER: str
+    SMTP_PASSWORD: str
+
+    FROM_EMAIL: str
+    FROM_NAME: str
+
+    TEMPLATES_DIR: str = "templates"
+
+
+class Settings(SmtpSettings, BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -10,20 +22,25 @@ class Settings(BaseSettings):
         case_sensitive=True,
     )
 
-    PROJECT_NAME: str = "Authorization Server"
-    SERVER_HOST: str = "http://localhost"
-
-    SQLALCHEMY_DATABASE_URI: AnyUrl
-
-    SECRET_KEY: str = "secret_key"
-    ALGORITHM: str = "HS256"
-    USER_TOKEN_EXPIRE_HOURS: int = 30 * 24
-    KEYS_LENGTH: int = 40
-    OTP_EXPIRE_SECONDS: int = 5 * 60
+    PROJECT_NAME: str = "Auth Service"
+    DOMAIN_URL: str
 
     REDIS_URL: RedisDsn
-    MONGO_URL: str
-    MONGO_DATABASE_NAME: str
+
+    ALGORITHM: str = "RS256"
+
+    FRONTEND_URL: str = "http://localhost:5173"
+
+    EMAILS_ENABLED: bool
+
+    MONGO_DATABASE_NAME: str = "auth_service"
+    MONGO_URI: MongoDsn
+
+    SESSION_EXPIRE_HOURS: int = 24 * 30
+    SESSION_KEY: str = "session"
+
+    AUTHORITATIVE_APPS_PATH: str = "/app/config/apps.json"
+    CERT_DIR: str = "/app/config"
 
 
 settings = Settings()  # type: ignore

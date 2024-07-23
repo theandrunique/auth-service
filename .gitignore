@@ -4,3 +4,6 @@ venv/
 *.swp
 .env
 .vscode
+.docker.env
+certs/
+config/*.pem

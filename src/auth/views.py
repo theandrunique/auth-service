@@ -2,168 +2,64 @@ from typing import Any
 
 from fastapi import (
     APIRouter,
-    BackgroundTasks,
     Request,
+    Response,
     status,
 )
 
-from src.dependencies import DbSession, UserAuthorizationWithSession
-from src.emails.dependencies import OtpEmailDep, ResetPassEmailDep
-from src.emails.utils import send_otp_email, send_reset_password_email
-from src.sessions.crud import SessionsDB
-from src.users.crud import UsersDB
-from src.users.exceptions import (
-    InactiveUser,
-    UserNotFound,
-)
-from src.users.schemas import (
-    RegistrationSchema,
-    ResetPasswordSchema,
-    UserSchema,
-)
+from src.auth.use_cases import LoginCommand, LoginUseCase, LogoutCommand, LogoutUseCase, SignUpCommand, SignUpUseCase
+from src.dependencies import Provide
+from src.sessions.utils import delete_session_cookie, set_session_cookie
+from src.users.schemas import UserSchema
 
-from .exceptions import (
-    EmailAlreadyExists,
-    EmailNotVerified,
-    InvalidCredentials,
-    UsernameAlreadyExists,
-)
-from .schemas import (
-    EmailRequest,
-    LoginSchema,
-    UserTokenSchema,
-)
-from .utils import (
-    check_password,
-    create_new_session,
-    gen_otp_with_token,
-)
+from .dependencies import UserAuthorizationWithSession
+from .schemas import LoginReq, RegistrationSchema
 
-router = APIRouter()
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post(
-    "/register/",
+    "/sign-up",
     status_code=status.HTTP_201_CREATED,
     response_model=UserSchema,
 )
 async def register(
     data: RegistrationSchema,
-    session: DbSession,
+    use_case=Provide(SignUpUseCase),
 ) -> Any:
-    existed_email = await UsersDB.get_by_email(email=data.email, session=session)
-    if existed_email:
-        raise EmailAlreadyExists()
-    existed_username = await UsersDB.get_by_username(
-        username=data.username, session=session
+    return await use_case.execute(
+        SignUpCommand(
+            username=data.username,
+            email=data.email,
+            password=data.password,
+        )
     )
-    if existed_username:
-        raise UsernameAlreadyExists()
-
-    new_user = await UsersDB.create_new(
-        username=data.username,
-        password=data.password,
-        email=data.email,
-        session=session,
-    )
-    return new_user
 
 
-@router.post("/login/")
+@router.post("/login")
 async def login(
-    data: LoginSchema,
+    data: LoginReq,
+    res: Response,
     req: Request,
-    session: DbSession,
-) -> UserTokenSchema:
-    if "@" in data.login:
-        user = await UsersDB.get_by_email(email=data.login, session=session)
-    else:
-        user = await UsersDB.get_by_username(username=data.login, session=session)
-    if user is None:
-        raise UserNotFound()
-    elif not user.active:
-        raise InactiveUser()
-    elif not check_password(
-        password=data.password,
-        hashed_password=user.hashed_password,
-    ):
-        raise InvalidCredentials()
-    return await create_new_session(req=req, user=user, session=session)
+    use_case=Provide(LoginUseCase),
+) -> None:
+    assert req.client
+    session_token = await use_case.execute(
+        LoginCommand(
+            login=data.login,
+            password=data.password,
+            ip_address=req.client.host,
+        )
+    )
+    set_session_cookie(session_token, res=res)
 
 
-@router.delete("/logout/", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_token(
-    session: DbSession,
     user_with_session: UserAuthorizationWithSession,
+    res: Response,
+    use_case=Provide(LogoutUseCase),
 ) -> None:
-    _, user_session = user_with_session
-    await SessionsDB.revoke(
-        user_session=user_session,
-        session=session,
-    )
-
-
-@router.post("/forgot/", status_code=status.HTTP_204_NO_CONTENT)
-async def recover_password(
-    data: EmailRequest,
-    session: DbSession,
-    worker: BackgroundTasks,
-) -> None:
-    user = await UsersDB.get_by_email(email=data.email, session=session)
-    if not user:
-        raise UserNotFound()
-    elif not user.active:
-        raise InactiveUser()
-    elif not user.email_verified:
-        raise EmailNotVerified()
-    worker.add_task(send_reset_password_email, data.email)
-
-
-@router.post("/reset/", response_model=UserSchema)
-async def reset_password(
-    data: ResetPasswordSchema,
-    email: ResetPassEmailDep,
-    session: DbSession,
-) -> Any:
-    # TODO: refactor
-    user = await UsersDB.get_by_email(email=email, session=session)
-    if not user:
-        raise UserNotFound()
-    elif not user.active:
-        raise InactiveUser()
-    await UsersDB.update_password(
-        user=user,
-        new_password=data.password,
-        session=session,
-    )
-    return user
-
-
-@router.put("/otp/")
-async def send_opt(
-    otp_data: EmailRequest, session: DbSession, worker: BackgroundTasks
-) -> dict[str, Any]:
-    user = await UsersDB.get_by_email(email=otp_data.email, session=session)
-    if not user:
-        raise UserNotFound()
-    elif not user.email_verified:
-        raise EmailNotVerified()
-    otp, token = gen_otp_with_token()
-    worker.add_task(send_otp_email, otp_data.email, user.username, otp, token)
-    return {
-        "token": token,
-    }
-
-
-@router.post("/otp/")
-async def otp_auth(
-    email: OtpEmailDep,
-    req: Request,
-    session: DbSession,
-) -> UserTokenSchema:
-    user = await UsersDB.get_by_email(email=email, session=session)
-    if not user:
-        raise UserNotFound()
-    if not user.active:
-        raise InactiveUser()
-    return await create_new_session(req=req, user=user, session=session)
+    user, user_session = user_with_session
+    await use_case.execute(LogoutCommand(user, session=user_session))
+    delete_session_cookie(res=res)

@@ -1,44 +1,41 @@
-import logging
-from contextlib import asynccontextmanager
-from typing import Any
-
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.apps.views import router as apps_router
 from src.auth.views import router as auth_router
-from src.database import db_helper
-from src.emails.views import router as emails_router
-from src.mongo_helper import mongo_client
-from src.oauth2.models import OAuth2SessionsInDB
-from src.oauth2.views import router as oauth2_router
-from src.redis_helper import redis_client
-from src.sessions.models import UserSessionsInDB
+from src.config import settings
+from src.exceptions import ServiceError, service_error_handler
+from src.lifespan import lifespan
+from src.oauth2.views import router as oauth_router
 from src.sessions.views import router as sessions_router
 from src.users.views import router as users_router
+from src.well_known.views import router as well_known
 
-logger = logging.getLogger(__name__)
+origins = [
+    settings.FRONTEND_URL,
+]
+
+app = FastAPI(lifespan=lifespan, title=settings.PROJECT_NAME)
+
+app.add_exception_handler(ServiceError, service_error_handler)  # type: ignore
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["Location"],
+)
+
+app.include_router(auth_router)
+app.include_router(apps_router)
+app.include_router(users_router)
+app.include_router(oauth_router)
+app.include_router(sessions_router)
+app.include_router(well_known)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> Any:
-    async with db_helper.engine.begin() as conn:
-        await conn.run_sync(OAuth2SessionsInDB.metadata.create_all)
-        await conn.run_sync(UserSessionsInDB.metadata.create_all)
-    logger.info("MongoDB connected: ", await mongo_client.server_info())
-    logger.info("Redis connected: ", await redis_client.info())
-    yield
-
-
-app = FastAPI(lifespan=lifespan)
-
-app.include_router(auth_router, prefix="/auth", tags=["auth"])
-app.include_router(sessions_router, prefix="/auth/sessions", tags=["sessions"])
-app.include_router(apps_router, prefix="/apps", tags=["apps"])
-app.include_router(oauth2_router, prefix="/oauth2", tags=["oauth2"])
-app.include_router(emails_router, prefix="/emails", tags=["emails"])
-app.include_router(users_router, prefix="/users", tags=["users"])
-
-
-@app.get("/ping")
-def ping_pong() -> str:
-    return "pong"
+@app.get("/ping", tags=["healthcheck"])
+def ping_pong() -> dict[str, str]:
+    return {"ping": "pong"}

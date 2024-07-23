@@ -1,21 +1,33 @@
-import datetime
-from uuid import UUID
+from datetime import datetime
+from uuid import UUID, uuid4
 
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from beanie import Document
+from pydantic import Field
 
-from src.models import Base
+from src.sessions.entities import Session, SessionFields
 
 
-class UserSessionsInDB(Base):
-    __tablename__ = "user_sessions"
+class SessionODM(Document):
+    id: UUID = Field(default_factory=uuid4)  # type: ignore
+    user_id: UUID
+    last_used: datetime
+    ip_address: str
+    expires_at: datetime
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"),
-        index=True,
-    )
-    session_id: Mapped[UUID]
-    last_used: Mapped[datetime.datetime]
-    ip_address: Mapped[str | None] = mapped_column(nullable=True)
-    expires_at: Mapped[datetime.datetime]
+    @classmethod
+    def from_fields(cls, entity: "SessionFields") -> "SessionODM":
+        return cls(
+            user_id=entity.user_id,
+            last_used=entity.last_used,
+            ip_address=entity.ip_address,
+            expires_at=entity.expires_at,
+        )
+
+    def to_entity(self) -> "Session":
+        return Session(
+            id=self.id,
+            user_id=self.user_id,
+            last_used=self.last_used,
+            ip_address=self.ip_address,
+            expires_at=self.expires_at,
+        )

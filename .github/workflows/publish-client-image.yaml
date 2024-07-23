@@ -1,0 +1,43 @@
+name: Publish Client Docker image
+
+on:
+  push:
+    tags:
+     - 'v*'
+    branches:
+      - master
+    paths:
+      - 'client/**'
+
+jobs:
+  publish:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    
+      - name: Extract metadata
+        id: metadata
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          echo "::set-output name=tags::${TAG}"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          context: client
+          file: client/Dockerfile
+          tags: theandru/auth-server-frontend:${{ steps.metadata.outputs.tags }}

@@ -1,154 +1,69 @@
 from typing import Annotated
 
-import jwt
-from fastapi import Security
-from fastapi.security import OAuth2PasswordBearer, SecurityScopes
-from jwt.exceptions import ExpiredSignatureError, PyJWTError
-from pydantic import ValidationError
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Response, Security
 
-from src.auth.schemas import UserTokenPayload
-from src.config import settings
-from src.database import DbSession
-from src.oauth2.schemas import OAuth2AccessTokenPayload
-from src.sessions.crud import SessionsDB
-from src.sessions.models import UserSessionsInDB
-from src.users.crud import UsersDB
-from src.users.exceptions import (
-    InactiveUser,
-    UserNotFound,
-)
-from src.users.models import UserInDB
-
-from .exceptions import (
-    InvalidToken,
-    MissingScope,
-    NotAuthenticated,
-    NotSupportedByOAuth2,
-)
-
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/oauth2/token/",
-    auto_error=False,
-)
+from src.auth.exceptions import InvalidSession, NotAuthenticated
+from src.auth.service import IAuthService
+from src.dependencies import Provide
+from src.sessions.dependencies import SessionCookie
+from src.sessions.entities import Session
+from src.sessions.utils import delete_session_cookie
+from src.users.entities import User
 
 
-BearerToken = Annotated[str | None, Security(oauth2_scheme)]
-
-
-def decode_payload(
-    token: str,
-) -> UserTokenPayload | OAuth2AccessTokenPayload:
+async def validate_session(
+    session_cookie: SessionCookie, res: Response, auth_service=Provide(IAuthService)
+) -> tuple[User, Session] | None:
+    if session_cookie is None:
+        return None
     try:
-        payload_dict = jwt.decode(
-            jwt=token,
-            key=settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM],
-        )
-        if "scopes" in payload_dict:
-            return OAuth2AccessTokenPayload(**payload_dict)
-        else:
-            return UserTokenPayload(**payload_dict)
-    except ExpiredSignatureError:
-        raise InvalidToken()
-    except (PyJWTError, ValidationError):
-        raise InvalidToken()
+        return await auth_service.validate_session(session_cookie.token)
+    except InvalidSession as e:
+        delete_session_cookie(res=res)
+        raise e
 
 
-def get_authorization(token: BearerToken) -> str:
-    if not token:
-        raise NotAuthenticated()
-    return token
+async def get_user_with_session(
+    session: Annotated[tuple[User, Session] | None, Security(validate_session)],
+) -> tuple[User, Session]:
+    if session is None:
+        raise NotAuthenticated
+
+    return session
 
 
-def get_authorization_optional(token: BearerToken) -> str | None:
-    return token
-
-
-async def authenticate_as_user(
-    payload: UserTokenPayload, session: AsyncSession
-) -> tuple[UserInDB, UserSessionsInDB]:
-    user, user_session = await UsersDB.get_with_session(
-        user_id=payload.sub,
-        session_id=payload.jti,
-        session=session,
-    )
-    if user is None:
-        raise UserNotFound()
-    if user_session is None:
-        raise InvalidToken()
-    elif not user.active:
-        raise InactiveUser()
-    await SessionsDB.update_last_used(user_session=user_session, session=session)
-    return user, user_session
-
-
-async def authenticate_as_oauth2(
-    req_scopes: SecurityScopes, payload: OAuth2AccessTokenPayload, session: AsyncSession
-) -> UserInDB:
-    disallowed_scopes = [
-        scope for scope in payload.scopes if scope not in req_scopes.scopes
-    ]
-    if disallowed_scopes:
-        raise MissingScope(disallowed_scopes)
-    user = await UsersDB.get_by_id(id=int(payload.sub), session=session)
-    if user is None:
-        raise UserNotFound()
-    return user
-
-
-async def user_authorization(
-    req_scopes: SecurityScopes,
-    session: DbSession,
-    token: str = Security(get_authorization),
-) -> tuple[UserInDB, UserSessionsInDB | None]:
-    payload = decode_payload(token)
-    if isinstance(payload, UserTokenPayload):
-        return await authenticate_as_user(payload, session)
-    elif isinstance(payload, OAuth2AccessTokenPayload):
-        user = await authenticate_as_oauth2(req_scopes, payload, session)
-        return user, None
-
-
-UserAuthorizationDep = Annotated[
-    tuple[UserInDB, UserSessionsInDB | None], Security(user_authorization)
-]
+UserAuthorizationWithSession = Annotated[tuple[User, Session], Security(get_user_with_session)]
 
 
 async def get_user(
-    user_with_session: UserAuthorizationDep,
-) -> UserInDB:
+    user_with_session: UserAuthorizationWithSession,
+) -> User:
     user, _ = user_with_session
     return user
 
 
-async def get_user_with_session(
-    user_with_session: UserAuthorizationDep,
-) -> tuple[UserInDB, UserSessionsInDB]:
-    """
-    Get user with session.
+UserAuthorization = Annotated[User, Security(get_user)]
 
-    Returns tuple with user session and user.
 
-    Raises:
-        NotSupportedByOAuth2: If session is None - its OAuth2 token
-            and it does not support sessions
-    """
-    user, user_session = user_with_session
-    if user_session is None:
-        raise NotSupportedByOAuth2()
-    return user, user_session
+async def get_user_with_session_optional(
+    session: Annotated[tuple[User, Session] | None, Security(validate_session)],
+) -> tuple[User, Session] | None:
+    if session is None:
+        return None
+    else:
+        return session
+
+
+UserAuthorizationWithSessionOptional = Annotated[tuple[User, Session] | None, Security(get_user_with_session_optional)]
 
 
 async def get_user_optional(
-    req_scopes: SecurityScopes,
-    session: DbSession,
-    token: str | None = Security(get_authorization_optional),
-) -> UserInDB | None:
-    if token is None:
+    session: Annotated[tuple[User, Session] | None, Security(validate_session)],
+) -> User | None:
+    if session is None:
         return None
     else:
-        user, _ = await user_authorization(
-            req_scopes=req_scopes, token=token, session=session
-        )
-        return user
+        return session[0]
+
+
+UserAuthorizationOptional = Annotated[User | None, Security(get_user_optional)]

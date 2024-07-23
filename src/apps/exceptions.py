@@ -1,16 +1,6 @@
-from fastapi import HTTPException, status
+from src.exceptions import ServiceError, ServiceErrorCode
 
 
-class AppNotFound(HTTPException):
+class AppNotFound(ServiceError):
     def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="App not found",
-        )
-
-
-class UnauthorizedAccess(HTTPException):
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=403, detail="You do not have permission to this application"
-        )
+        super().__init__(code=ServiceErrorCode.APP_NOT_FOUND)

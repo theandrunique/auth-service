@@ -1,60 +1,82 @@
 from typing import Any
-from uuid import uuid4
+from uuid import UUID
 
 from fastapi import APIRouter, status
 
-from src.dependencies import UserAuthorization, UserAuthorizationOptional
+from src.apps.use_cases import (
+    CreateAppCommand,
+    CreateAppUseCase,
+    GetUserAppsCommand,
+    GetUserAppsUseCase,
+    RegenerateClientSecretCommand,
+    RegenerateClientSecretUseCase,
+    UpdateAppInfoCommand,
+    UpdateAppInfoUseCase,
+)
+from src.auth.dependencies import UserAuthorization
+from src.dependencies import Provide
 
-from .dependencies import AppAccessControlDep, AppDep
-from .registry import AppsRegistry
 from .schemas import (
-    AppCreate,
-    AppInMongo,
-    AppPublicSchema,
-    AppUpdate,
+    AppCreateSchema,
+    ApplicationSchema,
+    AppUpdateSchema,
 )
 
-router = APIRouter(prefix="", tags=["apps"])
+router = APIRouter(prefix="/oauth/applications", tags=["apps"])
+
+
+@router.get("", response_model=list[ApplicationSchema])
+async def get_apps(
+    user: UserAuthorization,
+    use_case=Provide(GetUserAppsUseCase),
+) -> Any:
+    return await use_case.execute(GetUserAppsCommand(user=user))
 
 
 @router.put(
-    "/{app_id}/regenerate-client-secret/",
-    response_model=AppInMongo,
-    response_model_by_alias=False,
+    "/{app_id}/client-secret",
+    response_model=ApplicationSchema,
 )
-async def regenerate_client_secret(app: AppAccessControlDep) -> Any:
-    app.client_secret = uuid4()
-    await AppsRegistry.update(app.id, {"client_secret": app.client_secret})
-    return app
+async def regenerate_client_secret(
+    user: UserAuthorization,
+    app_id: UUID,
+    use_case=Provide(RegenerateClientSecretUseCase),
+) -> Any:
+    return await use_case.execute(RegenerateClientSecretCommand(user=user, app_id=app_id))
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model_by_alias=False)
-async def create_app(app: AppCreate, user: UserAuthorization) -> Any:
-    new_app = AppInMongo(**app.model_dump(), creator_id=user.id)
-    await AppsRegistry.add(new_app)
-    return new_app
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=ApplicationSchema)
+async def create_app(
+    data: AppCreateSchema,
+    user: UserAuthorization,
+    use_case=Provide(CreateAppUseCase),
+) -> Any:
+    return await use_case.execute(
+        CreateAppCommand(
+            user=user,
+            name=data.name,
+            redirect_uris=data.redirect_uris,
+            scopes=data.scopes,
+            description=data.description,
+            website=data.website,
+        )
+    )
 
 
-@router.get("/{app_id}/", response_model_by_alias=False)
-async def get_app_by_id(
-    app: AppDep, user: UserAuthorizationOptional
-) -> AppInMongo | AppPublicSchema:
-    if user and app.creator_id == user.id:
-        return app
-    return AppPublicSchema(**app.model_dump())
-
-
-@router.patch("/{app_id}/", response_model_by_alias=False)
+@router.patch("/{app_id}", response_model=ApplicationSchema)
 async def update_app(
-    app: AppAccessControlDep, data: AppUpdate,
-) -> AppInMongo:
-    new_values = data.model_dump(exclude_defaults=True)
-    if new_values:
-        return await AppsRegistry.update(app.id, new_values)
-    else:
-        return app
-
-
-@router.delete("/{app_id}/", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_app(app: AppAccessControlDep) -> None:
-    await AppsRegistry.delete(app.id)
+    user: UserAuthorization,
+    app_id: UUID,
+    data: AppUpdateSchema,
+    use_case=Provide(UpdateAppInfoUseCase),
+) -> Any:
+    return await use_case.execute(
+        UpdateAppInfoCommand(
+            user=user,
+            app_id=app_id,
+            name=data.name,
+            description=data.description,
+            redirect_uris=data.redirect_uris,
+            scopes=data.scopes,
+        )
+    )

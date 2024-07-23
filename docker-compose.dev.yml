@@ -1,0 +1,32 @@
+services:
+  app:
+    build:
+      target: dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+    command: "uvicorn src.main:app --host 0.0.0.0 --port 8000 --log-config logger_config.yml --reload"
+
+  mongo:
+    image: mongo
+    restart: always
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:?}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?}
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USERNAME:?}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD:?}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_USERNAME:?}:${MONGO_PASSWORD:?}@mongo:27017/
+      ME_CONFIG_BASICAUTH: false
+
+  redis:
+    image: redis
