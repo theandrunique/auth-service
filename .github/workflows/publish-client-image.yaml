@@ -4,8 +4,6 @@ on:
   push:
     tags:
      - 'v*'
-    branches:
-      - master
     paths:
       - 'client/**'
 
@@ -15,12 +13,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    
-      - name: Extract metadata
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get metadata for Docker
         id: metadata
-        run: |
-          TAG=${GITHUB_REF#refs/tags/}
-          echo "::set-output name=tags::${TAG}"
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            theandru/auth-server-client
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -40,4 +41,4 @@ jobs:
           push: true
           context: client
           file: client/Dockerfile
-          tags: theandru/auth-server-frontend:${{ steps.metadata.outputs.tags }}
+          tags: ${{ steps.metadata.outputs.tags }}

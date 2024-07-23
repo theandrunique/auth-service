@@ -4,8 +4,6 @@ on:
   push:
     tags:
      - 'v*'
-    branches:
-      - master
 
 jobs:
   publish:
@@ -13,12 +11,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Extract metadata
+      - name: Get metadata for Docker
         id: metadata
-        run: |
-          TAG=${GITHUB_REF#refs/tags/}
-          echo "::set-output name=tags::${TAG}"
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            theandru/auth-server
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -38,4 +39,4 @@ jobs:
           context: .
           push: true
           target: prod
-          tags: theandru/auth-server-backend:${{ steps.metadata.outputs.tags }}
+          tags: ${{ steps.metadata.outputs.tags }}
