@@ -1,32 +1,36 @@
-import { useQuery } from "react-query"
-import { getMe, logout } from "../api/api"
-import { User } from "../entities"
-import { useNavigate } from "react-router-dom"
-
+import { useQuery } from "react-query";
+import { getMe, logout } from "../api/api";
+import { User } from "../entities";
+import { useNavigate } from "react-router-dom";
+import Button from "../components/ui/Button";
+import Card from "../components/Card";
 
 export default function Dashboard() {
-    const user = useQuery<User>({
-        queryKey: ["user"],
-        queryFn: getMe
-    })
-    const navigate = useNavigate();
+  const user = useQuery<User>({
+    queryKey: ["user"],
+    queryFn: getMe,
+  });
+  const navigate = useNavigate();
 
-    const executeLogout = async () => {
-        await logout();
+  const executeLogout = async () => {
+    await logout();
 
-        navigate("/sign-in");
-    }
+    navigate("/sign-in");
+  };
 
-    return (
-        <>
-            <div>
-                <div>Id: {user.data?.id}</div>
-                <div>Username: {user.data?.username}</div>
-                <div>Email: {user.data?.email}</div>
-                <div>Email verified: {user.data?.email_verified}</div>
-                <div>Created at: {user.data?.created_at.toString()}</div>
-            </div>
-            <button onClick={() => executeLogout()}>Logout</button>
-        </>
-    )
+  return (
+    <Card className="w-[40rem]">
+      <div className="text-3xl text-center font-semibold text-slate-100">
+        Userinfo:
+      </div>
+      <div className="text-lg text-slate-200">
+        <div><strong>Id: </strong>{user.data?.id}</div>
+        <div><strong>Username: </strong>{user.data?.username}</div>
+        <div><strong>Email: </strong>{user.data?.email}</div>
+        <div><strong>Email verified: </strong>{user.data?.email_verified.toString()}</div>
+        <div><strong>Created at: </strong>{user.data?.created_at.toString()}</div>
+      </div>
+      <Button onClick={() => executeLogout()}>Logout</Button>
+    </Card>
+  );
 }

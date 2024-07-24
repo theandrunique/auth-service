@@ -4,6 +4,11 @@ import zod from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
 import { ServiceError } from "../entities";
+import Input from "../components/ui/Input";
+import ErrorMessage from "../components/ui/Error";
+import Button from "../components/ui/Button";
+import LinkButton from "../components/ui/LinkButton";
+import Card from "../components/Card";
 
 const schema = zod.object({
   email: zod.string().email(),
@@ -42,7 +47,10 @@ export default function SignUpPage() {
     } catch (error) {
       if (error instanceof ServiceError && error.error.errors) {
         for (const [field, details] of Object.entries(error.error.errors)) {
-          setError(field as keyof SignUpSchema, { type: "manual", message: details.message });
+          setError(field as keyof SignUpSchema, {
+            type: "manual",
+            message: details.message,
+          });
         }
       } else {
         setError("root", { message: "Error: something went wrong" });
@@ -51,44 +59,35 @@ export default function SignUpPage() {
   };
 
   return (
-    <>
-      <div className="min-h-screen flex justify-center items-center">
-        <div className="bg-slate-600">
-          <div>Sign Up</div>
-          <form
-            className="flex flex-col gap-2"
-            onSubmit={handleSubmit(onSubmit)}
-          >
-            <input {...register("email")} type="text" placeholder="email" />
-            {errors.email?.message && (
-              <p className="text-red-500">{errors.email?.message}</p>
-            )}
-            <input
-              {...register("username")}
-              type="text"
-              placeholder="username"
-            />
-            {errors.username?.message && (
-              <p className="text-red-500">{errors.username?.message}</p>
-            )}
-            <input
-              {...register("password")}
-              type="password"
-              placeholder="password"
-            />
-            {errors.password?.message && (
-              <p className="text-red-500">{errors.password?.message}</p>
-            )}
-
-            <button disabled={isSubmitting} type="submit">
-              Sign In
-            </button>
-            {errors.root?.message && (
-              <p className="text-red-500">{errors.root?.message}</p>
-            )}
-          </form>
-        </div>
+    <Card className="w-[30rem]" >
+      <div className="text-3xl text-center text-slate-100 font-semibold">
+        Sign Up
       </div>
-    </>
+      <form
+        className="flex flex-col gap-2"
+        onSubmit={handleSubmit(onSubmit)}
+      >
+        <Input {...register("email")} type="text" placeholder="email" />
+        <ErrorMessage message={errors.email?.message} />
+        <Input
+          {...register("username")}
+          type="text"
+          placeholder="username"
+        />
+        <ErrorMessage message={errors.username?.message} />
+        <Input
+          {...register("password")}
+          type="password"
+          placeholder="password"
+        />
+        <ErrorMessage message={errors.password?.message} />
+        <Button disabled={isSubmitting}>Sign Up</Button>
+        <ErrorMessage message={errors.root?.message} />
+      </form>
+      <div className="text-center text-slate-300">
+        Already have an account?
+        <LinkButton to={"/sign-in"}>sign in</LinkButton>
+      </div>
+    </Card>
   );
 }

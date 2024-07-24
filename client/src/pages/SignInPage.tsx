@@ -6,6 +6,11 @@ import zod from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import useNextParameter from "../hooks/useNextParameter";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import ErrorMessage from "../components/ui/Error";
+import LinkButton from "../components/ui/LinkButton";
+import Card from "../components/Card";
 
 const schema = zod.object({
   login: zod.string().min(1, "Login is required"),
@@ -53,34 +58,28 @@ function SignInPage() {
   }, []);
 
   return (
-    <>
-      <div className="min-h-screen flex justify-center items-center">
-        <div className="bg-slate-600">
-          <div>Sign In</div>
-          <form
-            className="flex flex-col gap-2"
-            onSubmit={handleSubmit(onSubmit)}
-          >
-            <input {...register("login")} type="text" placeholder="login" />
-            {errors.login?.message && (
-              <p className="text-red-500">{errors.login?.message}</p>
-            )}
-            <input
-              {...register("password")}
-              type="password"
-              placeholder="password"
-            />
-            {errors.password?.message && (
-              <p className="text-red-500">{errors.password?.message}</p>
-            )}
-            <button disabled={isSubmitting} type="submit">
-              Sign In
-            </button>
-            {errors.root?.message && <p>{errors.root?.message}</p>}
-          </form>
-        </div>
+    <Card className="w-[30rem]">
+      <div className="text-3xl text-center font-semibold text-slate-100">Sign In</div>
+      <form
+        className="flex flex-col gap-2"
+        onSubmit={handleSubmit(onSubmit)}
+      >
+        <Input {...register("login")} type="text" placeholder="login" />
+        <ErrorMessage message={errors.login?.message} />
+        <Input
+          {...register("password")}
+          type="password"
+          placeholder="password"
+        />
+        <ErrorMessage message={errors.password?.message} />
+        <Button disabled={isSubmitting} variant={"primary"}>Sign In</Button>
+        <ErrorMessage message={errors.root?.message} />
+      </form>
+      <div className="text-center text-slate-300">
+        Don't have an account?
+        <LinkButton to={"/sign-up"}>sign up</LinkButton>
       </div>
-    </>
+    </Card>
   );
 }
 
