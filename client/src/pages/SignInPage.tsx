@@ -5,7 +5,7 @@ import { ServiceError } from "../entities";
 import zod from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
-import useNextParameter from "../hooks/useNextParameter";
+import useNextParam from "../hooks/useNextParam";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import ErrorMessage from "../components/ui/Error";
@@ -21,7 +21,7 @@ type SignInSchema = zod.infer<typeof schema>;
 
 function SignInPage() {
   const navigate = useNavigate();
-  const nextLocation = useNextParameter();
+  const nextLocation = useNextParam();
 
   const {
     setError,
