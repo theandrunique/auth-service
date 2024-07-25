@@ -61,20 +61,22 @@ export default function Authorize() {
   }
 
   return (
-    <Card>
-      <div className="text-xl text-slate-100">
-        App <strong>{request?.client_id}</strong> want to get access to your
-        account with the following scopes:
-      </div>
-      <ul className="list-disc list-inside text-slate-100">
-        {scopes.map((scope) => (
-          <li>
-            <strong>{scope.name}</strong> - {scope.description}
-          </li>
-        ))}
-      </ul>
-      <Button className="w-64 self-center" onClick={() => submitHandler()}>Submit</Button>
-      <Button variant={"secondary"} onClick={() => cancelRequest()}>Cancel</Button>
-    </Card>
+    <div className="min-h-screen flex justify-center items-center">
+      <Card>
+        <div className="text-xl text-slate-100">
+          App <strong>{request?.client_id}</strong> want to get access to your
+          account with the following scopes:
+        </div>
+        <ul className="list-disc list-inside text-slate-100">
+          {scopes.map((scope) => (
+            <li>
+              <strong>{scope.name}</strong> - {scope.description}
+            </li>
+          ))}
+        </ul>
+        <Button className="w-64 self-center" onClick={() => submitHandler()}>Submit</Button>
+        <Button variant={"secondary"} className="w-64 self-center" onClick={() => cancelRequest()}>Cancel</Button>
+      </Card>
+    </div>
   );
 }

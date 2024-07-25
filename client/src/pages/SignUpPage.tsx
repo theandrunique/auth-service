@@ -59,35 +59,35 @@ export default function SignUpPage() {
   };
 
   return (
-    <Card className="w-[30rem]" >
-      <div className="text-3xl text-center text-slate-100 font-semibold">
-        Sign Up
-      </div>
-      <form
-        className="flex flex-col gap-2"
-        onSubmit={handleSubmit(onSubmit)}
-      >
-        <Input {...register("email")} type="text" placeholder="email" />
-        <ErrorMessage message={errors.email?.message} />
-        <Input
-          {...register("username")}
-          type="text"
-          placeholder="username"
-        />
-        <ErrorMessage message={errors.username?.message} />
-        <Input
-          {...register("password")}
-          type="password"
-          placeholder="password"
-        />
-        <ErrorMessage message={errors.password?.message} />
-        <Button disabled={isSubmitting}>Sign Up</Button>
-        <ErrorMessage message={errors.root?.message} />
-      </form>
-      <div className="text-center text-slate-300">
-        Already have an account?
-        <LinkButton to={"/sign-in"}>sign in</LinkButton>
-      </div>
-    </Card>
+    <div className="min-h-screen flex justify-center items-center">
+      <Card className="w-[30rem]" >
+        <Card.Title>Sign Up</Card.Title>
+        <form
+          className="flex flex-col gap-2"
+          onSubmit={handleSubmit(onSubmit)}
+        >
+          <Input {...register("email")} type="text" placeholder="email" />
+          <ErrorMessage message={errors.email?.message} />
+          <Input
+            {...register("username")}
+            type="text"
+            placeholder="username"
+          />
+          <ErrorMessage message={errors.username?.message} />
+          <Input
+            {...register("password")}
+            type="password"
+            placeholder="password"
+          />
+          <ErrorMessage message={errors.password?.message} />
+          <Button disabled={isSubmitting}>Sign Up</Button>
+          <ErrorMessage message={errors.root?.message} />
+        </form>
+        <div className="text-center text-slate-300">
+          Already have an account?
+          <LinkButton to={"/sign-in"}>sign in</LinkButton>
+        </div>
+      </Card>
+    </div>
   );
 }

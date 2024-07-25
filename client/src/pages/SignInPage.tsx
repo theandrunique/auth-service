@@ -58,28 +58,30 @@ function SignInPage() {
   }, []);
 
   return (
-    <Card className="w-[30rem]">
-      <div className="text-3xl text-center font-semibold text-slate-100">Sign In</div>
-      <form
-        className="flex flex-col gap-2"
-        onSubmit={handleSubmit(onSubmit)}
-      >
-        <Input {...register("login")} type="text" placeholder="login" />
-        <ErrorMessage message={errors.login?.message} />
-        <Input
-          {...register("password")}
-          type="password"
-          placeholder="password"
-        />
-        <ErrorMessage message={errors.password?.message} />
-        <Button disabled={isSubmitting} variant={"primary"}>Sign In</Button>
-        <ErrorMessage message={errors.root?.message} />
-      </form>
-      <div className="text-center text-slate-300">
-        Don't have an account?
-        <LinkButton to={"/sign-up"}>sign up</LinkButton>
-      </div>
-    </Card>
+    <div className="min-h-screen flex justify-center items-center">
+      <Card className="w-[30rem]">
+        <Card.Title>Sign In</Card.Title>
+        <form
+          className="flex flex-col gap-2"
+          onSubmit={handleSubmit(onSubmit)}
+        >
+          <Input {...register("login")} type="text" placeholder="login" />
+          <ErrorMessage message={errors.login?.message} />
+          <Input
+            {...register("password")}
+            type="password"
+            placeholder="password"
+          />
+          <ErrorMessage message={errors.password?.message} />
+          <Button disabled={isSubmitting} variant={"primary"}>Sign In</Button>
+          <ErrorMessage message={errors.root?.message} />
+        </form>
+        <div className="text-center text-slate-300">
+          Don't have an account?
+          <LinkButton to={"/sign-up"}>sign up</LinkButton>
+        </div>
+      </Card>
+    </div>
   );
 }
 
