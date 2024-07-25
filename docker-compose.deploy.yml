@@ -1,0 +1,81 @@
+name: auth-service-deploy
+
+services:
+  app:
+    restart: always
+    volumes:
+      - ./config:/app/config
+    command: "uvicorn src.main:app --host 0.0.0.0 --port 8000"
+    labels:
+    - traefik.enable=true
+    - traefik.docker.network=traefik
+
+    - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
+    - traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
+
+    - traefik.http.routers.fastapi-crud-example.rule=Host(`${DOMAIN_NAME?}`)
+    - traefik.http.routers.fastapi-crud-example.entrypoints=http
+    - traefik.http.routers.fastapi-crud-example.middlewares=https-redirect
+
+    - traefik.http.routers.fastapi-crud-example-https.rule=Host(`${DOMAIN_NAME?}`)
+    - traefik.http.routers.fastapi-crud-example-https.entrypoints=https
+    - traefik.http.routers.fastapi-crud-example-https.tls.certresolver=le
+    - traefik.http.routers.fastapi-crud-example-https.tls=true
+    networks:
+      - traefik
+      - default
+
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:?}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?}
+
+  redis:
+    restart: always
+    image: redis
+  
+  traefik:
+    image: traefik:v3.0
+    ports:
+      - 80:80
+      - 443:443
+    restart: always
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+    volumes:
+      # Add Docker as a mounted volume, so that Traefik can read the labels of other services
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Mount the volume to store the certificates
+      - ./cert/:/certificates
+    command:
+      - --providers.docker
+
+      - --providers.docker.exposedbydefault=false
+
+      - --entrypoints.http.address=:80
+
+      - --entrypoints.https.address=:443
+
+      - --certificatesresolvers.le.acme.email=${TRAEFIK_CERTRESOLVER_ACME_EMAIL:?}
+
+      - --certificatesresolvers.le.acme.storage=/certificates/acme.json
+
+      - --certificatesresolvers.le.acme.tlschallenge=true
+
+      - --api
+
+      - --accesslog
+
+      - --log
+
+    networks:
+      - traefik
+
+
+
+networks:
+  traefik:
+    external: true
