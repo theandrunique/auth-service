@@ -2,7 +2,7 @@ import base64
 import hashlib
 import secrets
 
-from .config import settings
+from src.config import settings
 
 
 def gen_authorization_code() -> str:

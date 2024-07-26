@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from redis.asyncio import Redis
 
-from src.oauth2.config import settings
+from src.config import settings
 from src.oauth2.entities import AuthorizationRequest
 from src.oauth2.exceptions import InvalidAuthorizationCode
 from src.oauth2.utils import gen_authorization_code

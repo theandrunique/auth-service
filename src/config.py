@@ -2,6 +2,25 @@ from pydantic import BaseModel, MongoDsn, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+class OAuthSettings(BaseModel):
+    AUTHORIZATION_CODE_LENGTH: int = 512
+    AUTHORIZATION_CODE_EXPIRE_SECONDS: int = 60
+    ACCESS_TOKEN_EXPIRE_SECONDS: int = 3600
+    REFRESH_TOKEN_EXPIRE_HOURS: int = 24
+
+
+class UsersSettings(BaseModel):
+    USERNAME_MIN_LENGTH: int = 3
+    USERNAME_MAX_LENGTH: int = 32
+
+    USERNAME_PATTERN: str = r"^[a-zA-Z0-9_]+$"
+
+    PASSWORD_MIN_LENGTH: int = 8
+    PASSWORD_MAX_LENGTH: int = 32
+
+    PASSWORD_PATTERN: str = r"^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-])+"
+
+
 class SmtpSettings(BaseModel):
     SMTP_PORT: int
     SMTP_SERVER: str
@@ -14,14 +33,7 @@ class SmtpSettings(BaseModel):
     TEMPLATES_DIR: str = "templates"
 
 
-class Settings(SmtpSettings, BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore",
-        case_sensitive=True,
-    )
-
+class Settings(SmtpSettings, UsersSettings, OAuthSettings, BaseSettings):
     PROJECT_NAME: str = "Auth Service"
     DOMAIN_URL: str
 
@@ -41,6 +53,12 @@ class Settings(SmtpSettings, BaseSettings):
 
     AUTHORITATIVE_APPS_PATH: str = "/app/config/apps.json"
     CERT_DIR: str = "/app/config"
+
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+        extra = "ignore"
+        case_sensitive = True
 
 
 settings = Settings()  # type: ignore

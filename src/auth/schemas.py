@@ -2,7 +2,7 @@ import re
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from src.users.config import settings
+from src.config import settings
 from src.users.exceptions import PasswordValidationError, UsernameValidationError
 
 

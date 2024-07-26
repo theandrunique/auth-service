@@ -4,6 +4,7 @@ from uuid import UUID
 from src.apps.service import IAppsService
 from src.auth.exceptions import InvalidSession
 from src.auth.service import IAuthService
+from src.config import settings
 from src.oauth2.exceptions import (
     InvalidAuthorizationCode,
     InvalidClientId,
@@ -17,7 +18,6 @@ from src.oauth2_sessions.service import IOAuthSessionsService
 from src.schemas import Scope
 from src.services.oauth_auth_requests import IAuthReqService
 
-from .config import settings
 from .dto import RequestValidateResponseDTO, TokenResponseDTO
 from .entities import AuthorizationRequest, CodeChallengeMethod, GrantType, ResponseType
 from .responses import (
