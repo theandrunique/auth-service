@@ -41,8 +41,17 @@ class SessionsService(ISessionsService):
             )
         )
 
+    def _is_expired(self, session: Session) -> bool:
+        return session.expires_at < datetime.now()
+
     async def get_by_id(self, session_id: UUID) -> Session | None:
-        return await self.repository.get_by_id(session_id)
+        session = await self.repository.get_by_id(session_id)
+        if session:
+            if self._is_expired(session):
+                return None
+
+            return session
+        return None
 
     async def update_last_used(self, session_id: UUID) -> None:
         return await self.repository.update_last_used(session_id, datetime.now())

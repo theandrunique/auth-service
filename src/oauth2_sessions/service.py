@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 
+from src.config import settings
 from src.oauth2_sessions.dto import CreateOAuth2SessionDTO
 from src.oauth2_sessions.entities import OAuth2Session, OAuth2SessionFields
 
@@ -45,8 +46,17 @@ class OAuthSessionsService(IOAuthSessionsService):
             )
         )
 
+    def _is_expired(self, session: OAuth2Session) -> bool:
+        return session.created_at + timedelta(hours=settings.REFRESH_TOKEN_EXPIRE_HOURS) < datetime.now()
+
     async def get(self, session_id: UUID) -> OAuth2Session | None:
-        return await self.repository.get_by_id(session_id)
+        session = await self.repository.get_by_id(session_id)
+        if session:
+            if self._is_expired(session):
+                return None
+
+            return session
+        return None
 
     async def get_by_token_id(self, token_id: UUID) -> OAuth2Session | None:
         return await self.repository.get_by_token_id(token_id)
