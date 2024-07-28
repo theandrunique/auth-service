@@ -6,8 +6,6 @@ from uuid import UUID, uuid4
 from src.apps.dto import AppUpdateInfoDTO, CreateAppDTO, OAuth2AppInfoDTO
 from src.apps.entities import Application, ApplicationFields
 from src.exceptions import ServiceError, ServiceErrorCode
-from src.schemas import AuthoritativeApp
-from src.services.authoritative_apps import AuthoritativeAppsService
 
 from .repository import IAppsRepository
 
@@ -42,7 +40,6 @@ class IAppsService(ABC):
 @dataclass
 class AppsService(IAppsService):
     repository: IAppsRepository
-    authoritative_apps: AuthoritativeAppsService
 
     async def create_new_app(self, dto: CreateAppDTO) -> Application:
         return await self.repository.add(
@@ -68,17 +65,18 @@ class AppsService(IAppsService):
         return await self.repository.get(app_id)
 
     async def get_by_client_id(self, client_id: UUID) -> OAuth2AppInfoDTO | None:
-        app = self.authoritative_apps.get_by_client_id(client_id)
-        if not app:
-            app = await self.repository.get_by_client_id(client_id)
+        app = await self.repository.get_by_client_id(client_id)
         if not app:
             return None
+
         return OAuth2AppInfoDTO(
+            name=app.name,
+            description=app.description,
             client_id=app.client_id,
             client_secret=app.client_secret,
             redirect_uris=app.redirect_uris,
             scopes=app.scopes,
-            is_authoritative=isinstance(app, AuthoritativeApp),
+            is_web_message_allowed=app.is_web_message_allowed,
         )
 
     async def delete(self, app_id: UUID) -> None:

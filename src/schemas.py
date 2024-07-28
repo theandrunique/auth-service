@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from typing import Any
-from uuid import UUID
 
 import bson
 from jwcrypto import jwk
@@ -38,13 +37,6 @@ class Scope(BaseModel):
 
 class AppScopes(RootModel):
     root: list[Scope]
-
-
-class AuthoritativeApp(BaseModel):
-    client_id: UUID
-    client_secret: UUID
-    redirect_uris: list[str]
-    scopes: list[str]
 
 
 @dataclass

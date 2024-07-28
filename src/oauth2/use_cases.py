@@ -53,8 +53,14 @@ class OAuthRequestUseCase:
 
         if command.redirect_uri not in application.redirect_uris:
             raise NotMatchingConfiguration
+        if command.response_mode == ResponseMode.web_message and not application.is_web_message_allowed:
+            raise NotMatchingConfiguration
 
-        return RequestValidateResponseDTO(requested_scopes=self.get_requested_scopes(command.scope))
+        return RequestValidateResponseDTO(
+            app_name=application.name,
+            app_description=application.description,
+            requested_scopes=self.get_requested_scopes(command.scope),
+        )
 
     def get_requested_scopes(self, scopes: list[str]) -> list[Scope]:
         app_scopes = self.oauth_service.get_app_scopes()
@@ -88,6 +94,8 @@ class OAuthAuthorizeUseCase:
             raise InvalidClientId
 
         if command.redirect_uri not in application.redirect_uris:
+            raise NotMatchingConfiguration
+        if command.response_mode == ResponseMode.web_message and not application.is_web_message_allowed:
             raise NotMatchingConfiguration
 
         try:

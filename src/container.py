@@ -22,7 +22,6 @@ from src.oauth2_sessions.models import OAuth2SessionODM
 from src.oauth2_sessions.repository import IOAuth2SessionsRepository, MongoOAuth2SessionsRepository
 from src.oauth2_sessions.service import IOAuthSessionsService, OAuthSessionsService
 from src.schemas import AppScopes
-from src.services.authoritative_apps import AuthoritativeAppsService
 from src.services.emails import EmailService, IEmailService
 from src.services.hash import Hash, ImplHash
 from src.services.jwe import JWE, ImplJWE
@@ -41,7 +40,7 @@ from src.users.models import UserODM
 from src.users.repository import IUsersRepository, MongoUsersRepository
 from src.users.service import IUsersService, UsersService
 from src.users.use_cases import GetMeUseCase
-from src.utils import load_authoritative_apps, load_certs_and_create_key_pairs
+from src.utils import load_app_scopes, load_certs_and_create_key_pairs
 from src.well_known.service import WellKnownService
 from src.well_known.use_cases import GetJWKsUseCase, GetOpenIdConfigurationUseCase
 
@@ -72,7 +71,7 @@ async def init_container() -> punq.Container:
     key_manager = KeyManager(key_pairs=key_pairs)
     container.register(KeyManager, instance=key_manager, scope=punq.Scope.singleton)
 
-    apps, scopes = load_authoritative_apps()
+    apps, scopes = load_app_scopes()
 
     container.register(Hash, ImplHash, scope=punq.Scope.singleton)
     container.register(
@@ -116,11 +115,6 @@ async def init_container() -> punq.Container:
     container.register(ISessionsService, SessionsService, scope=punq.Scope.singleton)
     container.register(IUsersService, UsersService, scope=punq.Scope.singleton)
     container.register(WellKnownService, scope=punq.Scope.singleton)
-    container.register(
-        AuthoritativeAppsService,
-        instance=AuthoritativeAppsService(apps=apps),
-        scope=punq.Scope.singleton,
-    )
 
     container.register(CreateAppUseCase, scope=punq.Scope.transient)
     container.register(GetUserAppsUseCase, scope=punq.Scope.transient)

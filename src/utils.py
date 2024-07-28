@@ -1,14 +1,13 @@
 import glob
 import json
 import os
-from uuid import UUID
 
 from jwcrypto import jwk
 from jwcrypto.common import json_decode
 
 from src.config import settings
 from src.logger import logger
-from src.schemas import AppScopes, AuthoritativeApp, KeyPair
+from src.schemas import AppScopes, KeyPair
 
 
 def load_certs() -> list[str]:
@@ -43,19 +42,14 @@ def load_certs_and_create_key_pairs() -> list[KeyPair]:
     return [KeyPair(private_key=private_key, public_key=public_key) for private_key, public_key in jwk_keys]
 
 
-def load_authoritative_apps() -> tuple[dict[UUID, AuthoritativeApp], AppScopes]:
+def load_app_scopes() -> AppScopes:
     try:
         with open(settings.AUTHORITATIVE_APPS_PATH) as f:
-            apps_dict = json.loads(f.read())
-            apps_list = apps_dict["apps"]
-            loaded_scopes = apps_dict["scopes"]
-            apps_dict = {}
-            for app in apps_list:
-                loaded_app = AuthoritativeApp(**app)
-                apps_dict[loaded_app.client_id] = loaded_app
-
+            d = json.loads(f.read())
+            loaded_scopes = d["scopes"]
+            d = {}
             app_scopes = AppScopes.model_validate(loaded_scopes)
-            return apps_dict, app_scopes
+            return app_scopes
     except Exception as e:
         logger.error("Failed to load authoritative apps: ", exc_info=False)
         raise e

@@ -14,4 +14,6 @@ class TokenResponseDTO:
 
 @dataclass(slots=True, frozen=True)
 class RequestValidateResponseDTO:
+    app_name: str
+    app_description: str | None
     requested_scopes: list[Scope]

@@ -24,8 +24,10 @@ class AppUpdateInfoDTO:
 
 @dataclass(slots=True, frozen=True)
 class OAuth2AppInfoDTO:
+    name: str
+    description: str | None
     client_id: UUID
     client_secret: UUID
     redirect_uris: list[str]
     scopes: list[str]
-    is_authoritative: bool
+    is_web_message_allowed: bool
