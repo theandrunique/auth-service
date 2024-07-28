@@ -1,5 +1,5 @@
 from pydantic import BaseModel, MongoDsn, RedisDsn
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
 
 
 class OAuthSettings(BaseModel):

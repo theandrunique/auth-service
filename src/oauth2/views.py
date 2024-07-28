@@ -5,7 +5,7 @@ from fastapi import APIRouter, Body, Form, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from src.dependencies import Provide
-from src.oauth2.entities import CodeChallengeMethod, GrantType, ResponseType
+from src.oauth2.entities import CodeChallengeMethod, GrantType, ResponseMode, ResponseType
 from src.oauth2.responses import RedirectUri, WebMessage
 from src.oauth2.use_cases import (
     GetAppScopesUseCase,
@@ -33,6 +33,7 @@ async def oauth_request(
     redirect_uri: Annotated[str, Body()],
     scope: Annotated[str, Body()],
     state: Annotated[str | None, Body()] = None,
+    response_mode: Annotated[ResponseMode, Body()] = ResponseMode.query,
     code_challenge_method: Annotated[CodeChallengeMethod | None, Body()] = None,
     code_challenge: Annotated[str | None, Body()] = None,
     use_case=Provide(OAuthRequestUseCase),
@@ -45,6 +46,7 @@ async def oauth_request(
             response_type=response_type,
             client_id=client_id,
             redirect_uri=redirect_uri,
+            response_mode=response_mode,
             scope=scopes,
             state=state,
             code_challenge_method=code_challenge_method,
@@ -64,11 +66,11 @@ async def oauth2_authorize(
     redirect_uri: Annotated[str, Form()],
     scope: Annotated[str, Body()],
     state: Annotated[str | None, Form()] = None,
+    response_mode: Annotated[ResponseMode, Body()] = ResponseMode.query,
     code_challenge_method: Annotated[CodeChallengeMethod | None, Form()] = None,
     code_challenge: Annotated[str | None, Form()] = None,
     use_case=Provide(OAuthAuthorizeUseCase),
 ) -> Any:
-
     scopes = scope.split(",")
     res = await use_case.execute(
         OAuthAuthorizeCommand(
@@ -77,6 +79,7 @@ async def oauth2_authorize(
             client_id=client_id,
             redirect_uri=redirect_uri,
             scope=scopes,
+            response_mode=response_mode,
             state=state,
             code_challenge_method=code_challenge_method,
             code_challenge=code_challenge,

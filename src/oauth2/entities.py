@@ -26,6 +26,7 @@ class ResponseType(str, Enum):
 class ResponseMode(str, Enum):
     web_message = "web_message"
     query = "query"
+    fragment = "fragment"
 
 
 class GrantType(str, Enum):

@@ -16,6 +16,5 @@ class RefreshTokenRequest(BaseModel):
     grant_type: str
 
 
-
 class OAuthRequestValidateResponseSchema(BaseModel):
     scopes: list[Scope]

@@ -1,6 +1,6 @@
 import secrets
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from urllib.parse import urlencode
 
 WEB_MESSAGE_TEMPLATE = """
 <!DOCTYPE html>
@@ -31,76 +31,57 @@ class Response:
     headers: dict[str, str]
 
 
-@dataclass
-class WebMessage(ABC):
-    target_origin: str
-    state: str | None
+class WebMessage:
+    def __init__(self, target_origin: str, state: str | None = None):
+        self.target_origin = target_origin
+        self.state = state
 
-    @abstractmethod
-    def build(self) -> Response: ...
+    def add_error(self, error: str) -> "WebMessage":
+        if self.response:
+            raise RuntimeError("Response already set")
+
+        self.response = {"error": error, "state": self.state}
+        return self
+
+    def add_code(self, code: str) -> "WebMessage":
+        if self.response:
+            raise RuntimeError("Response already set")
+
+        self.response = {"code": code, "state": self.state}
+        return self
 
     def _get_nonce(self) -> str:
         return secrets.token_hex(16)
 
-    def _build_response(self, response: dict) -> Response:
+    def build(self) -> Response:
         nonce = self._get_nonce()
-        content = WEB_MESSAGE_TEMPLATE.format(nonce=nonce, target_origin=self.target_origin, response=response)
+        if not self.response:
+            raise RuntimeError("Response not set")
+
+        content = WEB_MESSAGE_TEMPLATE.format(nonce=nonce, target_origin=self.target_origin, response=self.response)
         return Response(content=content, headers={"Content-Security-Policy": f"default-src 'nonce-{nonce}'"})
 
 
-@dataclass
-class WebMessageError(WebMessage):
-    error: str
+class RedirectUri:
+    def __init__(self, target_origin: str) -> None:
+        self.target_origin = target_origin
+        self.fragments = {}
+        self.params = {}
 
-    def build(self) -> Response:
-        response = {"error": self.error, "state": self.state}
-        return self._build_response(response)
+    def add_fragment(self, key: str, value: str | None) -> "RedirectUri":
+        if value:
+            self.fragments[key] = value
+        return self
 
-
-@dataclass
-class WebMessageSuccess(WebMessage):
-    code: str
-
-    def build(self) -> Response:
-        response = {"code": self.code, "state": self.state}
-        return self._build_response(response)
-
-
-@dataclass
-class RedirectUri(ABC):
-    target_origin: str
-    state: str | None
-
-    @abstractmethod
-    def build(self) -> str: ...
-
-
-@dataclass
-class RedirectUriSuccessToken(RedirectUri):
-    access_token: str
-    expires_in: int
-    token_type: str = "Bearer"
+    def add_param(self, key: str, value: str | None) -> "RedirectUri":
+        if value:
+            self.params[key] = value
+        return self
 
     def build(self) -> str:
-        return (
-            f"{self.target_origin}#access_token={self.access_token}"
-            f"&expires_in={self.expires_in}"
-            f"&token_type={self.token_type}"
-            f"&state={self.state}"
-        )
-
-
-@dataclass
-class RedirectUriSuccess(RedirectUri):
-    code: str
-
-    def build(self) -> str:
-        return f"{self.target_origin}?code={self.code}&state={self.state}"
-
-
-@dataclass
-class RedirectUriError(RedirectUri):
-    error: str
-
-    def build(self) -> str:
-        return f"{self.target_origin}?error={self.error}&state={self.state}"
+        uri = f"{self.target_origin}"
+        if self.params:
+            uri += f"?{urlencode(self.params)}"
+        if self.fragments:
+            uri += f"#{urlencode(self.fragments)}"
+        return uri
